@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Di Prisma 7, url pindah ke prisma.config.ts / tidak perlu ditulis di sini jika pakai adapter
+datasource db {
+  provider = "postgresql" // Ganti 'postgresql' atau 'mysql' sesuai database yang dipakai
+}
+
+model m_level {
+  id         Int    @id @default(autoincrement())
+  nama_level String @unique // Contoh: "superuser", "admin", "anggota"
+
+  users m_user[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model m_jabatan {
+  id                Int     @id @default(autoincrement())
+  nama_jabatan      String  @unique
+  deskripsi_jabatan String?
+
+  users m_user[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model m_user {
+  id           Int  @id @default(autoincrement())
+  m_jabatan_id Int?
+  m_level_id   Int?
+
+  nama_lengkap String
+  username     String @unique
+  password     String
+  no_handphone String @unique
+
+  rt            String
+  rw            String
+  alamat        String?
+  jenis_kelamin String? // "L" atau "P"
+
+  // Relasi
+  jabatan m_jabatan? @relation(fields: [m_jabatan_id], references: [id], onDelete: SetNull)
+  level   m_level?   @relation(fields: [m_level_id], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Optimasi Index untuk pencarian relasi agar lebih cepat saat JOIN
+  @@index([m_jabatan_id])
+  @@index([m_level_id])
+}

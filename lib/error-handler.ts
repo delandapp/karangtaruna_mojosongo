@@ -6,7 +6,10 @@ import { Prisma } from "@prisma/client";
  * Helper to catch and format API errors globally
  */
 export function handleApiError(error: unknown) {
-  console.error("[API_ERROR]", error);
+  // Hanya log ke console jika bukan error parsing JSON biasa (mengurangi spam)
+  if (!(error instanceof SyntaxError && error.message.includes("JSON"))) {
+    console.error("[API_ERROR]", error);
+  }
 
   // 1. Zod Validation Errors (400 Bad Request)
   if (error instanceof z.ZodError) {

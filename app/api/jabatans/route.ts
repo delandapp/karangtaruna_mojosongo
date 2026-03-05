@@ -6,8 +6,9 @@ import { successResponse, paginatedResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import { redis, getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
 import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
+import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
-export async function GET(req: NextRequest) {
+export const GET = withAuth(async (req: AuthenticatedRequest) => {
   try {
     const { searchParams } = new URL(req.url);
     const pageStr = searchParams.get("page") || "1";
@@ -39,11 +40,11 @@ export async function GET(req: NextRequest) {
     // 3. Bangun Query Prisma
     const whereCondition = searchQuery
       ? {
-          nama_jabatan: {
-            contains: searchQuery,
-            mode: "insensitive" as const,
-          },
-        }
+        nama_jabatan: {
+          contains: searchQuery,
+          mode: "insensitive" as const,
+        },
+      }
       : {};
 
     const [jabatans, total] = await Promise.all([
@@ -73,9 +74,9 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     return handleApiError(error);
   }
-}
+});
 
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: AuthenticatedRequest) => {
   try {
     const body = await req.json();
 
@@ -101,4 +102,4 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     return handleApiError(error);
   }
-}
+});

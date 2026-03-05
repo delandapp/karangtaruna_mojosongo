@@ -5,12 +5,13 @@ import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import { getCache, setCache, invalidateCachePrefix, redis } from "@/lib/redis";
 import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
+import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
 interface RouteProps {
   params: Promise<{ id: string }>;
 }
 
-export async function GET(req: NextRequest, props: RouteProps) {
+export const GET = withAuth(async (req: AuthenticatedRequest, props: RouteProps) => {
   try {
     const { id } = await props.params;
     const jabatanId = parseInt(id, 10);
@@ -43,9 +44,9 @@ export async function GET(req: NextRequest, props: RouteProps) {
   } catch (error) {
     return handleApiError(error);
   }
-}
+});
 
-export async function PUT(req: NextRequest, props: RouteProps) {
+export const PUT = withAuth(async (req: AuthenticatedRequest, props: RouteProps) => {
   try {
     const { id } = await props.params;
     const jabatanId = parseInt(id, 10);
@@ -78,9 +79,9 @@ export async function PUT(req: NextRequest, props: RouteProps) {
   } catch (error) {
     return handleApiError(error);
   }
-}
+});
 
-export async function DELETE(req: NextRequest, props: RouteProps) {
+export const DELETE = withAuth(async (req: AuthenticatedRequest, props: RouteProps) => {
   try {
     const { id } = await props.params;
     const jabatanId = parseInt(id, 10);
@@ -102,4 +103,4 @@ export async function DELETE(req: NextRequest, props: RouteProps) {
   } catch (error) {
     return handleApiError(error);
   }
-}
+});

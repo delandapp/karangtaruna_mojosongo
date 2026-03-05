@@ -5,12 +5,13 @@ import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import { getCache, setCache, invalidateCachePrefix, redis } from "@/lib/redis";
 import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
+import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
 interface RouteProps {
   params: Promise<{ id: string }>;
 }
 
-export async function GET(req: NextRequest, props: RouteProps) {
+export const GET = withAuth(async (req: AuthenticatedRequest, props: RouteProps) => {
   try {
     const { id } = await props.params;
     const levelId = parseInt(id, 10);
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest, props: RouteProps) {
       return successResponse(cachedLevel, 200);
     }
 
-    // 2. Ambil dari Databse
+    // 2. Ambil dari Database
     const level = await prisma.m_level.findUnique({
       where: { id: levelId },
     });
@@ -43,9 +44,9 @@ export async function GET(req: NextRequest, props: RouteProps) {
   } catch (error) {
     return handleApiError(error);
   }
-}
+});
 
-export async function PUT(req: NextRequest, props: RouteProps) {
+export const PUT = withAuth(async (req: AuthenticatedRequest, props: RouteProps) => {
   try {
     const { id } = await props.params;
     const levelId = parseInt(id, 10);
@@ -78,9 +79,9 @@ export async function PUT(req: NextRequest, props: RouteProps) {
   } catch (error) {
     return handleApiError(error);
   }
-}
+});
 
-export async function DELETE(req: NextRequest, props: RouteProps) {
+export const DELETE = withAuth(async (req: AuthenticatedRequest, props: RouteProps) => {
   try {
     const { id } = await props.params;
     const levelId = parseInt(id, 10);
@@ -95,7 +96,7 @@ export async function DELETE(req: NextRequest, props: RouteProps) {
 
     const cacheKey = REDIS_KEYS.LEVELS.SINGLE(levelId);
 
-    // Hapus single cache specfic
+    // Hapus single cache specific
     await redis.del(cacheKey);
     // Invalidate rekap table master cache
     await invalidateCachePrefix(REDIS_KEYS.LEVELS.ALL_PREFIX);
@@ -104,4 +105,4 @@ export async function DELETE(req: NextRequest, props: RouteProps) {
   } catch (error) {
     return handleApiError(error);
   }
-}
+});

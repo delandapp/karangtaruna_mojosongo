@@ -383,3 +383,92 @@ Sama seperti entitas Level, manajemen cache di Jabatan menggunakan integrasi Red
 ### 3.5 Delete Jabatan
 
 **Endpoint:** `DELETE /api/jabatans/:id`
+
+---
+
+## 4. Master Data - User (Anggota)
+
+Endpoint untuk mengelola user/anggota. Dilengkapi dengan Role-Based Access Control (RBAC) ketat dan validasi Zod.
+
+### Role-Based Access Control (RBAC)
+- **Full CRUD** (Bisa melakukan semua aksi GET, POST, PUT, DELETE): `superuser`, `ketua`, `wakil ketua`, `seketaris`, `bendahara`.
+- **Read-Only** (Hanya bisa GET): `admin`.
+- **Restricted CRUD** (Bisa CRUD namun TERBATAS pada anggota yang memiliki `m_jabatan_id` yang SAMA dengan dirinya): `koordinator`.
+
+### 4.1 Get All Users (List, Pagination & Filter)
+
+**Endpoint:** `GET /api/users`
+
+**Description:** Mengambil daftar user dengan opsi filter spesifik.
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | number | `1` | Nomor halaman |
+| `limit` | number | `10` | Jumlah data per halaman |
+| `m_jabatan_id` | number | | Filter berdasarkan ID Jabatan. *Catatan: Jika user login sebagai Koordinator, nilai ini akan dioverride paksa ke ID jabatannya sendiri.* |
+| `m_level_id` | number | | Filter berdasarkan ID Level |
+| `search` | string | | Pencarian berdasarkan `nama_lengkap` atau `username` (Insensitive) |
+
+**Contoh Response Sukses (200 OK):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "nama_lengkap": "Karang Taruna Kelurahan Mojosongo",
+      "username": "kti_mojosongo",
+      "no_handphone": "08979341242",
+      "rt": "00", "rw": "00",
+      "alamat": "Jl. Brigjend Katamso...",
+      "jenis_kelamin": null,
+      "m_jabatan_id": 1,
+      "m_level_id": 1,
+      "createdAt": "2023-11-01T10:00:00.000Z",
+      "jabatan": { "nama_jabatan": "Penanggung Jawab" },
+      "level": { "nama_level": "superuser" }
+    }
+  ],
+  "meta": {
+    "total": 10,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 1
+  }
+}
+```
+
+### 4.2 Create User
+
+**Endpoint:** `POST /api/users`
+
+**Request Body (JSON):**
+Mirip dengan endpoint Register (`POST /api/auth/register`), namun dengan restriksi keamanan bahwa hanya user berwenang yang dapat membuat user baru. Koordinator **wajib** mengisi `m_jabatan_id` sesuai dengan jabatannya (jika berbeda akan ditolak dengan `403 Forbidden`).
+
+**Contoh Error (403 Forbidden - Koordinator menambah di luar jabatannya):**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "Koordinator hanya dapat menambahkan anggota ke dalam jabatannya sendiri."
+  }
+}
+```
+
+### 4.3 Update User
+
+**Endpoint:** `PUT /api/users/:id`
+
+**Description:** Memperbarui data anggota. Admin (Read-Only) akan selalu mendapat error 403 Forbidden.
+
+**Request Body (JSON):**
+Semua properti bersifat `optional`. Jika `password` diisi string kosong `""`, data tersebut akan diabaikan (tidak diubah). Parameter validasi sama persis dengan tabel form register.
+
+### 4.4 Delete User
+
+**Endpoint:** `DELETE /api/users/:id`
+
+**Description:** Menghapus data user berdasarkan ID.
+_Catatan: User tidak dapat menghapus akunnya sendiri (akan dicegah via HTTP 403)._

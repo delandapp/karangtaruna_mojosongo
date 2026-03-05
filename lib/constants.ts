@@ -11,6 +11,8 @@ export const REDIS_KEYS = {
     SINGLE: (id: number) => `master:jabatans:${id}`,
   },
   USERS: {
+    ALL: "master:users:all",
+    ALL_PREFIX: "master:users:all:*",
     SINGLE: (id: number) => `master:users:${id}`,
   },
 };

@@ -10,7 +10,7 @@
  */
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
-  delay: number
+  delay: number,
 ): (...args: Parameters<T>) => void {
   // Fungsi yg dikembalikan tidak me-return value dari func asli
 
@@ -31,3 +31,12 @@ export function debounce<T extends (...args: any[]) => any>(
     }, delay);
   };
 }
+
+// ──────────────────────────────────────────────────────────
+// Helper: Normalisasi nomor handphone → awalan 08
+// ──────────────────────────────────────────────────────────
+export const normalizePhone = (val: string) => {
+  const digits = val.replace(/\D/g, "");
+  if (digits.startsWith("62")) return "0" + digits.slice(2);
+  return digits;
+};

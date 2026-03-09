@@ -1,0 +1,34 @@
+model m_hak_akses {
+  id         Int    @id @default(autoincrement())
+  nama_fitur String // "Create Kategori Brand"
+  tipe_fitur String // "create", "update", "delete", "get_detail", "get_all"
+  endpoint   String // "/api/sponsorship/kategori-brand"
+  method     String // "POST", "GET", "PUT", "DELETE"
+
+  is_all_level   Boolean @default(false)
+  is_all_jabatan Boolean @default(false)
+
+  rules m_hak_akses_rule[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model m_hak_akses_rule {
+  id             Int @id @default(autoincrement())
+  m_hak_akses_id Int
+
+  // Jika m_level_id ada namun m_jabatan_id null, berarti berlaku untuk level tersebut apapun jabatannya. 
+  // Jika m_jabatan_id ada namun m_level_id null, berarti berlaku untuk jabatan tersebut apapun levelnya.
+  // Jika keduanya ada, maka user harus memiliki level DAN jabatan tersebut (AND condition).
+  m_level_id   Int?
+  m_jabatan_id Int?
+
+  hak_akses m_hak_akses @relation(fields: [m_hak_akses_id], references: [id], onDelete: Cascade)
+  level     m_level?    @relation(fields: [m_level_id], references: [id], onDelete: Cascade)
+  jabatan   m_jabatan?  @relation(fields: [m_jabatan_id], references: [id], onDelete: Cascade)
+
+  @@index([m_hak_akses_id])
+  @@index([m_level_id])
+  @@index([m_jabatan_id])
+}

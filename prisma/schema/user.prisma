@@ -1,0 +1,80 @@
+model m_level {
+  id         Int    @id @default(autoincrement())
+  nama_level String @unique // Contoh: "superuser", "admin", "anggota"
+
+  users           m_user[]
+  hak_akses_rules m_hak_akses_rule[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model m_jabatan {
+  id                Int     @id @default(autoincrement())
+  nama_jabatan      String  @unique
+  deskripsi_jabatan String?
+
+  users             m_user[]
+  hak_akses_rules   m_hak_akses_rule[]
+  anggota_panitia   anggota_panitia[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model m_user {
+  id           Int  @id @default(autoincrement())
+  m_jabatan_id Int?
+  m_level_id   Int?
+
+  nama_lengkap String
+  username     String @unique
+  password     String
+  no_handphone String @unique
+
+  rt            String
+  rw            String
+  alamat        String?
+  jenis_kelamin String? // "L" atau "P"
+
+  // Relasi
+  jabatan m_jabatan? @relation(fields: [m_jabatan_id], references: [id], onDelete: SetNull)
+  level   m_level?   @relation(fields: [m_level_id], references: [id], onDelete: SetNull)
+  event_dibuat          event[]                 @relation("event_dibuat_oleh")
+  anggota_panitia       anggota_panitia[]
+  rundown_pic           rundown_acara[]
+  tugas_dibuat          tugas_event[]           @relation("tugas_dibuat_oleh")
+  tugas_ditugaskan      tugas_event[]           @relation("tugas_ditugaskan_ke")
+  tiket_order           tiket_order[]
+  tiket_validasi        tiket_terbit[]          @relation("tiket_dicek_oleh")
+  pendaftaran           pendaftaran[]
+  hasil_nilai_juri      hasil_lomba[]
+  anggaran_dibuat       anggaran[]              @relation("anggaran_dibuat_oleh")
+  anggaran_disetujui    anggaran[]              @relation("anggaran_disetujui_oleh")
+  transaksi_dicatat     transaksi_keuangan[]    @relation("transaksi_dicatat_oleh")
+  transaksi_disetujui   transaksi_keuangan[]    @relation("transaksi_disetujui_oleh")
+  proposal_dikirim      proposal_sponsor[]      @relation("proposal_dikirim_oleh")
+  sponsor_ditangani     event_sponsor[]         @relation("sponsor_ditangani_oleh")
+  berita_ditulis        berita[]
+  konten_ditugaskan     kalender_konten[]
+  surat_dibuat          surat[]                 @relation("surat_dibuat_oleh")
+  surat_ditandatangani  surat[]                 @relation("surat_ditandatangani_oleh")
+  dokumen_diunggah      dokumen[]
+  survei_dibuat         survei_kepuasan[]
+  saran_ditangani       saran_masukan[]         @relation("saran_ditangani_oleh")
+  laporan_dibuat        laporan[]               @relation("laporan_dibuat_oleh")
+  laporan_disetujui     laporan[]               @relation("laporan_disetujui_oleh")
+  media_diunggah        media_galeri[]
+  notifikasi            notifikasi[]
+  log_audit             log_audit[]
+  rapat_dibuat          rapat[]
+  saran_user            saran_masukan[]         @relation("saran_dari_user")
+  respon_survei_user    respon_survei[]         @relation("respon_user")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Optimasi Index untuk pencarian relasi agar lebih cepat saat JOIN
+  @@index([m_jabatan_id])
+  @@index([m_level_id])
+}

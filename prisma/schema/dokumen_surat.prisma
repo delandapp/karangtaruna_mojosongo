@@ -1,0 +1,128 @@
+// -----------------------------------------------------------------------------
+// MASTER: JENIS SURAT
+// Contoh: "Undangan", "Permohonan Izin", "SK", "Kerjasama", "Ucapan Terima Kasih"
+// -----------------------------------------------------------------------------
+model m_jenis_surat {
+  id          Int     @id @default(autoincrement())
+  nama_jenis  String  @unique
+  prefix_nomor String? // Contoh: "001/KT-MJS" → untuk auto-numbering
+  template_url String? // URL template Word/PDF
+
+  // Relasi
+  surat surat[]
+
+  dibuat_pada    DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
+}
+
+// =============================================================================
+// MODUL 8 — SURAT MENYURAT
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// SURAT (KELUAR / MASUK)
+// Mendukung auto-numbering & alur tanda tangan digital
+// -----------------------------------------------------------------------------
+model surat {
+  id                   Int  @id @default(autoincrement())
+  event_id             Int?
+  m_jenis_surat_id      Int?
+  dibuat_oleh_id       Int
+  ditandatangani_oleh_id Int?
+
+  nomor_surat   String?  @unique // auto-generate via trigger/service
+  perihal       String
+  tujuan_kepada String?
+  konten        String?  @db.Text
+  url_file      String?
+  arah_surat    String   // "keluar" | "masuk"
+  status        String   @default("draft")
+  // "draft" | "diajukan" | "ditandatangani" | "terkirim" | "dibalas" | "diarsipkan"
+  tanggal_surat DateTime
+  ditandatangani_pada DateTime?
+
+  // Relasi
+  event              event?        @relation(fields: [event_id],                references: [id], onDelete: SetNull)
+  jenis_surat        m_jenis_surat? @relation(fields: [m_jenis_surat_id],        references: [id], onDelete: SetNull)
+  dibuat_oleh        m_user        @relation("surat_dibuat_oleh",               fields: [dibuat_oleh_id],         references: [id])
+  ditandatangani_oleh m_user?      @relation("surat_ditandatangani_oleh",        fields: [ditandatangani_oleh_id], references: [id], onDelete: SetNull)
+
+  dibuat_pada    DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
+
+  @@index([event_id])
+  @@index([m_jenis_surat_id])
+  @@index([dibuat_oleh_id])
+  @@index([ditandatangani_oleh_id])
+  @@index([status])
+  @@index([arah_surat])
+}
+
+// =============================================================================
+// MODUL 9 — DOKUMEN & LAPORAN
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// DOKUMEN UMUM
+// Repositori semua file organisasi: proposal, MOU, izin, dsb
+// -----------------------------------------------------------------------------
+model dokumen {
+  id             Int  @id @default(autoincrement())
+  event_id       Int?
+  diunggah_oleh_id Int
+
+  nama_dokumen  String
+  jenis_dokumen String  // "proposal" | "laporan" | "kontrak" | "izin" | "sk" | dst
+  url_file      String
+  ukuran_kb     Int?
+  versi         Int     @default(1)
+  level_akses   String  @default("anggota") // "publik" | "anggota" | "admin"
+  tag           Json?   // array string tag
+  catatan       String? @db.Text
+
+  // Relasi
+  event         event?  @relation(fields: [event_id],          references: [id], onDelete: SetNull)
+  diunggah_oleh m_user  @relation(fields: [diunggah_oleh_id],  references: [id])
+
+  diunggah_pada  DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
+
+  @@index([event_id])
+  @@index([diunggah_oleh_id])
+  @@index([jenis_dokumen])
+}
+
+// -----------------------------------------------------------------------------
+// LAPORAN RESMI
+// Laporan pertanggungjawaban per event, keuangan, tahunan
+// -----------------------------------------------------------------------------
+model laporan {
+  id                Int  @id @default(autoincrement())
+  event_id          Int?
+  dibuat_oleh_id    Int
+  disetujui_oleh_id Int?
+
+  jenis_laporan  String   // "pertanggungjawaban" | "keuangan" | "kegiatan" | "tahunan"
+  judul          String
+  periode_mulai  DateTime?
+  periode_selesai DateTime?
+  isi_laporan    Json?    // section-section laporan (summary, statistik, dst)
+  url_file       String?
+  status         String   @default("draft")
+  // "draft" | "review" | "disetujui" | "final" | "terarsip"
+  catatan        String?  @db.Text
+  disetujui_pada DateTime?
+
+  // Relasi
+  event          event?  @relation(fields: [event_id],          references: [id], onDelete: SetNull)
+  dibuat_oleh    m_user  @relation("laporan_dibuat_oleh",       fields: [dibuat_oleh_id],    references: [id])
+  disetujui_oleh m_user? @relation("laporan_disetujui_oleh",    fields: [disetujui_oleh_id], references: [id], onDelete: SetNull)
+
+  dibuat_pada    DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
+
+  @@index([event_id])
+  @@index([dibuat_oleh_id])
+  @@index([disetujui_oleh_id])
+  @@index([status])
+}

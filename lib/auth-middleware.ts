@@ -85,20 +85,34 @@ export function withAuth<T extends unknown[]>(
         const { pathname } = new URL(req.url);
         const method = req.method;
 
-        // Try getting cached RBAC rules eventually, or query directly
         const hakAkses = await prisma.m_hak_akses.findFirst({
           where: { endpoint: pathname, method },
-          include: { levels: true, jabatans: true },
+          include: { rules: true },
         });
 
         if (hakAkses) {
-          const levelAllowed = hakAkses.is_all_level ||
-            (decoded.m_level_id && hakAkses.levels.some(l => l.m_level_id === decoded.m_level_id));
-          const jabatanAllowed = hakAkses.is_all_jabatan ||
-            (decoded.m_jabatan_id && hakAkses.jabatans.some(j => j.m_jabatan_id === decoded.m_jabatan_id));
+          // Jika is_all_level dan is_all_jabatan true, semua user boleh akses
+          if (!hakAkses.is_all_level || !hakAkses.is_all_jabatan) {
+            // Cek apakah user memenuhi minimal satu rule
+            // Rule semantics (sesuai schema):
+            //   - level_id ada & jabatan_id null  → cukup punya level tersebut
+            //   - jabatan_id ada & level_id null  → cukup punya jabatan tersebut
+            //   - keduanya ada                    → harus punya KEDUANYA (AND)
+            const isAllowed = hakAkses.rules.some((rule) => {
+              const levelMatch =
+                rule.m_level_id == null || rule.m_level_id === decoded.m_level_id;
+              const jabatanMatch =
+                rule.m_jabatan_id == null || rule.m_jabatan_id === decoded.m_jabatan_id;
+              return levelMatch && jabatanMatch;
+            });
 
-          if (!levelAllowed && !jabatanAllowed) {
-            return errorResponse(403, "Akses ditolak (RBAC): Anda tidak memiliki izin untuk fitur ini", "FORBIDDEN") as NextResponse;
+            if (!isAllowed) {
+              return errorResponse(
+                403,
+                "Akses ditolak: Anda tidak memiliki izin untuk fitur ini",
+                "FORBIDDEN",
+              ) as NextResponse;
+            }
           }
         }
       } catch (rbacError) {

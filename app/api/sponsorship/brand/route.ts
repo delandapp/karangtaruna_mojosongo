@@ -9,6 +9,17 @@ import { DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { checkUserAccess } from "@/lib/rbac";
 
+import { z } from "zod";
+import { buildCacheKeyPart, buildInFilter, zCommaSeparatedNumbers } from "@/utils/helpers/api-filter";
+
+const querySchema = z.object({
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(10),
+  search: z.string().optional(),
+  m_bidang_brand_id: zCommaSeparatedNumbers,
+  m_kategori_brand_id: zCommaSeparatedNumbers,
+});
+
 export const GET = withAuth(async (req: AuthenticatedRequest) => {
     try {
         const { m_level_id: userLevelId, m_jabatan_id: userJabatanId } = req.user;
@@ -34,34 +45,35 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
             return successResponse(items, 200);
         }
 
-        const pageStr = searchParams.get("page") || "1";
-        const limitStr = searchParams.get("limit") || "10";
-        const search = searchParams.get("search") || undefined;
+        const query = Object.fromEntries(searchParams.entries());
+        const validatedQuery = querySchema.parse(query);
 
-        const { page, limit, search: searchQuery } = paginationSchema.parse({
-            page: pageStr,
-            limit: limitStr,
-            search,
-        });
-
+        const { page, limit, search: searchQuery, m_bidang_brand_id, m_kategori_brand_id } = validatedQuery;
         const skip = (page - 1) * limit;
 
-        const cacheKey = `brand:all:page:${page}:limit:${limit}`;
-        if (!searchQuery) {
-            const cachedData = await getCache<{ data: any[]; meta: any }>(cacheKey);
-            if (cachedData) {
-                return paginatedResponse(cachedData.data, cachedData.meta, 200);
-            }
+        const bidKey = buildCacheKeyPart(m_bidang_brand_id, "all");
+        const katKey = buildCacheKeyPart(m_kategori_brand_id, "all");
+        const cacheKey = `brand:all:page:${page}:limit:${limit}:bid:${bidKey}:kat:${katKey}:search:${searchQuery || "none"}`;
+
+        const cachedData = await getCache<{ data: any[]; meta: any }>(cacheKey);
+        if (cachedData) {
+            return paginatedResponse(cachedData.data, cachedData.meta, 200);
         }
 
-        const whereCondition = searchQuery
-            ? {
-                OR: [
-                    { nama_brand: { contains: searchQuery, mode: "insensitive" as const } },
-                    { perusahaan_induk: { contains: searchQuery, mode: "insensitive" as const } }
-                ]
-            }
-            : {};
+        const whereCondition: any = {};
+        
+        if (m_bidang_brand_id && m_bidang_brand_id.length > 0) {
+            whereCondition.m_bidang_brand_id = buildInFilter(m_bidang_brand_id);
+        }
+        if (m_kategori_brand_id && m_kategori_brand_id.length > 0) {
+            whereCondition.m_kategori_brand_id = buildInFilter(m_kategori_brand_id);
+        }
+        if (searchQuery) {
+            whereCondition.OR = [
+                { nama_brand: { contains: searchQuery, mode: "insensitive" as const } },
+                { perusahaan_induk: { contains: searchQuery, mode: "insensitive" as const } }
+            ];
+        }
 
         const [items, total] = await Promise.all([
             prisma.m_brand.findMany({
@@ -76,9 +88,7 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
 
         const meta = { page, limit, total, totalPages: Math.ceil(total / limit) };
 
-        if (!searchQuery) {
-            await setCache(cacheKey, { data: items, meta }, DEFAULT_CACHE_TTL);
-        }
+        await setCache(cacheKey, { data: items, meta }, DEFAULT_CACHE_TTL);
 
         return paginatedResponse(items, meta, 200);
     } catch (error) {

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { phoneField } from "./reusable.schema";
 
 export const registerSchema = z.object({
   nama_lengkap: z
@@ -20,11 +21,7 @@ export const registerSchema = z.object({
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
       "Password harus mengandung setidaknya satu huruf besar, satu huruf kecil, dan satu angka",
     ),
-  no_handphone: z
-    .string()
-    .min(10, "Nomor handphone minimal 10 digit")
-    .max(15, "Nomor handphone maksimal 15 digit")
-    .regex(/^[0-9]+$/, "Nomor handphone hanya boleh berisi angka"),
+  no_handphone: phoneField,
   rt: z.string().min(1, "RT harus diisi").max(5, "Format RT tidak valid"),
   rw: z.string().min(1, "RW harus diisi").max(5, "Format RW tidak valid"),
   alamat: z.string().optional(),

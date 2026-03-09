@@ -16,8 +16,8 @@ import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
 const querySchema = z.object({
   page: z.coerce.number().min(1).default(1),
   limit: z.coerce.number().min(1).max(100).default(10),
-  m_jabatan_id: z.coerce.number().positive().optional(),
-  m_level_id: z.coerce.number().positive().optional(),
+  m_jabatan_id: zCommaSeparatedNumbers,
+  m_level_id: zCommaSeparatedNumbers,
   search: z.string().optional(),
 });
 
@@ -47,6 +47,7 @@ const createUserSchema = z.object({
 });
 
 import { checkUserAccess } from "@/lib/rbac";
+import { buildCacheKeyPart, buildInFilter, zCommaSeparatedNumbers } from "@/utils/helpers/api-filter";
 
 export const GET = withAuth(async (req: AuthenticatedRequest) => {
   try {
@@ -84,8 +85,24 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
 
     const where: any = {};
 
-    // Generate Cache Key parameter mapping based on query combinations
-    const cacheKey = `${REDIS_KEYS.USERS.ALL}:page:${page}:limit:${limit}:jab:${m_jabatan_id || "all"}:lvl:${m_level_id || "all"}:search:${search || "none"}`;
+    // Apply filters utilizing reusable helper
+    if (m_jabatan_id && m_jabatan_id.length > 0) {
+      where.m_jabatan_id = buildInFilter(m_jabatan_id);
+    }
+    if (m_level_id && m_level_id.length > 0) {
+      where.m_level_id = buildInFilter(m_level_id);
+    }
+    if (search) {
+      where.OR = [
+        { nama_lengkap: { contains: search, mode: "insensitive" } },
+        { username: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    // Generate deterministric Cache Key parameter mapping based on query combinations
+    const jabKey = buildCacheKeyPart(m_jabatan_id, "all");
+    const lvlKey = buildCacheKeyPart(m_level_id, "all");
+    const cacheKey = `${REDIS_KEYS.USERS.ALL}:page:${page}:limit:${limit}:jab:${jabKey}:lvl:${lvlKey}:search:${search || "none"}`;
 
     // Try hitting cache first
     const cachedData = await getCache<{ data: any[]; meta: any }>(cacheKey);
@@ -94,16 +111,6 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
       // The Koordinator logic below should still work if isolated correctly by params,
       // but to be safe, caching structure isolates them by their explicit jabata_id
       return paginatedResponse(cachedData.data, cachedData.meta, 200);
-    }
-
-    // Apply filters
-    if (m_jabatan_id) where.m_jabatan_id = m_jabatan_id;
-    if (m_level_id) where.m_level_id = m_level_id;
-    if (search) {
-      where.OR = [
-        { nama_lengkap: { contains: search, mode: "insensitive" } },
-        { username: { contains: search, mode: "insensitive" } },
-      ];
     }
 
     // Koordinator can only see users of the same jabatan
@@ -122,10 +129,16 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
         );
       }
 
-      // Force override m_jabatan_id filter for koordinator
-      if (m_jabatan_id && m_jabatan_id !== currentUser.m_jabatan_id) {
-        return successResponse({ data: [], total: 0, page, limit }); // return empty if trying to access other jabatan
+      // Pastikan koordinator hanya bisa memfilter jabatannya sendiri.
+      // Jika mereka mecoba memfilter jabatan lain, kembalikan kosong.
+      if (m_jabatan_id && m_jabatan_id.length > 0) {
+        const isRequestingOtherJabatan = !m_jabatan_id.includes(currentUser.m_jabatan_id);
+        if (isRequestingOtherJabatan) {
+           return successResponse({ data: [], total: 0, page, limit }); // return empty if trying to access other jabatan
+        }
       }
+      
+      // Override/Set filter ke jabatan koordinator itu sendiri
       where.m_jabatan_id = currentUser.m_jabatan_id;
     }
 

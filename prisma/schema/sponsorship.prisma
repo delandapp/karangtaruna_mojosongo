@@ -1,0 +1,161 @@
+model m_kategori_brand {
+  id                 Int     @id @default(autoincrement())
+  nama_kategori      String  @unique
+  deskripsi_kategori String?
+
+  brands m_brand[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model m_bidang_brand {
+  id               Int     @id @default(autoincrement())
+  nama_bidang      String  @unique
+  deskripsi_bidang String?
+
+  brands m_brand[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model m_brand {
+  id                  Int  @id @default(autoincrement())
+  m_bidang_brand_id   Int?
+  m_kategori_brand_id Int?
+
+  nama_brand              String
+  whatsapp_brand          String?
+  email_brand             String?
+  linkend_brand           String?
+  instagram_brand         String?
+  presentase_keberhasilan Float?
+  perusahaan_induk        String?
+
+  // Relasi
+  bidang   m_bidang_brand?   @relation(fields: [m_bidang_brand_id], references: [id], onDelete: SetNull)
+  kategori m_kategori_brand? @relation(fields: [m_kategori_brand_id], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Optimasi Index
+  @@index([m_bidang_brand_id])
+  @@index([m_kategori_brand_id])
+}
+
+// -----------------------------------------------------------------------------
+// MASTER: KATEGORI SPONSOR
+// Contoh: "Perbankan", "Kuliner", "Otomotif", "UMKM"
+// -----------------------------------------------------------------------------
+model m_kategori_sponsor {
+  id                 Int     @id @default(autoincrement())
+  nama_kategori      String  @unique
+  deskripsi_kategori String?
+
+  // Relasi
+  sponsors m_sponsor[]
+
+  dibuat_pada    DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
+}
+
+// -----------------------------------------------------------------------------
+// MASTER: SPONSOR / PERUSAHAAN
+// Database sponsor yang bisa dipakai lintas event
+// -----------------------------------------------------------------------------
+model m_sponsor {
+  id                   Int  @id @default(autoincrement())
+  m_kategori_sponsor_id Int?
+
+  nama_perusahaan   String
+  nama_kontak       String?
+  no_handphone      String?
+  email             String?
+  alamat            String? @db.Text
+  logo_url          String?
+  instagram         String?
+  website           String?
+  total_disponsori  Decimal? @db.Decimal(15, 2)
+  catatan           String?  @db.Text
+
+  // Relasi
+  kategori          m_kategori_sponsor? @relation(fields: [m_kategori_sponsor_id], references: [id], onDelete: SetNull)
+  event_sponsor     event_sponsor[]
+  proposal_sponsor  proposal_sponsor[]
+
+  dibuat_pada    DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
+
+  @@index([m_kategori_sponsor_id])
+}
+
+// =============================================================================
+// MODUL 5 — SPONSORSHIP
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// EVENT SPONSOR (Pivot: Event ↔ Sponsor dengan detail kontribusi)
+// -----------------------------------------------------------------------------
+model event_sponsor {
+  id           Int  @id @default(autoincrement())
+  event_id     Int
+  m_sponsor_id  Int
+  ditangani_oleh_id Int?
+
+  tier                String   // "platinum" | "gold" | "silver" | "bronze" | "inkind"
+  jenis_kontribusi    String   // "uang" | "barang" | "jasa" | "campuran"
+  jumlah_disepakati   Decimal? @db.Decimal(15, 2)
+  jumlah_diterima     Decimal? @db.Decimal(15, 2)
+  deskripsi_inkind    String?  @db.Text
+  benefit_disepakati  Json?    // array benefit yang dijanjikan
+  benefit_terealisasi Json?    // array benefit yang sudah dilaksanakan
+  status_pipeline     String   @default("prospek")
+  // "prospek" | "dihubungi" | "negosiasi" | "dikonfirmasi" | "lunas" | "selesai" | "batal"
+  url_mou             String?  // dokumen MOU digital
+  dikonfirmasi_pada   DateTime?
+
+  // Relasi
+  event          event    @relation(fields: [event_id],          references: [id], onDelete: Cascade)
+  sponsor        m_sponsor @relation(fields: [m_sponsor_id],      references: [id])
+  ditangani_oleh m_user?  @relation("sponsor_ditangani_oleh",    fields: [ditangani_oleh_id], references: [id], onDelete: SetNull)
+
+  dibuat_pada    DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
+
+  @@unique([event_id, m_sponsor_id])
+  @@index([event_id])
+  @@index([m_sponsor_id])
+  @@index([ditangani_oleh_id])
+  @@index([status_pipeline])
+}
+
+// -----------------------------------------------------------------------------
+// PROPOSAL SPONSOR
+// Tracking setiap pengiriman proposal ke calon sponsor
+// -----------------------------------------------------------------------------
+model proposal_sponsor {
+  id           Int @id @default(autoincrement())
+  event_id     Int
+  m_sponsor_id  Int
+  dikirim_oleh_id Int
+
+  tier_diusulkan  String   // "platinum" | "gold" | "silver" | "bronze"
+  url_file_proposal String?
+  dikirim_pada    DateTime?
+  followup_pada   DateTime?
+  respons         String?  // "diterima" | "ditolak" | "negosiasi" | "menunggu"
+  catatan         String?  @db.Text
+
+  // Relasi
+  event       event    @relation(fields: [event_id],      references: [id], onDelete: Cascade)
+  sponsor     m_sponsor @relation(fields: [m_sponsor_id],  references: [id])
+  dikirim_oleh m_user  @relation("proposal_dikirim_oleh", fields: [dikirim_oleh_id], references: [id])
+
+  dibuat_pada DateTime @default(now())
+
+  @@index([event_id])
+  @@index([m_sponsor_id])
+  @@index([dikirim_oleh_id])
+}

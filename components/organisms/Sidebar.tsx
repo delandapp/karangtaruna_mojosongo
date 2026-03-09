@@ -21,6 +21,8 @@ import {
   PanelLeft,
   Handshake,
   ShieldCheck,
+  Calendar,
+  Building2,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -28,10 +30,12 @@ interface SidebarProps {
 }
 
 const GENERAL_NAV = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/dashboard/home", icon: LayoutDashboard, label: "Home" },
+  { href: "/dashboard/event", icon: Calendar, label: "Event" },
 ];
 
 const MASTER_NAV = [
+  { href: "/dashboard/organisasi", icon: Building2, label: "Organisasi" },
   { href: "/dashboard/jabatan", icon: Briefcase, label: "Jabatan" },
   { href: "/dashboard/level", icon: Shield, label: "Level" },
   { href: "/dashboard/user", icon: Users, label: "User" },
@@ -47,7 +51,10 @@ const TOOLS_NAV = [
     label: "Sponsorship",
     subItems: [
       { href: "/dashboard/sponsorship/brand", label: "Brand" },
-      { href: "/dashboard/sponsorship/kategori-brand", label: "Kategori Brand" },
+      {
+        href: "/dashboard/sponsorship/kategori-brand",
+        label: "Kategori Brand",
+      },
       { href: "/dashboard/sponsorship/bidang-brand", label: "Bidang Brand" },
     ],
   },

@@ -20,6 +20,36 @@ export const REDIS_KEYS = {
     ALL_PREFIX: "master:hak_akses:all:*",
     SINGLE: (id: number) => `master:hak_akses:${id}`,
   },
+  ORGANISASI: {
+    ALL: "master:organisasi:all",
+    ALL_PREFIX: "master:organisasi:all:*",
+    SINGLE: (id: number) => `master:organisasi:${id}`,
+  },
+  EVENTS: {
+    ALL: "master:events:all",
+    ALL_PREFIX: "master:events:all:*",
+    SINGLE: (id: number) => `master:events:${id}`,
+  },
+  PANITIA: {
+    ALL: (eventId: number) => `event:${eventId}:panitia:all`,
+    ALL_PREFIX: (eventId: number) => `event:${eventId}:panitia:all:*`,
+    SINGLE: (eventId: number, id: number) => `event:${eventId}:panitia:${id}`,
+  },
+  RUNDOWN: {
+    ALL: (eventId: number) => `event:${eventId}:rundown:all`,
+    ALL_PREFIX: (eventId: number) => `event:${eventId}:rundown:all:*`,
+    SINGLE: (eventId: number, id: number) => `event:${eventId}:rundown:${id}`,
+  },
+  TUGAS: {
+    ALL: (eventId: number) => `event:${eventId}:tugas:all`,
+    ALL_PREFIX: (eventId: number) => `event:${eventId}:tugas:all:*`,
+    SINGLE: (eventId: number, id: number) => `event:${eventId}:tugas:${id}`,
+  },
+  RAPAT: {
+    ALL: "master:rapat:all",
+    ALL_PREFIX: "master:rapat:all:*",
+    SINGLE: (id: number) => `master:rapat:${id}`,
+  },
 };
 
 // Global cache TTL in seconds (1 Hour by default)

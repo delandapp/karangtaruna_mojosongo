@@ -1,0 +1,120 @@
+// -----------------------------------------------------------------------------
+// MASTER: VENDOR (Penyedia Jasa)
+// Contoh: "Sound System Sejahtera", "Tenda Berkah", "Catering Bu Siti"
+// -----------------------------------------------------------------------------
+model m_vendor {
+  id           Int     @id @default(autoincrement())
+  nama_vendor  String
+  jenis_vendor String  // "sound_system" | "tenda" | "catering" | "lighting" | dst
+  nama_kontak  String?
+  no_handphone String?
+  alamat       String? @db.Text
+  penilaian    Decimal? @db.Decimal(3, 1) // 0.0 - 5.0
+  catatan      String?  @db.Text
+  is_aktif     Boolean  @default(true)
+
+  // Relasi
+  event_vendor event_vendor[]
+
+  dibuat_pada    DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
+}
+
+// -----------------------------------------------------------------------------
+// MASTER: VENUE / TEMPAT
+// Database tempat yang bisa dipakai lintas event
+// -----------------------------------------------------------------------------
+model m_venue {
+  id            Int     @id @default(autoincrement())
+  nama_venue    String
+  alamat        String  @db.Text
+  kapasitas     Int?
+  luas_m2       Decimal? @db.Decimal(10, 2)
+  fasilitas     Json?   // { listrik: true, toilet: 4, parkir: true, genset: false }
+  harga_per_hari Decimal? @db.Decimal(12, 2)
+  info_kontak   Json?   // { nama, telepon, email }
+  foto_url      Json?   // array URL foto
+  penilaian     Decimal? @db.Decimal(3, 1)
+  catatan       String?  @db.Text
+
+  // Relasi
+  event_venue event_venue[]
+
+  dibuat_pada    DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
+}
+
+// -----------------------------------------------------------------------------
+// MASTER: ASET / INVENTARIS KARANG TARUNA
+// -----------------------------------------------------------------------------
+model m_inventaris {
+  id              Int    @id @default(autoincrement())
+  kode_aset       String @unique
+  nama_aset       String
+  kategori_aset   String // "sound_system" | "tenda" | "meja" | "kursi" | dst
+  jumlah          Int
+  kondisi         String // "baik" | "rusak_ringan" | "rusak_berat"
+  tanggal_beli    DateTime?
+  harga_beli      Decimal? @db.Decimal(12, 2)
+  lokasi_simpan   String?
+  foto_url        String?
+  catatan         String? @db.Text
+
+  dibuat_pada    DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
+}
+
+// =============================================================================
+// MODUL 6 — LOGISTIK (VENDOR & VENUE)
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// EVENT VENDOR (Pivot: Event ↔ Vendor)
+// -----------------------------------------------------------------------------
+model event_vendor {
+  id          Int @id @default(autoincrement())
+  event_id    Int
+  m_vendor_id  Int
+
+  item_disewa     String  // "sound_system_5kva" | "tenda_10x20" | dst
+  tanggal_pakai   DateTime
+  tanggal_kembali DateTime?
+  harga_sewa      Decimal? @db.Decimal(12, 2)
+  dp_dibayar      Decimal? @db.Decimal(12, 2)
+  status_bayar    String   @default("belum") // "belum" | "dp" | "lunas"
+  url_kontrak     String?
+  catatan         String?  @db.Text
+  status          String   @default("dipesan") // "dipesan" | "dikonfirmasi" | "selesai" | "dibatalkan"
+
+  // Relasi
+  event  event    @relation(fields: [event_id],   references: [id], onDelete: Cascade)
+  vendor m_vendor @relation(fields: [m_vendor_id], references: [id])
+
+  @@index([event_id])
+  @@index([m_vendor_id])
+}
+
+// -----------------------------------------------------------------------------
+// EVENT VENUE (Pivot: Event ↔ Venue)
+// -----------------------------------------------------------------------------
+model event_venue {
+  id         Int @id @default(autoincrement())
+  event_id   Int
+  m_venue_id  Int
+
+  tanggal_booking_mulai   DateTime
+  tanggal_booking_selesai DateTime
+  biaya_sewa              Decimal? @db.Decimal(12, 2)
+  url_denah_layout        String?
+  url_dokumen_izin        String?
+  catatan                 String?  @db.Text
+  status                  String   @default("dipesan")
+  // "dipesan" | "dikonfirmasi" | "selesai" | "dibatalkan"
+
+  // Relasi
+  event event   @relation(fields: [event_id],  references: [id], onDelete: Cascade)
+  venue m_venue @relation(fields: [m_venue_id], references: [id])
+
+  @@index([event_id])
+  @@index([m_venue_id])
+}

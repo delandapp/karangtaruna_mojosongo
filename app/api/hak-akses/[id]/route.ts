@@ -9,7 +9,7 @@ import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { checkUserAccess } from "@/lib/rbac";
 
 interface Context {
-    params: { id: string };
+    params: Promise<{ id: string }>;
 }
 
 export const PUT = withAuth(
@@ -22,7 +22,8 @@ export const PUT = withAuth(
                 return errorResponse(403, "Akses ditolak. Anda tidak memiliki izin update hak akses.", "FORBIDDEN");
             }
 
-            const id = parseInt(params.id);
+            const { id: paramId } = await params;
+            const id = parseInt(paramId);
             if (isNaN(id)) {
                 return errorResponse(400, "ID tidak valid", "VALIDATION_ERROR");
             }
@@ -88,7 +89,8 @@ export const DELETE = withAuth(
                 return errorResponse(403, "Akses ditolak. Anda tidak memiliki izin hapus hak akses.", "FORBIDDEN");
             }
 
-            const id = parseInt(params.id);
+            const { id: paramId } = await params;
+            const id = parseInt(paramId);
             if (isNaN(id)) {
                 return errorResponse(400, "ID tidak valid", "VALIDATION_ERROR");
             }

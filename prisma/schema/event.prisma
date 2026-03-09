@@ -1,0 +1,174 @@
+// =============================================================================
+// EVENT — TABEL MASTER UTAMA SELURUH SISTEM
+// Semua modul merujuk ke event_id
+// =============================================================================
+model event {
+  id              Int    @id @default(autoincrement())
+  m_organisasi_id Int
+  dibuat_oleh_id  Int
+
+  kode_event        String  @unique               // Contoh: "EVT-2025-001"
+  nama_event        String
+  tema_event        String?
+  deskripsi         String? @db.Text
+  jenis_event       String  // "festival" | "lomba" | "seminar" | "bakti_sosial" | dst
+  status_event      String  @default("perencanaan")
+  // "perencanaan" | "persiapan" | "siap" | "berlangsung" | "selesai" | "dibatalkan"
+
+  tanggal_mulai   DateTime
+  tanggal_selesai DateTime
+  lokasi          String?
+  target_peserta  Int?
+  realisasi_peserta Int?
+  banner_url      String?
+  tujuan          Json?   // array string tujuan SMART
+
+  // Relasi ke master
+  organisasi  m_organisasi @relation(fields: [m_organisasi_id], references: [id])
+  dibuat_oleh m_user       @relation("event_dibuat_oleh", fields: [dibuat_oleh_id], references: [id])
+
+  // Relasi ke semua modul
+  anggota_panitia   anggota_panitia[]
+  rundown_acara     rundown_acara[]
+  tugas_event       tugas_event[]
+  jenis_tiket       jenis_tiket[]
+  kategori_daftar   kategori_pendaftaran[]
+  rapat             rapat[]
+  anggaran          anggaran[]
+  event_sponsor     event_sponsor[]
+  proposal_sponsor  proposal_sponsor[]
+  event_vendor      event_vendor[]
+  event_venue       event_venue[]
+  berita            berita[]
+  kalender_konten   kalender_konten[]
+  surat             surat[]
+  dokumen           dokumen[]
+  survei_kepuasan   survei_kepuasan[]
+  saran_masukan     saran_masukan[]
+  laporan           laporan[]
+  media_galeri      media_galeri[]
+  notifikasi        notifikasi[]
+
+  dibuat_pada    DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
+
+  @@index([m_organisasi_id])
+  @@index([dibuat_oleh_id])
+  @@index([status_event])
+  @@index([tanggal_mulai, tanggal_selesai])
+}
+
+// =============================================================================
+// MODUL 1 — PERENCANAAN EVENT
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// ANGGOTA PANITIA PER EVENT
+// -----------------------------------------------------------------------------
+model anggota_panitia {
+  id           Int @id @default(autoincrement())
+  event_id     Int
+  user_id      Int
+  m_jabatan_id Int?
+
+  divisi         String  // "acara" | "logistik" | "humas" | "konsumsi" | "keamanan" | dst
+  posisi         String  // "Koordinator" | "Anggota"
+  deskripsi_tugas String? @db.Text
+  is_aktif       Boolean  @default(true)
+  bergabung_pada DateTime @default(now())
+
+  // Relasi
+  event   event     @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  user    m_user    @relation(fields: [user_id],  references: [id], onDelete: Cascade)
+  jabatan m_jabatan? @relation(fields: [m_jabatan_id], references: [id], onDelete: SetNull)
+
+  @@unique([event_id, user_id])
+  @@index([event_id])
+  @@index([user_id])
+  @@index([m_jabatan_id])
+}
+
+// -----------------------------------------------------------------------------
+// RUNDOWN ACARA
+// -----------------------------------------------------------------------------
+model rundown_acara {
+  id       Int  @id @default(autoincrement())
+  event_id Int
+  pic_id   Int?
+
+  hari_ke      Int     // 1, 2, 3, dst
+  urutan_no    Int     // urutan dalam hari tsb
+  waktu_mulai  String  // "09.00" — disimpan sebagai string agar fleksibel
+  waktu_selesai String // "10.00"
+  nama_kegiatan String
+  keterangan    String? @db.Text
+  status        String  @default("belum") // "belum" | "berjalan" | "selesai" | "dilewati"
+
+  // Relasi
+  event event  @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  pic   m_user? @relation(fields: [pic_id], references: [id], onDelete: SetNull)
+
+  @@index([event_id])
+  @@index([pic_id])
+  @@index([event_id, hari_ke, urutan_no])
+}
+
+// -----------------------------------------------------------------------------
+// TUGAS / TASK MANAGER PER EVENT
+// Mendukung subtask via parent_tugas_id (self-reference)
+// -----------------------------------------------------------------------------
+model tugas_event {
+  id               Int  @id @default(autoincrement())
+  event_id         Int
+  ditugaskan_ke_id Int?
+  dibuat_oleh_id   Int
+  parent_tugas_id  Int? // untuk sub-task
+
+  nama_tugas   String
+  deskripsi    String? @db.Text
+  prioritas    String  @default("sedang") // "rendah" | "sedang" | "tinggi" | "kritis"
+  status       String  @default("belum_mulai")
+  // "belum_mulai" | "sedang_berjalan" | "selesai" | "terlambat" | "dibatalkan"
+  batas_waktu  DateTime?
+  selesai_pada DateTime?
+
+  // Relasi
+  event        event       @relation(fields: [event_id],         references: [id], onDelete: Cascade)
+  ditugaskan_ke m_user?    @relation("tugas_ditugaskan_ke",      fields: [ditugaskan_ke_id], references: [id], onDelete: SetNull)
+  dibuat_oleh  m_user      @relation("tugas_dibuat_oleh",        fields: [dibuat_oleh_id],   references: [id])
+  parent_tugas tugas_event? @relation("subtask_parent",          fields: [parent_tugas_id],  references: [id], onDelete: Cascade)
+  sub_tugas    tugas_event[] @relation("subtask_parent")
+
+  @@index([event_id])
+  @@index([ditugaskan_ke_id])
+  @@index([dibuat_oleh_id])
+  @@index([parent_tugas_id])
+  @@index([status])
+}
+
+// -----------------------------------------------------------------------------
+// RAPAT / PERTEMUAN
+// Bisa terikat event tertentu atau rapat umum organisasi
+// -----------------------------------------------------------------------------
+model rapat {
+  id           Int  @id @default(autoincrement())
+  event_id     Int?
+  dibuat_oleh_id Int
+
+  judul          String
+  agenda         Json?   // array { nomor, topik, durasi_menit, pic }
+  tanggal_rapat  DateTime
+  lokasi         String?
+  notulensi      String? @db.Text
+  action_items   Json?   // array { tugas, pic, deadline }
+  status         String  @default("dijadwalkan")
+  // "dijadwalkan" | "berlangsung" | "selesai" | "dibatalkan"
+
+  // Relasi
+  event       event?  @relation(fields: [event_id],      references: [id], onDelete: SetNull)
+  dibuat_oleh m_user  @relation(fields: [dibuat_oleh_id], references: [id])
+
+  @@index([event_id])
+  @@index([dibuat_oleh_id])
+  @@index([tanggal_rapat])
+}

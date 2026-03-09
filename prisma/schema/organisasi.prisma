@@ -1,0 +1,25 @@
+// -----------------------------------------------------------------------------
+// MASTER: ORGANISASI / KARANG TARUNA
+// Data profil organisasi — biasanya hanya 1 baris (singleton)
+// -----------------------------------------------------------------------------
+model m_organisasi {
+  id           Int    @id @default(autoincrement())
+  nama_org     String
+  kelurahan    String
+  kecamatan    String
+  kota         String
+  provinsi     String
+  logo_url     String?
+  visi         String? @db.Text
+  misi         String? @db.Text
+  no_handphone String?
+  email        String?
+  alamat       String?
+  media_sosial Json?   // { instagram, facebook, tiktok, youtube, whatsapp }
+
+  // Relasi
+  events event[]
+
+  dibuat_pada    DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
+}

@@ -472,3 +472,417 @@ Semua properti bersifat `optional`. Jika `password` diisi string kosong `""`, da
 
 **Description:** Menghapus data user berdasarkan ID.
 _Catatan: User tidak dapat menghapus akunnya sendiri (akan dicegah via HTTP 403)._
+
+---
+
+## 5. Master Data - Sponsorship
+
+Endpoint untuk mengelola modul Sponsorship. Filter terintegrasi memakai sistem caching cerdas berdasarkan kombinasi parameter.
+
+### 5.1 Reusable Array Filter System (Baru)
+
+Sistem filter GET yang baru mendukung **comma-separated parameter** untuk men-support nilai array (e.g., dari `MultipleComboBox`). Backend akan merubahnya menjadi query `in:` menggunakan Prisma secara otomatis.
+
+**Contoh Format URI Valid:**
+`/api/sponsorship/brands?m_bidang_brand_id=1,2,3&search=Tech`
+
+Setiap kombinasi unik ini akan menghasilkan deterministic Redis **Cache Key** (`bid:1,2,3:kat:all`).
+
+### 5.2 Get All Brands
+
+**Endpoint:** `GET /api/sponsorship/brands`
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | number | `1` | Nomor halaman |
+| `limit` | number | `10` | Jumlah data per halaman |
+| `m_bidang_brand_id` | string | | Comma separated ID (cth: `1,2,3`) untuk mem-filter bidang Brand. |
+| `m_kategori_brand_id` | string | | Comma separated ID (cth: `4,5`) untuk mem-filter kategori Brand. |
+| `search` | string | | Pencarian nama_brand atau perusahaan_induk (Insensitive) |
+| `dropdown` | string | | `true` jika ingin me-return data id dan nama_brand ringan tanpa paginasi |
+
+**Contoh Response Sukses (200 OK):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "nama_brand": "TechInAsia",
+      "perusahaan_induk": "TIA SG",
+      "whatsapp_brand": "0812...",
+      "bidang": { "nama_bidang": "Teknologi" },
+      "kategori": { "nama_kategori": "Media Partner" }
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 1
+  }
+}
+```
+
+### 5.3 Create Brand
+
+**Endpoint:** `POST /api/sponsorship/brands`
+
+**Request Body (JSON):**
+| Field | Type | Required | Validations |
+|-------|------|----------|-------------|
+| `nama_brand` | string | Yes | Min 2 karakter |
+| `m_bidang_brand_id` | number | No | Integer |
+| `m_kategori_brand_id` | number | No | Integer |
+| `perusahaan_induk` | string | No | Optional string |
+| `whatsapp_brand` | string | No | Optional string |
+| `email_brand` | string | No | Format email valid atau kosong |
+| `instagram_brand` | string | No | Optional string |
+| `linkend_brand` | string | No | Optional string |
+
+*(Endpoint Update dan Delete menyesuaikan dengan ID)*
+
+---
+
+## 6. Master Data - Organisasi
+
+Endpoint untuk mengelola profil organisasi Karang Taruna (`m_organisasi`). Karena profil organisasi bersifat **singleton** (biasanya hanya 1 baris), endpoint ini dilindungi dengan RBAC ketat dan mencakup validasi format email, nomor handphone, serta URL.
+
+### Hak Akses RBAC
+
+| Method | Izin Minimal |
+|--------|-------------|
+| `GET` | superuser, admin, ketua |
+| `POST` | superuser, admin, ketua |
+| `PUT` | superuser, admin, ketua |
+| `DELETE` | superuser, admin, ketua |
+
+### 6.1 Get All Organisasi
+
+**Endpoint:** `GET /api/organisasi`
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | number | `1` | Nomor halaman |
+| `limit` | number | `10` | Jumlah data per halaman |
+| `search` | string | | Pencarian berdasarkan `nama_org`, `kelurahan`, `kecamatan`, atau `kota` (case-insensitive) |
+
+**Contoh Response Sukses (200 OK):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "nama_org": "Karang Taruna Mojosongo",
+      "kelurahan": "Mojosongo",
+      "kecamatan": "Jebres",
+      "kota": "Surakarta",
+      "provinsi": "Jawa Tengah",
+      "no_handphone": "081234567890",
+      "email": "karangtaruna@mojosongo.id",
+      "alamat": "Jl. Brigjend Katamso No. 1",
+      "logo_url": null,
+      "visi": "Menjadi organisasi pemuda terdepan...",
+      "misi": "1. Memberdayakan pemuda...",
+      "media_sosial": {
+        "instagram": "@kt_mojosongo",
+        "facebook": "KarangTarunaMojosongo",
+        "tiktok": null,
+        "youtube": null,
+        "whatsapp": "081234567890"
+      },
+      "dibuat_pada": "2025-01-01T00:00:00.000Z",
+      "diperbarui_pada": "2025-01-01T00:00:00.000Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "total": 1,
+    "totalPages": 1
+  }
+}
+```
+
+### 6.2 Get Organisasi by ID
+
+**Endpoint:** `GET /api/organisasi/:id`
+
+**Contoh Response Sukses (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "nama_org": "Karang Taruna Mojosongo",
+    ...
+  }
+}
+```
+
+**Contoh Error (404 Not Found):**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Data organisasi tidak ditemukan"
+  }
+}
+```
+
+### 6.3 Create Organisasi
+
+**Endpoint:** `POST /api/organisasi`
+
+**Request Body (JSON):**
+| Field | Type | Required | Validations |
+|-------|------|----------|-------------|
+| `nama_org` | string | **Yes** | Min 3, Max 200 karakter |
+| `kelurahan` | string | **Yes** | Min 2, Max 100 karakter |
+| `kecamatan` | string | **Yes** | Min 2, Max 100 karakter |
+| `kota` | string | **Yes** | Min 2, Max 100 karakter |
+| `provinsi` | string | **Yes** | Min 2, Max 100 karakter |
+| `no_handphone` | string | No | Diawali `08`, 10–15 digit. Input `+62xxx` diterima dan dinormalisasi otomatis ke `08xxx` |
+| `email` | string | No | Format email valid, otomatis di-lowercase |
+| `alamat` | string | No | Max 500 karakter |
+| `logo_url` | string | No | Format URL valid, Max 255 karakter |
+| `visi` | string | No | Max 2000 karakter |
+| `misi` | string | No | Max 2000 karakter |
+| `media_sosial` | object | No | Object: `{ instagram, facebook, tiktok, youtube, whatsapp }` |
+| `media_sosial.whatsapp` | string | No | Validasi sama dengan `no_handphone` |
+
+**Contoh Request:**
+```json
+{
+  "nama_org": "Karang Taruna Mojosongo",
+  "kelurahan": "Mojosongo",
+  "kecamatan": "Jebres",
+  "kota": "Surakarta",
+  "provinsi": "Jawa Tengah",
+  "no_handphone": "+6281234567890",
+  "email": "KarangTaruna@Mojosongo.ID",
+  "media_sosial": {
+    "instagram": "@kt_mojosongo"
+  }
+}
+```
+
+> **Catatan:** `no_handphone` di atas akan otomatis dinormalisasi menjadi `08123456789` dan `email` akan di-lowercase menjadi `karangtaruna@mojosongo.id`.
+
+**Contoh Response Sukses (201 Created):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "nama_org": "Karang Taruna Mojosongo",
+    "no_handphone": "08123456789",
+    "email": "karangtaruna@mojosongo.id"
+  }
+}
+```
+
+### 6.4 Update Organisasi
+
+**Endpoint:** `PUT /api/organisasi/:id`
+
+**Description:** Semua field bersifat `optional`. Hanya field yang dikirimkan yang akan diperbarui. Sebelum update, sistem melakukan pengecekan `404` jika ID tidak ditemukan.
+
+**Request Body:** Sama dengan Create, namun semua field `optional`.
+
+**Contoh Response Sukses (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "nama_org": "Karang Taruna Mojosongo (Updated)",
+    "diperbarui_pada": "2025-08-01T10:00:00.000Z"
+  }
+}
+```
+
+### 6.5 Delete Organisasi
+
+**Endpoint:** `DELETE /api/organisasi/:id`
+
+**Description:** Menghapus data organisasi secara permanen dan membersihkan cache Redis.
+
+**Contoh Response Sukses (200 OK):**
+```json
+{
+  "success": true,
+  "data": null
+}
+```
+
+---
+
+## 7. Event
+
+Endpoint untuk mengelola master data event (`event`). Kode event (`kode_event`) di-generate **otomatis oleh server** dalam format `EVT-MMYY-NNN` dan tidak dapat diisi atau diubah oleh user.
+
+### Hak Akses RBAC
+
+| Method | Jabatan yang diizinkan |
+|--------|------------------------|
+| `GET` | superuser, admin, ketua, wakil ketua |
+| `POST` | superuser, admin, ketua, wakil ketua |
+| `PUT` | superuser, admin, ketua, wakil ketua |
+| `DELETE` | superuser, admin, ketua, wakil ketua |
+
+### Format Kode Event
+
+| Contoh | Keterangan |
+|--------|-----------|
+| `EVT-0325-001` | Event pertama di bulan Maret 2025 |
+| `EVT-0325-002` | Event kedua di bulan Maret 2025 |
+| `EVT-1225-001` | Event pertama di bulan Desember 2025 |
+
+> Increment di-reset setiap bulan baru. Kode unik dijamin di level database (`@unique`).
+
+### 7.1 Get All Events
+
+**Endpoint:** `GET /api/events`
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | number | `1` | Nomor halaman |
+| `limit` | number | `10` | Jumlah data per halaman |
+| `search` | string | | Pencarian `nama_event`, `kode_event`, atau `lokasi` (case-insensitive) |
+| `status_event` | string | | Filter: `perencanaan` \| `persiapan` \| `siap` \| `berlangsung` \| `selesai` \| `dibatalkan` |
+| `jenis_event` | string | | Filter: `festival` \| `lomba` \| `seminar` \| `bakti_sosial` \| `olahraga` \| `seni_budaya` \| `pelatihan` \| `lainnya` |
+| `m_organisasi_id` | number | | Filter berdasarkan ID Organisasi |
+
+> Cache Redis **hanya aktif** untuk request tanpa filter sama sekali. Request dengan filter selalu query langsung ke database.
+
+**Contoh Response Sukses (200 OK):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "kode_event": "EVT-0325-001",
+      "nama_event": "Festival Pemuda Mojosongo 2025",
+      "jenis_event": "festival",
+      "status_event": "perencanaan",
+      "tanggal_mulai": "2025-04-01T00:00:00.000Z",
+      "tanggal_selesai": "2025-04-03T00:00:00.000Z",
+      "lokasi": "Lapangan Mojosongo",
+      "target_peserta": 500,
+      "organisasi": { "id": 1, "nama_org": "Karang Taruna Mojosongo" },
+      "dibuat_oleh": { "id": 2, "nama_lengkap": "Budi Santoso", "username": "budisantoso" }
+    }
+  ],
+  "meta": { "page": 1, "limit": 10, "total": 1, "totalPages": 1 }
+}
+```
+
+### 7.2 Get Event by ID
+
+**Endpoint:** `GET /api/events/:id`
+
+**Contoh Error (404):**
+```json
+{
+  "success": false,
+  "error": { "code": "NOT_FOUND", "message": "Event tidak ditemukan" }
+}
+```
+
+### 7.3 Create Event
+
+**Endpoint:** `POST /api/events`
+
+> `kode_event` **tidak boleh** disertakan dalam request body. Server akan meng-generate secara otomatis.
+
+**Request Body (JSON):**
+| Field | Type | Required | Validations |
+|-------|------|----------|-------------|
+| `m_organisasi_id` | number | **Yes** | Integer positif, harus ada di database |
+| `nama_event` | string | **Yes** | Min 3, Max 200 karakter |
+| `jenis_event` | string | **Yes** | Enum: `festival`, `lomba`, `seminar`, `bakti_sosial`, `olahraga`, `seni_budaya`, `pelatihan`, `lainnya` |
+| `tanggal_mulai` | string (ISO date) | **Yes** | Format datetime ISO 8601 |
+| `tanggal_selesai` | string (ISO date) | **Yes** | Harus ≥ `tanggal_mulai` |
+| `tema_event` | string | No | Max 200 karakter |
+| `deskripsi` | string | No | Max 5000 karakter |
+| `status_event` | string | No | Default: `perencanaan`. Enum: `perencanaan` \| `persiapan` \| `siap` \| `berlangsung` \| `selesai` \| `dibatalkan` |
+| `lokasi` | string | No | Max 255 karakter |
+| `target_peserta` | number | No | Integer ≥ 1 |
+| `realisasi_peserta` | number | No | Integer ≥ 0 |
+| `banner_url` | string | No | Format URL valid |
+| `tujuan` | string[] | No | Array of string (tujuan SMART) |
+
+**Contoh Request:**
+```json
+{
+  "m_organisasi_id": 1,
+  "nama_event": "Festival Pemuda Mojosongo 2025",
+  "jenis_event": "festival",
+  "tanggal_mulai": "2025-04-01",
+  "tanggal_selesai": "2025-04-03",
+  "lokasi": "Lapangan Mojosongo",
+  "target_peserta": 500,
+  "tujuan": ["Meningkatkan kreativitas pemuda", "Mempererat silaturahmi warga"]
+}
+```
+
+**Contoh Response Sukses (201 Created):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "kode_event": "EVT-0325-001",
+    "nama_event": "Festival Pemuda Mojosongo 2025",
+    "status_event": "perencanaan"
+  }
+}
+```
+
+**Contoh Error — tanggal selesai sebelum mulai (400):**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Validasi data gagal",
+    "details": [{ "field": "tanggal_selesai", "message": "Tanggal selesai tidak boleh sebelum tanggal mulai" }]
+  }
+}
+```
+
+### 7.4 Update Event
+
+**Endpoint:** `PUT /api/events/:id`
+
+**Batasan:**
+- `kode_event` tidak dapat diubah meskipun dikirim dalam body
+- Event dengan `status_event = "selesai"` atau `"dibatalkan"` tidak dapat diubah (422)
+
+**Request Body:** Sama dengan Create, namun semua field `optional`.
+
+### 7.5 Delete Event
+
+**Endpoint:** `DELETE /api/events/:id`
+
+**Batasan:**
+- Event dengan `status_event = "berlangsung"` atau `"selesai"` tidak dapat dihapus (422)
+- Penghapusan bersifat **CASCADE** — seluruh data turunan (panitia, rundown, tugas, tiket, dst.) ikut terhapus
+
+**Contoh Error — event sedang berlangsung (422):**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "UNPROCESSABLE_ENTITY",
+    "message": "Event dengan status \"berlangsung\" tidak dapat dihapus."
+  }
+}
+```

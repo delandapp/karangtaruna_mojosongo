@@ -12,13 +12,15 @@ export async function POST(req: NextRequest) {
     // 1. Validasi Input via Zod
     const validatedData = registerSchema.parse(body);
 
+    const orConditions: any[] = [{ username: validatedData.username }];
+    if (validatedData.no_handphone) {
+        orConditions.push({ no_handphone: validatedData.no_handphone });
+    }
+
     // 2. Cek apakah Username atau No HP sudah terdaftar
     const existingUser = await prisma.m_user.findFirst({
       where: {
-        OR: [
-          { username: validatedData.username },
-          { no_handphone: validatedData.no_handphone },
-        ],
+        OR: orConditions,
       },
     });
 
@@ -43,7 +45,7 @@ export async function POST(req: NextRequest) {
         nama_lengkap: validatedData.nama_lengkap,
         username: validatedData.username,
         password: hashedPassword,
-        no_handphone: validatedData.no_handphone,
+        no_handphone: (validatedData.no_handphone || "") as string,
         rt: validatedData.rt,
         rw: validatedData.rw,
         alamat: validatedData.alamat,

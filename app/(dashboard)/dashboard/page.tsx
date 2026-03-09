@@ -1,8 +1,8 @@
-import { DashboardHeader } from "@/components/organisms/DashboardHeader";
+import { DashboardHeader } from "@/components/organisms/headers/DashboardHeader";
 import { PromoBanner } from "@/components/organisms/PromoBanner";
 import { OverviewCards } from "@/components/organisms/OverviewCards";
 import { SalesChart } from "@/components/organisms/SalesChart";
-import { DataTable } from "@/components/organisms/DataTable";
+import { DataTable } from "@/components/organisms/tables/DataTable";
 
 export default function DashboardPage() {
   return (

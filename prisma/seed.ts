@@ -126,113 +126,134 @@ async function main() {
   // 4. Seed Hak Akses & Rules Role-Based
   console.log("Seeding hak akses & rules...");
 
-  // Endpoint map for generic CRUD models
-  const apiModels = [
-    { name: "Users", prefix: "/api/users" },
-    { name: "Jabatan", prefix: "/api/jabatans" },
-    { name: "Level", prefix: "/api/levels" },
-  ];
+  // Bersihkan data lama agar tidak duplikat (karena m_hak_akses tidak punya unique constraint)
+  await prisma.m_hak_akses_rule.deleteMany({});
+  await prisma.m_hak_akses.deleteMany({});
 
-  const methods = ["GET", "POST", "PUT", "DELETE"];
+  // Ambil semua level yang dibutuhkan sekaligus
+  const [superuserLvl, ketuaLvl, adminLvl, wakilKetuaLvl] = await Promise.all([
+    prisma.m_level.findUnique({ where: { nama_level: "superuser" } }),
+    prisma.m_level.findUnique({ where: { nama_level: "ketua" } }),
+    prisma.m_level.findUnique({ where: { nama_level: "admin" } }),
+    prisma.m_level.findUnique({ where: { nama_level: "wakil ketua" } }),
+  ]);
 
-  for (const model of apiModels) {
-    for (const method of methods) {
-      const typeStr =
-        method === "GET"
-          ? "Read"
-          : method === "POST"
-            ? "Create"
-            : method === "PUT"
-              ? "Update"
-              : "Delete";
-
-      const hak = await prisma.m_hak_akses.upsert({
-        where: { id: 0 }, // Fake where to force create or use specific unique constraints if we had one
-        update: {},
-        create: {
-          nama_fitur: `${typeStr} ${model.name}`,
-          tipe_fitur: typeStr.toLowerCase(),
-          endpoint: model.prefix,
-          method: method,
-          is_all_level: false,
-          is_all_jabatan: false,
-        },
-      });
-
-      // For Users, Jabatan, Level -> only Superuser & Ketua
-      const allowedLevels = ["superuser", "ketua"];
-      for (const lvl of allowedLevels) {
-        const lvlRecord = await prisma.m_level.findUnique({ where: { nama_level: lvl } });
-        if (lvlRecord) {
-          await prisma.m_hak_akses_rule.create({
-            data: {
-              m_hak_akses_id: hak.id,
-              m_level_id: lvlRecord.id,
-              // null jabatan means any jabatan is allowed as long as level matches
-            },
-          });
-        }
-      }
-    }
-  }
-
-  // Khusus Sponsorship
-  const spMethods = ["GET", "POST", "PUT", "DELETE"];
-  for (const method of spMethods) {
-    const typeStr =
-      method === "GET"
-        ? "Read"
-        : method === "POST"
-          ? "Create"
-          : method === "PUT"
-            ? "Update"
-            : "Delete";
-
-    const hakSp = await prisma.m_hak_akses.upsert({
-      where: { id: 0 },
-      update: {},
-      create: {
-        nama_fitur: `${typeStr} Sponsorship`,
-        tipe_fitur: typeStr.toLowerCase(),
-        endpoint: "/api/sponsorship/brands", // Contoh endpoint
-        method: method,
+  // Helper: buat hak akses + rules sekaligus
+  const buatHakAkses = async (
+    namaFitur: string,
+    tipeFitur: string,
+    endpoint: string,
+    method: string,
+    allowedLevelIds: number[]
+  ) => {
+    const hak = await prisma.m_hak_akses.create({
+      data: {
+        nama_fitur: namaFitur,
+        tipe_fitur: tipeFitur,
+        endpoint,
+        method,
         is_all_level: false,
         is_all_jabatan: false,
       },
     });
 
-    // Superuser, Admin, Ketua (Any jabatan ok)
-    const spAllowedLevels = ["superuser", "admin", "ketua"];
-    for (const lvl of spAllowedLevels) {
-      const lvlRecord = await prisma.m_level.findUnique({ where: { nama_level: lvl } });
-      if (lvlRecord) {
-        await prisma.m_hak_akses_rule.create({
-          data: {
-            m_hak_akses_id: hakSp.id,
-            m_level_id: lvlRecord.id,
-          },
-        });
-      }
-    }
+    await prisma.m_hak_akses_rule.createMany({
+      data: allowedLevelIds.map((levelId) => ({
+        m_hak_akses_id: hak.id,
+        m_level_id: levelId,
+      })),
+    });
+  };
 
-    // Tapi KHUSUS Koordinator & Anggota, harus jabatan Bidang Humas
-    const specialLevels = ["koordinator", "anggota"];
-    const humasJabatan = await prisma.m_jabatan.findUnique({ where: { nama_jabatan: "Bidang Humas" } });
+  // Level ID yang digunakan untuk CRUD standar
+  // superuser + ketua + admin boleh melakukan semua CRUD
+  const crudLevelIds = [superuserLvl?.id, ketuaLvl?.id, adminLvl?.id].filter(
+    (id): id is number => id !== undefined
+  );
 
-    if (humasJabatan) {
-      for (const lvl of specialLevels) {
-        const lvlRecord = await prisma.m_level.findUnique({ where: { nama_level: lvl } });
-        if (lvlRecord) {
-          await prisma.m_hak_akses_rule.create({
-            data: {
-              m_hak_akses_id: hakSp.id,
-              m_level_id: lvlRecord.id,
-              m_jabatan_id: humasJabatan.id, // AND Condition
-            },
-          });
-        }
-      }
-    }
+  const organisasiLevelIds = crudLevelIds;
+
+  const eventLevelIds = [superuserLvl?.id, ketuaLvl?.id, adminLvl?.id, wakilKetuaLvl?.id].filter(
+    (id): id is number => id !== undefined
+  );
+
+  // ── API: Users ──────────────────────────────────────────────────────────────
+  const apiUsers = [
+    { nama: "Read Users",   tipe: "read",   method: "GET"    },
+    { nama: "Create Users", tipe: "create", method: "POST"   },
+    { nama: "Update Users", tipe: "update", method: "PUT"    },
+    { nama: "Delete Users", tipe: "delete", method: "DELETE" },
+  ];
+  for (const item of apiUsers) {
+    await buatHakAkses(item.nama, item.tipe, "/api/users", item.method, crudLevelIds);
+  }
+
+  // ── API: Jabatan ─────────────────────────────────────────────────────────────
+  const apiJabatan = [
+    { nama: "Read Jabatan",   tipe: "read",   method: "GET"    },
+    { nama: "Create Jabatan", tipe: "create", method: "POST"   },
+    { nama: "Update Jabatan", tipe: "update", method: "PUT"    },
+    { nama: "Delete Jabatan", tipe: "delete", method: "DELETE" },
+  ];
+  for (const item of apiJabatan) {
+    await buatHakAkses(item.nama, item.tipe, "/api/jabatans", item.method, crudLevelIds);
+  }
+
+  // ── API: Level ───────────────────────────────────────────────────────────────
+  const apiLevel = [
+    { nama: "Read Level",   tipe: "read",   method: "GET"    },
+    { nama: "Create Level", tipe: "create", method: "POST"   },
+    { nama: "Update Level", tipe: "update", method: "PUT"    },
+    { nama: "Delete Level", tipe: "delete", method: "DELETE" },
+  ];
+  for (const item of apiLevel) {
+    await buatHakAkses(item.nama, item.tipe, "/api/levels", item.method, crudLevelIds);
+  }
+
+  // ── API: Sponsorship/Brands ──────────────────────────────────────────────────
+  // superuser + ketua + admin bisa semua CRUD
+  const apiBrands = [
+    { nama: "Read Sponsorship",   tipe: "read",   method: "GET"    },
+    { nama: "Create Sponsorship", tipe: "create", method: "POST"   },
+    { nama: "Update Sponsorship", tipe: "update", method: "PUT"    },
+    { nama: "Delete Sponsorship", tipe: "delete", method: "DELETE" },
+  ];
+  for (const item of apiBrands) {
+    await buatHakAkses(item.nama, item.tipe, "/api/sponsorship/brands", item.method, crudLevelIds);
+  }
+
+  // ── API: Hak Akses ───────────────────────────────────────────────────────────
+  // superuser + ketua + admin bisa semua CRUD hak akses
+  const apiHakAkses = [
+    { nama: "Read Hak Akses",   tipe: "read",   method: "GET"    },
+    { nama: "Create Hak Akses", tipe: "create", method: "POST"   },
+    { nama: "Update Hak Akses", tipe: "update", method: "PUT"    },
+    { nama: "Delete Hak Akses", tipe: "delete", method: "DELETE" },
+  ];
+  for (const item of apiHakAkses) {
+    await buatHakAkses(item.nama, item.tipe, "/api/hak-akses", item.method, crudLevelIds);
+  }
+
+  // ── API: Organisasi ──────────────────────────────────────────────────────────
+  const apiOrganisasi = [
+    { nama: "Read Organisasi",   tipe: "read",   method: "GET"    },
+    { nama: "Create Organisasi", tipe: "create", method: "POST"   },
+    { nama: "Update Organisasi", tipe: "update", method: "PUT"    },
+    { nama: "Delete Organisasi", tipe: "delete", method: "DELETE" },
+  ];
+  for (const item of apiOrganisasi) {
+    await buatHakAkses(item.nama, item.tipe, "/api/organisasi", item.method, organisasiLevelIds);
+  }
+
+  // ── API: Events ──────────────────────────────────────────────────────────────
+  const apiEvents = [
+    { nama: "Read Events",   tipe: "read",   method: "GET"    },
+    { nama: "Create Events", tipe: "create", method: "POST"   },
+    { nama: "Update Events", tipe: "update", method: "PUT"    },
+    { nama: "Delete Events", tipe: "delete", method: "DELETE" },
+  ];
+  for (const item of apiEvents) {
+    await buatHakAkses(item.nama, item.tipe, "/api/events", item.method, eventLevelIds);
   }
 
   console.log("Seeding completed!");

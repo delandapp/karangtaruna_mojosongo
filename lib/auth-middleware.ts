@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { errorResponse } from "@/lib/api-response";
+import { prisma } from "@/lib/prisma"; // Require prisma for RBAC check
 import { redis } from "@/lib/redis";
 
 const JWT_SECRET = process.env.JWT_SECRET || "super_secret_fallback_key_123!";
@@ -9,6 +10,8 @@ export interface AuthenticatedUser {
   userId: number;
   username: string;
   level: string;
+  m_level_id?: number | null;
+  m_jabatan_id?: number | null;
 }
 
 export interface AuthenticatedRequest extends NextRequest {
@@ -77,7 +80,32 @@ export function withAuth<T extends unknown[]>(
         ) as NextResponse;
       }
 
-      // 4. Inject user ke request dan lanjutkan ke handler
+      // 4. Optional RBAC Check via DB (if hak_akses exists for this endpoint)
+      try {
+        const { pathname } = new URL(req.url);
+        const method = req.method;
+
+        // Try getting cached RBAC rules eventually, or query directly
+        const hakAkses = await prisma.m_hak_akses.findFirst({
+          where: { endpoint: pathname, method },
+          include: { levels: true, jabatans: true },
+        });
+
+        if (hakAkses) {
+          const levelAllowed = hakAkses.is_all_level ||
+            (decoded.m_level_id && hakAkses.levels.some(l => l.m_level_id === decoded.m_level_id));
+          const jabatanAllowed = hakAkses.is_all_jabatan ||
+            (decoded.m_jabatan_id && hakAkses.jabatans.some(j => j.m_jabatan_id === decoded.m_jabatan_id));
+
+          if (!levelAllowed && !jabatanAllowed) {
+            return errorResponse(403, "Akses ditolak (RBAC): Anda tidak memiliki izin untuk fitur ini", "FORBIDDEN") as NextResponse;
+          }
+        }
+      } catch (rbacError) {
+        console.error("RBAC Check Error:", rbacError);
+      }
+
+      // 5. Inject user ke request dan lanjutkan ke handler
       const authenticatedReq = req as AuthenticatedRequest;
       authenticatedReq.user = decoded;
 

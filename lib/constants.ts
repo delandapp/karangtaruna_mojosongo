@@ -15,6 +15,11 @@ export const REDIS_KEYS = {
     ALL_PREFIX: "master:users:all:*",
     SINGLE: (id: number) => `master:users:${id}`,
   },
+  HAK_AKSES: {
+    ALL: "master:hak_akses:all",
+    ALL_PREFIX: "master:hak_akses:all:*",
+    SINGLE: (id: number) => `master:hak_akses:${id}`,
+  },
 };
 
 // Global cache TTL in seconds (1 Hour by default)

@@ -12,16 +12,6 @@ import { z } from "zod";
 import { redis, getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
 import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
 
-// Roles definition for RBAC
-const FULL_CRUD_LEVELS = [
-  "superuser",
-  "ketua",
-  "wakil ketua",
-  "seketaris",
-  "bendahara",
-];
-const ALLOWED_GET_LEVELS = [...FULL_CRUD_LEVELS, "admin", "koordinator"];
-
 // Schema validation for query params filtering
 const querySchema = z.object({
   page: z.coerce.number().min(1).default(1),
@@ -56,15 +46,36 @@ const createUserSchema = z.object({
   m_level_id: z.number().int().positive().optional(),
 });
 
+import { checkUserAccess } from "@/lib/rbac";
+
 export const GET = withAuth(async (req: AuthenticatedRequest) => {
   try {
-    const { level: userLevel } = req.user;
+    const { level: userLevel, m_level_id: userLevelId, m_jabatan_id: userJabatanId } = req.user;
 
-    if (!ALLOWED_GET_LEVELS.includes(userLevel.toLowerCase())) {
-      return errorResponse(403, "Akses ditolak", "FORBIDDEN");
+    const hasAccess = await checkUserAccess(userLevelId, userJabatanId, "/api/users", "GET");
+    if (!hasAccess) {
+      return errorResponse(403, "Akses ditolak. Anda tidak memiliki izin untuk melihat data anggota.", "FORBIDDEN");
     }
 
     const { searchParams } = new URL(req.url);
+    const dropdown = searchParams.get("dropdown") === "true";
+
+    if (dropdown) {
+      const dropdownCacheKey = `${REDIS_KEYS.USERS.ALL}:dropdown`;
+      const cachedDropdown = await getCache<{ data: any[] }>(dropdownCacheKey);
+      if (cachedDropdown) {
+        return successResponse(cachedDropdown.data, 200);
+      }
+
+      const usersResult = await prisma.m_user.findMany({
+        select: { id: true, nama_lengkap: true },
+        orderBy: { nama_lengkap: "asc" },
+      });
+
+      await setCache(dropdownCacheKey, { data: usersResult }, DEFAULT_CACHE_TTL);
+      return successResponse(usersResult, 200);
+    }
+
     const query = Object.fromEntries(searchParams.entries());
     const validatedQuery = querySchema.parse(query);
 
@@ -157,11 +168,12 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
 
 export const POST = withAuth(async (req: AuthenticatedRequest) => {
   try {
-    const { level: userLevel } = req.user;
-    const isFullCrud = FULL_CRUD_LEVELS.includes(userLevel.toLowerCase());
+    const { level: userLevel, m_level_id: userLevelId, m_jabatan_id: userJabatanId } = req.user;
     const isKoordinator = userLevel.toLowerCase() === "koordinator";
 
-    if (!isFullCrud && !isKoordinator) {
+    const hasAccess = await checkUserAccess(userLevelId, userJabatanId, "/api/users", "POST");
+
+    if (!hasAccess) {
       return errorResponse(
         403,
         "Akses ditolak. Anda tidak memiliki izin untuk menambah data.",
@@ -233,6 +245,7 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
 
     // Invalidate All Users Cache Prefix on successful creation
     await invalidateCachePrefix(REDIS_KEYS.USERS.ALL_PREFIX);
+    await invalidateCachePrefix(`${REDIS_KEYS.USERS.ALL}:dropdown`);
     await setCache(
       REDIS_KEYS.USERS.SINGLE(newUser.id),
       newUser,

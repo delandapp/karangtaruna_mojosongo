@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useCreateJabatanMutation, useUpdateJabatanMutation } from "@/features/api/jabatanApi";
 
 const jabatanFormSchema = z.object({
   nama_jabatan: z.string().min(3, "Minimal 3 karakter").max(100),
@@ -74,27 +75,16 @@ export function JabatanFormModal({
     }
   }, [isOpen, isEditing, initialData, form]);
 
+  const [createJabatan] = useCreateJabatanMutation();
+  const [updateJabatan] = useUpdateJabatanMutation();
+
   const onSubmit = async (data: JabatanFormValues) => {
     setIsSubmitting(true);
     try {
-      const endpoint = isEditing
-        ? `/api/jabatans/${initialData.id}`
-        : "/api/jabatans";
-      const method = isEditing ? "PUT" : "POST";
-
-      const res = await fetch(endpoint, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      const json = await res.json();
-
-      if (!res.ok) {
-        toast.error("Gagal menyimpan data", {
-          description: json.error?.message,
-        });
-        return;
+      if (isEditing) {
+        await updateJabatan({ id: initialData.id, data }).unwrap();
+      } else {
+        await createJabatan(data).unwrap();
       }
 
       toast.success(
@@ -104,9 +94,9 @@ export function JabatanFormModal({
         },
       );
       onSuccess();
-    } catch (error) {
-      toast.error("Kesalahan jaringan", {
-        description: "Gagal memproses data",
+    } catch (error: any) {
+      toast.error("Gagal menyimpan data", {
+        description: error?.data?.error?.message || "Gagal memproses data",
       });
     } finally {
       setIsSubmitting(false);

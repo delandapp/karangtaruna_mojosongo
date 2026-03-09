@@ -33,6 +33,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { UserFormModal } from "./UserFormModal";
+import { useGetUsersQuery, useDeleteUserMutation } from "@/features/api/userApi";
+import { useGetJabatansQuery } from "@/features/api/jabatanApi";
 
 interface Jabatan {
   id: number;
@@ -55,15 +57,7 @@ interface UserData {
   m_level_id?: number | null;
 }
 
-interface UserTableProps {
-  jabatans: Jabatan[];
-  levels: Level[];
-}
-
-export function UserTable({ jabatans, levels }: UserTableProps) {
-  const [users, setUsers] = useState<UserData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [total, setTotal] = useState(0);
+export function UserTable() {
 
   // Filters
   const [activeTab, setActiveTab] = useState<string>("all");
@@ -75,47 +69,28 @@ export function UserTable({ jabatans, levels }: UserTableProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
 
-  const fetchUsers = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-      });
+  const { data: jabatansRes } = useGetJabatansQuery({ filter: { dropdown: true } });
+  const jabatans = jabatansRes?.data || [];
 
-      if (searchQuery) params.append("search", searchQuery);
-      if (activeTab !== "all") params.append("m_jabatan_id", activeTab);
+  const {
+    data: usersRes,
+    isFetching: loading,
+    refetch,
+  } = useGetUsersQuery({
+    page,
+    limit,
+    search: searchQuery || undefined,
+    m_jabatan_id: activeTab !== "all" ? Number(activeTab) : undefined,
+  });
 
-      const res = await fetch(`/api/users?${params.toString()}`);
-      const json = await res.json();
+  const users = usersRes?.data || [];
+  const total = usersRes?.meta?.totalPages || 0;
 
-      if (!res.ok) {
-        // Ignore 403 for read-only if it shouldn't happen, but just show error
-        toast.error("Gagal mengambil data", {
-          description: json.error?.message,
-        });
-        setUsers([]);
-        setTotal(0);
-        return;
-      }
+  const fetchUsers = () => {
+    refetch();
+  };
 
-      setUsers(json.data || []);
-      setTotal(json.meta?.totalPages || 0);
-    } catch (error) {
-      toast.error("Kesalahan jaringan", {
-        description: "Gagal terhubung ke server.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [page, limit, searchQuery, activeTab]);
-
-  useEffect(() => {
-    const debounce = setTimeout(() => {
-      fetchUsers();
-    }, 300);
-    return () => clearTimeout(debounce);
-  }, [fetchUsers]);
+  const [deleteUser] = useDeleteUserMutation();
 
   const handleDelete = async (id: number, nama: string) => {
     if (
@@ -124,20 +99,14 @@ export function UserTable({ jabatans, levels }: UserTableProps) {
       return;
 
     try {
-      const res = await fetch(`/api/users/${id}`, { method: "DELETE" });
-      const json = await res.json();
-
-      if (!res.ok) {
-        toast.error("Gagal menghapus", { description: json.error?.message });
-        return;
-      }
-
+      await deleteUser(id).unwrap();
       toast.success("Berhasil dihapus", {
         description: `Data anggota ${nama} telah dihapus.`,
       });
-      fetchUsers();
-    } catch {
-      toast.error("Kesalahan jaringan saat menghapus data.");
+    } catch (error: any) {
+      toast.error("Gagal menghapus", {
+        description: error?.data?.error?.message || "Kesalahan jaringan saat menghapus data."
+      });
     }
   };
 
@@ -177,12 +146,11 @@ export function UserTable({ jabatans, levels }: UserTableProps) {
               >
                 Semua
               </TabsTrigger>
-              {/* Menampilkan max 5 tab spesifik, sisanya lewat dropdown jika diperlukan, namun untuk demo tampil semua yang penting */}
-              {jabatans.slice(0, 6).map((jab) => (
+              {jabatans.map((jab: Jabatan) => (
                 <TabsTrigger
                   key={jab.id}
                   value={jab.id.toString()}
-                  className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm"
+                  className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm whitespace-nowrap"
                 >
                   {jab.nama_jabatan}
                 </TabsTrigger>
@@ -198,7 +166,7 @@ export function UserTable({ jabatans, levels }: UserTableProps) {
               placeholder="Cari nama atau username..."
               className="w-full bg-card/50 pl-9 backdrop-blur focus-visible:ring-primary/50"
               value={searchQuery}
-              onChange={(e) => {
+              onChange={(e: any) => {
                 setSearchQuery(e.target.value);
                 setPage(1);
               }}
@@ -292,13 +260,12 @@ export function UserTable({ jabatans, levels }: UserTableProps) {
                   <TableCell>
                     <Badge
                       variant="secondary"
-                      className={`font-medium ${
-                        user.level?.nama_level?.toLowerCase() === "superuser"
-                          ? "bg-destructive/10 text-destructive"
-                          : user.level?.nama_level?.toLowerCase() === "admin"
-                            ? "bg-indigo-500/10 text-indigo-500 font-semibold"
-                            : "bg-muted text-muted-foreground"
-                      }`}
+                      className={`font-medium ${user.level?.nama_level?.toLowerCase() === "superuser"
+                        ? "bg-destructive/10 text-destructive"
+                        : user.level?.nama_level?.toLowerCase() === "admin"
+                          ? "bg-indigo-500/10 text-indigo-500 font-semibold"
+                          : "bg-muted text-muted-foreground"
+                        }`}
                     >
                       {user.level?.nama_level || "Guest"}
                     </Badge>
@@ -419,8 +386,6 @@ export function UserTable({ jabatans, levels }: UserTableProps) {
         onOpenChange={setIsModalOpen}
         onSuccess={onFormSuccess}
         initialData={editingUser || undefined}
-        jabatans={jabatans}
-        levels={levels}
       />
     </div>
   );

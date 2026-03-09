@@ -7,14 +7,7 @@ import bcrypt from "bcrypt";
 import { z } from "zod";
 import { redis, getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
 import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
-
-const FULL_CRUD_LEVELS = [
-  "superuser",
-  "ketua",
-  "wakil ketua",
-  "seketaris",
-  "bendahara",
-];
+import { checkUserAccess } from "@/lib/rbac";
 
 const updateUserSchema = z.object({
   nama_lengkap: z.string().min(3).max(100).optional(),
@@ -54,11 +47,11 @@ export const PUT = withAuth(
       const userId = parseInt(resolvedParams.id, 10);
       if (isNaN(userId)) return errorResponse(400, "ID tidak valid");
 
-      const { level: userLevel } = req.user;
-      const isFullCrud = FULL_CRUD_LEVELS.includes(userLevel.toLowerCase());
+      const { level: userLevel, m_level_id: userLevelId, m_jabatan_id: userJabatanId } = req.user;
       const isKoordinator = userLevel.toLowerCase() === "koordinator";
 
-      if (!isFullCrud && !isKoordinator) {
+      const hasAccess = await checkUserAccess(userLevelId, userJabatanId, "/api/users", "PUT");
+      if (!hasAccess) {
         return errorResponse(
           403,
           "Akses ditolak. Anda tidak memiliki izin untuk mengubah data.",
@@ -174,11 +167,11 @@ export const DELETE = withAuth(
       const userId = parseInt(resolvedParams.id, 10);
       if (isNaN(userId)) return errorResponse(400, "ID tidak valid");
 
-      const { level: userLevel } = req.user;
-      const isFullCrud = FULL_CRUD_LEVELS.includes(userLevel.toLowerCase());
+      const { level: userLevel, m_level_id: userLevelId, m_jabatan_id: userJabatanId } = req.user;
       const isKoordinator = userLevel.toLowerCase() === "koordinator";
 
-      if (!isFullCrud && !isKoordinator) {
+      const hasAccess = await checkUserAccess(userLevelId, userJabatanId, "/api/users", "DELETE");
+      if (!hasAccess) {
         return errorResponse(
           403,
           "Akses ditolak. Anda tidak memiliki izin untuk menghapus data.",

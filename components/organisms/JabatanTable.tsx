@@ -31,6 +31,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { JabatanFormModal } from "./JabatanFormModal";
+import { useGetJabatansQuery, useDeleteJabatanMutation } from "@/features/api/jabatanApi";
 
 interface JabatanData {
   id: number;
@@ -40,10 +41,6 @@ interface JabatanData {
 }
 
 export function JabatanTable() {
-  const [jabatans, setJabatans] = useState<JabatanData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [total, setTotal] = useState(0);
-
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -51,69 +48,36 @@ export function JabatanTable() {
 
   // Form Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingJabatan, setEditingJabatan] = useState<JabatanData | null>(
-    null,
-  );
+  const [editingJabatan, setEditingJabatan] = useState<JabatanData | null>(null);
 
-  const fetchJabatans = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-      });
+  const { data: response, isFetching: loading, refetch } = useGetJabatansQuery({
+    page,
+    limit,
+    search: searchQuery || undefined,
+  });
 
-      if (searchQuery) params.append("search", searchQuery);
+  const jabatans = response?.data || [];
+  const total = response?.meta?.totalPages || 0;
 
-      const res = await fetch(`/api/jabatans?${params.toString()}`);
-      const json = await res.json();
+  const fetchJabatans = () => {
+    refetch();
+  };
 
-      if (!res.ok) {
-        toast.error("Gagal mengambil data", {
-          description: json.error?.message,
-        });
-        setJabatans([]);
-        setTotal(0);
-        return;
-      }
-
-      setJabatans(json.data || []);
-      setTotal(json.meta?.totalPages || 0);
-    } catch (error) {
-      toast.error("Kesalahan jaringan", {
-        description: "Gagal terhubung ke server.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [page, limit, searchQuery]);
-
-  useEffect(() => {
-    const debounce = setTimeout(() => {
-      fetchJabatans();
-    }, 300);
-    return () => clearTimeout(debounce);
-  }, [fetchJabatans]);
+  const [deleteJabatan] = useDeleteJabatanMutation();
 
   const handleDelete = async (id: number, nama: string) => {
     if (!window.confirm(`Apakah Anda yakin ingin menghapus jabatan ${nama}?`))
       return;
 
     try {
-      const res = await fetch(`/api/jabatans/${id}`, { method: "DELETE" });
-      const json = await res.json();
-
-      if (!res.ok) {
-        toast.error("Gagal menghapus", { description: json.error?.message });
-        return;
-      }
-
+      await deleteJabatan(id).unwrap();
       toast.success("Berhasil dihapus", {
         description: `Jabatan ${nama} telah dihapus.`,
       });
-      fetchJabatans();
-    } catch {
-      toast.error("Kesalahan jaringan saat menghapus data.");
+    } catch (error: any) {
+      toast.error("Gagal menghapus", {
+        description: error?.data?.error?.message || "Kesalahan jaringan saat menghapus data."
+      });
     }
   };
 
@@ -143,7 +107,7 @@ export function JabatanTable() {
               placeholder="Cari nama jabatan..."
               className="w-full bg-card/50 pl-9 backdrop-blur focus-visible:ring-primary/50"
               value={searchQuery}
-              onChange={(e) => {
+              onChange={(e: any) => {
                 setSearchQuery(e.target.value);
                 setPage(1);
               }}

@@ -32,6 +32,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LevelFormModal } from "./LevelFormModal";
+import { useGetLevelsQuery, useDeleteLevelMutation } from "@/features/api/levelApi";
 
 interface LevelData {
   id: number;
@@ -40,10 +41,6 @@ interface LevelData {
 }
 
 export function LevelTable() {
-  const [levels, setLevels] = useState<LevelData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [total, setTotal] = useState(0);
-
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -53,65 +50,34 @@ export function LevelTable() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLevel, setEditingLevel] = useState<LevelData | null>(null);
 
-  const fetchLevels = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-      });
+  const { data: response, isFetching: loading, refetch } = useGetLevelsQuery({
+    page,
+    limit,
+    search: searchQuery || undefined,
+  });
 
-      if (searchQuery) params.append("search", searchQuery);
+  const levels = response?.data || [];
+  const total = response?.meta?.totalPages || 0;
 
-      const res = await fetch(`/api/levels?${params.toString()}`);
-      const json = await res.json();
+  const fetchLevels = () => {
+    refetch();
+  };
 
-      if (!res.ok) {
-        toast.error("Gagal mengambil data", {
-          description: json.error?.message,
-        });
-        setLevels([]);
-        setTotal(0);
-        return;
-      }
-
-      setLevels(json.data || []);
-      setTotal(json.meta?.totalPages || 0);
-    } catch (error) {
-      toast.error("Kesalahan jaringan", {
-        description: "Gagal terhubung ke server.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [page, limit, searchQuery]);
-
-  useEffect(() => {
-    const debounce = setTimeout(() => {
-      fetchLevels();
-    }, 300);
-    return () => clearTimeout(debounce);
-  }, [fetchLevels]);
+  const [deleteLevel] = useDeleteLevelMutation();
 
   const handleDelete = async (id: number, nama: string) => {
     if (!window.confirm(`Apakah Anda yakin ingin menghapus level ${nama}?`))
       return;
 
     try {
-      const res = await fetch(`/api/levels/${id}`, { method: "DELETE" });
-      const json = await res.json();
-
-      if (!res.ok) {
-        toast.error("Gagal menghapus", { description: json.error?.message });
-        return;
-      }
-
+      await deleteLevel(id).unwrap();
       toast.success("Berhasil dihapus", {
         description: `Level ${nama} telah dihapus.`,
       });
-      fetchLevels();
-    } catch {
-      toast.error("Kesalahan jaringan saat menghapus data.");
+    } catch (error: any) {
+      toast.error("Gagal menghapus", {
+        description: error?.data?.error?.message || "Kesalahan jaringan saat menghapus data."
+      });
     }
   };
 
@@ -140,7 +106,7 @@ export function LevelTable() {
               placeholder="Cari nama level..."
               className="w-full bg-card/50 pl-9 backdrop-blur focus-visible:ring-primary/50"
               value={searchQuery}
-              onChange={(e) => {
+              onChange={(e: any) => {
                 setSearchQuery(e.target.value);
                 setPage(1);
               }}
@@ -207,13 +173,12 @@ export function LevelTable() {
                   <TableCell className="font-medium text-foreground">
                     <Badge
                       variant="secondary"
-                      className={`font-medium ${
-                        level.nama_level?.toLowerCase() === "superuser"
-                          ? "bg-destructive/10 text-destructive"
-                          : level.nama_level?.toLowerCase() === "admin"
-                            ? "bg-indigo-500/10 text-indigo-500 font-semibold"
-                            : "bg-muted text-muted-foreground"
-                      }`}
+                      className={`font-medium ${level.nama_level?.toLowerCase() === "superuser"
+                        ? "bg-destructive/10 text-destructive"
+                        : level.nama_level?.toLowerCase() === "admin"
+                          ? "bg-indigo-500/10 text-indigo-500 font-semibold"
+                          : "bg-muted text-muted-foreground"
+                        }`}
                     >
                       {level.nama_level}
                     </Badge>

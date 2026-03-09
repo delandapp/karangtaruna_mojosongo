@@ -25,13 +25,11 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ComboBox } from "@/components/ui/combobox";
+import { ComboBoxItem } from "@/lib/types/form.types";
+import { useGetJabatansQuery } from "@/features/api/jabatanApi";
+import { useGetLevelsQuery } from "@/features/api/levelApi";
+import { useCreateUserMutation, useUpdateUserMutation } from "@/features/api/userApi";
 
 // Zod schema based on API requirements
 const userFormSchema = z.object({
@@ -64,23 +62,11 @@ const userFormSchema = z.object({
 
 type UserFormValues = z.infer<typeof userFormSchema>;
 
-interface Jabatan {
-  id: number;
-  nama_jabatan: string;
-}
-
-interface Level {
-  id: number;
-  nama_level: string;
-}
-
 interface UserFormModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
-  initialData?: any; // To prepopulate if editing
-  jabatans: Jabatan[];
-  levels: Level[];
+  initialData?: any;
 }
 
 export function UserFormModal({
@@ -88,8 +74,6 @@ export function UserFormModal({
   onOpenChange,
   onSuccess,
   initialData,
-  jabatans,
-  levels,
 }: UserFormModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditing = !!initialData;
@@ -98,6 +82,15 @@ export function UserFormModal({
   const desc = isEditing
     ? "Perbarui informasi anggota."
     : "Isi formulir untuk menambahkan anggota ke dalam master data.";
+
+  const { data: jabatansRes, isFetching: isLoadingJabatans } = useGetJabatansQuery({ filter: { dropdown: true } }, { skip: !isOpen });
+  const { data: levelsRes, isFetching: isLoadingLevels } = useGetLevelsQuery({ filter: { dropdown: true } }, { skip: !isOpen });
+
+  const jabatansData = jabatansRes?.data || [];
+  const levelsData = levelsRes?.data || [];
+
+  const [createUser] = useCreateUserMutation();
+  const [updateUser] = useUpdateUserMutation();
 
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema) as any,
@@ -141,30 +134,15 @@ export function UserFormModal({
     try {
       const payload: any = { ...data };
 
-      // Cleanup payload
-      if (!payload.password) delete payload.password; // Saat edit dan tidak isi pass
+      if (!payload.password) delete payload.password;
       if (payload.m_jabatan_id === 0) delete payload.m_jabatan_id;
       if (payload.m_level_id === 0) delete payload.m_level_id;
       if (!payload.jenis_kelamin) delete payload.jenis_kelamin;
 
-      const endpoint = isEditing
-        ? `/api/users/${initialData.id}`
-        : "/api/users";
-      const method = isEditing ? "PUT" : "POST";
-
-      const res = await fetch(endpoint, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const json = await res.json();
-
-      if (!res.ok) {
-        toast.error("Gagal menyimpan data", {
-          description: json.error?.message,
-        });
-        return;
+      if (isEditing) {
+        await updateUser({ id: initialData.id, data: payload }).unwrap();
+      } else {
+        await createUser(payload).unwrap();
       }
 
       toast.success(
@@ -173,10 +151,10 @@ export function UserFormModal({
           description: `Data anggota ${data.nama_lengkap} telah disimpan.`,
         },
       );
-      onSuccess(); // Close modal & re-fetch
-    } catch (error) {
-      toast.error("Kesalahan jaringan", {
-        description: "Gagal memproses data",
+      onSuccess();
+    } catch (error: any) {
+      toast.error("Gagal menyimpan data", {
+        description: error?.data?.error?.message || "Kesalahan jaringan",
       });
     } finally {
       setIsSubmitting(false);
@@ -291,20 +269,15 @@ export function UserFormModal({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Jenis Kelamin</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      onChange={field.onChange}
                       value={field.value || ""}
                     >
-                      <FormControl>
-                        <SelectTrigger className="bg-muted/50 focus:ring-primary/50">
-                          <SelectValue placeholder="Pilih..." />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="bg-card/90 backdrop-blur border-border/50">
-                        <SelectItem value="L">Laki-laki</SelectItem>
-                        <SelectItem value="P">Perempuan</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      <option value="">Pilih...</option>
+                      <option value="L">Laki-laki</option>
+                      <option value="P">Perempuan</option>
+                    </select>
                     <FormMessage className="text-xs" />
                   </FormItem>
                 )}
@@ -373,23 +346,16 @@ export function UserFormModal({
                 render={({ field }) => (
                   <FormItem className="mt-4">
                     <FormLabel>Jabatan</FormLabel>
-                    <Select
-                      onValueChange={(v) => field.onChange(parseInt(v, 10))}
-                      value={field.value ? field.value.toString() : ""}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="bg-muted/50 focus:ring-primary/50">
-                          <SelectValue placeholder="Pilih Jabatan..." />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="bg-card/90 backdrop-blur border-border/50">
-                        {jabatans.map((j) => (
-                          <SelectItem key={j.id} value={j.id.toString()}>
-                            {j.nama_jabatan}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <ComboBox
+                      data={jabatansData.map((j: any) => ({ id: j.id.toString(), nama: j.nama_jabatan }))}
+                      selected={field.value ? field.value.toString() : ""}
+                      onChange={(val) => {
+                        const parsed = typeof val === "string" ? parseInt(val, 10) : parseInt(val.id, 10);
+                        field.onChange(parsed);
+                      }}
+                      title="Jabatan"
+                      disabled={isLoadingJabatans}
+                    />
                     <FormMessage className="text-xs" />
                   </FormItem>
                 )}
@@ -401,23 +367,16 @@ export function UserFormModal({
                 render={({ field }) => (
                   <FormItem className="mt-4">
                     <FormLabel>Hak Akses Level</FormLabel>
-                    <Select
-                      onValueChange={(v) => field.onChange(parseInt(v, 10))}
-                      value={field.value ? field.value.toString() : ""}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="bg-muted/50 focus:ring-primary/50">
-                          <SelectValue placeholder="Pilih Akses..." />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="bg-card/90 backdrop-blur border-border/50">
-                        {levels.map((l) => (
-                          <SelectItem key={l.id} value={l.id.toString()}>
-                            {l.nama_level}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <ComboBox
+                      data={levelsData.map((l: any) => ({ id: l.id.toString(), nama: l.nama_level }))}
+                      selected={field.value ? field.value.toString() : ""}
+                      onChange={(val) => {
+                        const parsed = typeof val === "string" ? parseInt(val, 10) : parseInt(val.id, 10);
+                        field.onChange(parsed);
+                      }}
+                      title="Level Akses"
+                      disabled={isLoadingLevels}
+                    />
                     <FormMessage className="text-xs" />
                   </FormItem>
                 )}

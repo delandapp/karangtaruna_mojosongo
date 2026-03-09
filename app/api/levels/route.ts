@@ -4,15 +4,41 @@ import {
   createLevelSchema,
   paginationSchema,
 } from "@/lib/validations/level.schema";
-import { successResponse, paginatedResponse } from "@/lib/api-response";
+import { successResponse, errorResponse, paginatedResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import { redis, getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
 import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
+import { checkUserAccess } from "@/lib/rbac";
 
 export const GET = withAuth(async (req: AuthenticatedRequest) => {
   try {
+    const { m_level_id: userLevelId, m_jabatan_id: userJabatanId } = req.user;
+
+    const hasAccess = await checkUserAccess(userLevelId, userJabatanId, "/api/levels", "GET");
+    if (!hasAccess) {
+      return errorResponse(403, "Akses ditolak. Anda tidak memiliki izin membaca data level.", "FORBIDDEN");
+    }
+
     const { searchParams } = new URL(req.url);
+    const dropdown = searchParams.get("dropdown") === "true";
+
+    if (dropdown) {
+      const dropdownCacheKey = `${REDIS_KEYS.LEVELS.ALL}:dropdown`;
+      const cachedDropdown = await getCache<{ data: any[] }>(dropdownCacheKey);
+      if (cachedDropdown) {
+        return successResponse(cachedDropdown.data, 200);
+      }
+
+      const levelsResult = await prisma.m_level.findMany({
+        select: { id: true, nama_level: true },
+        orderBy: { nama_level: "asc" },
+      });
+
+      await setCache(dropdownCacheKey, { data: levelsResult }, DEFAULT_CACHE_TTL);
+      return successResponse(levelsResult, 200);
+    }
+
     const pageStr = searchParams.get("page") || "1";
     const limitStr = searchParams.get("limit") || "10";
     const search = searchParams.get("search") || undefined;
@@ -81,6 +107,13 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
 
 export const POST = withAuth(async (req: AuthenticatedRequest) => {
   try {
+    const { m_level_id: userLevelId, m_jabatan_id: userJabatanId } = req.user;
+
+    const hasAccess = await checkUserAccess(userLevelId, userJabatanId, "/api/levels", "POST");
+    if (!hasAccess) {
+      return errorResponse(403, "Akses ditolak. Anda tidak memiliki izin membuat data level.", "FORBIDDEN");
+    }
+
     const body = await req.json();
 
     // 1. Zod Validation
@@ -96,6 +129,7 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     // 3. Optimasi Cache Beban Server (Invalidation)
     // Ketika ada penambahan data baru, invalidate semua cache pagination "master:levels:all:*"
     await invalidateCachePrefix(REDIS_KEYS.LEVELS.ALL_PREFIX);
+    await invalidateCachePrefix(`${REDIS_KEYS.LEVELS.ALL}:dropdown`);
 
     // 4. Kita juga bisa set directly cache untuk master:levels:{id} ini
     const singleCacheKey = REDIS_KEYS.LEVELS.SINGLE(newLevel.id);

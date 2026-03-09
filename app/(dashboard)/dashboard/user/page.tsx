@@ -1,27 +1,12 @@
 import { Metadata } from "next";
 import { DashboardHeader } from "@/components/organisms/DashboardHeader";
 import { UserTable } from "@/components/organisms/UserTable";
-// Asumsi API bisa diakses direct server, tapi karena ada Session dan Token dari JWT Cookie,
-// Kita fetch daftar jabatan dan level secara statis dari DB di server component untuk Tabs & dropdown form.
-import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
   title: "Data Master - User",
 };
 
 export default async function UserPage() {
-  // Fetch referensi data untuk Tabs filter dan Dropdown select di Form
-  const [jabatans, levels] = await Promise.all([
-    prisma.m_jabatan.findMany({
-      select: { id: true, nama_jabatan: true },
-      orderBy: { id: "asc" },
-    }),
-    prisma.m_level.findMany({
-      select: { id: true, nama_level: true },
-      orderBy: { id: "asc" },
-    }),
-  ]);
-
   return (
     <div className="flex flex-col">
       <DashboardHeader breadcrumb="Data Master / User" />
@@ -39,8 +24,8 @@ export default async function UserPage() {
             </div>
           </div>
 
-          {/* User Table Component (Client Side) */}
-          <UserTable jabatans={jabatans} levels={levels} />
+          {/* User Table Component (Client Side) uses RTK Query internally */}
+          <UserTable />
         </section>
       </div>
     </div>

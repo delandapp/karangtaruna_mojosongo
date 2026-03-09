@@ -123,6 +123,118 @@ async function main() {
     });
   }
 
+  // 4. Seed Hak Akses & Rules Role-Based
+  console.log("Seeding hak akses & rules...");
+
+  // Endpoint map for generic CRUD models
+  const apiModels = [
+    { name: "Users", prefix: "/api/users" },
+    { name: "Jabatan", prefix: "/api/jabatans" },
+    { name: "Level", prefix: "/api/levels" },
+  ];
+
+  const methods = ["GET", "POST", "PUT", "DELETE"];
+
+  for (const model of apiModels) {
+    for (const method of methods) {
+      const typeStr =
+        method === "GET"
+          ? "Read"
+          : method === "POST"
+            ? "Create"
+            : method === "PUT"
+              ? "Update"
+              : "Delete";
+
+      const hak = await prisma.m_hak_akses.upsert({
+        where: { id: 0 }, // Fake where to force create or use specific unique constraints if we had one
+        update: {},
+        create: {
+          nama_fitur: `${typeStr} ${model.name}`,
+          tipe_fitur: typeStr.toLowerCase(),
+          endpoint: model.prefix,
+          method: method,
+          is_all_level: false,
+          is_all_jabatan: false,
+        },
+      });
+
+      // For Users, Jabatan, Level -> only Superuser & Ketua
+      const allowedLevels = ["superuser", "ketua"];
+      for (const lvl of allowedLevels) {
+        const lvlRecord = await prisma.m_level.findUnique({ where: { nama_level: lvl } });
+        if (lvlRecord) {
+          await prisma.m_hak_akses_rule.create({
+            data: {
+              m_hak_akses_id: hak.id,
+              m_level_id: lvlRecord.id,
+              // null jabatan means any jabatan is allowed as long as level matches
+            },
+          });
+        }
+      }
+    }
+  }
+
+  // Khusus Sponsorship
+  const spMethods = ["GET", "POST", "PUT", "DELETE"];
+  for (const method of spMethods) {
+    const typeStr =
+      method === "GET"
+        ? "Read"
+        : method === "POST"
+          ? "Create"
+          : method === "PUT"
+            ? "Update"
+            : "Delete";
+
+    const hakSp = await prisma.m_hak_akses.upsert({
+      where: { id: 0 },
+      update: {},
+      create: {
+        nama_fitur: `${typeStr} Sponsorship`,
+        tipe_fitur: typeStr.toLowerCase(),
+        endpoint: "/api/sponsorship/brands", // Contoh endpoint
+        method: method,
+        is_all_level: false,
+        is_all_jabatan: false,
+      },
+    });
+
+    // Superuser, Admin, Ketua (Any jabatan ok)
+    const spAllowedLevels = ["superuser", "admin", "ketua"];
+    for (const lvl of spAllowedLevels) {
+      const lvlRecord = await prisma.m_level.findUnique({ where: { nama_level: lvl } });
+      if (lvlRecord) {
+        await prisma.m_hak_akses_rule.create({
+          data: {
+            m_hak_akses_id: hakSp.id,
+            m_level_id: lvlRecord.id,
+          },
+        });
+      }
+    }
+
+    // Tapi KHUSUS Koordinator & Anggota, harus jabatan Bidang Humas
+    const specialLevels = ["koordinator", "anggota"];
+    const humasJabatan = await prisma.m_jabatan.findUnique({ where: { nama_jabatan: "Bidang Humas" } });
+
+    if (humasJabatan) {
+      for (const lvl of specialLevels) {
+        const lvlRecord = await prisma.m_level.findUnique({ where: { nama_level: lvl } });
+        if (lvlRecord) {
+          await prisma.m_hak_akses_rule.create({
+            data: {
+              m_hak_akses_id: hakSp.id,
+              m_level_id: lvlRecord.id,
+              m_jabatan_id: humasJabatan.id, // AND Condition
+            },
+          });
+        }
+      }
+    }
+  }
+
   console.log("Seeding completed!");
 }
 

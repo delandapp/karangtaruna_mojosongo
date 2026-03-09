@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useCreateLevelMutation, useUpdateLevelMutation } from "@/features/api/levelApi";
 
 const levelFormSchema = z.object({
   nama_level: z
@@ -74,27 +75,16 @@ export function LevelFormModal({
     }
   }, [isOpen, isEditing, initialData, form]);
 
+  const [createLevel] = useCreateLevelMutation();
+  const [updateLevel] = useUpdateLevelMutation();
+
   const onSubmit = async (data: LevelFormValues) => {
     setIsSubmitting(true);
     try {
-      const endpoint = isEditing
-        ? `/api/levels/${initialData.id}`
-        : "/api/levels";
-      const method = isEditing ? "PUT" : "POST";
-
-      const res = await fetch(endpoint, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      const json = await res.json();
-
-      if (!res.ok) {
-        toast.error("Gagal menyimpan data", {
-          description: json.error?.message,
-        });
-        return;
+      if (isEditing) {
+        await updateLevel({ id: initialData.id, data }).unwrap();
+      } else {
+        await createLevel(data).unwrap();
       }
 
       toast.success(
@@ -104,9 +94,9 @@ export function LevelFormModal({
         },
       );
       onSuccess();
-    } catch (error) {
-      toast.error("Kesalahan jaringan", {
-        description: "Gagal memproses data",
+    } catch (error: any) {
+      toast.error("Gagal menyimpan data", {
+        description: error?.data?.error?.message || "Gagal memproses data",
       });
     } finally {
       setIsSubmitting(false);

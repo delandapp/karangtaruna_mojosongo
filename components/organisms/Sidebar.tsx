@@ -19,6 +19,8 @@ import {
   LogOut,
   PanelLeftClose,
   PanelLeft,
+  Handshake,
+  ShieldCheck,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -33,11 +35,22 @@ const MASTER_NAV = [
   { href: "/dashboard/jabatan", icon: Briefcase, label: "Jabatan" },
   { href: "/dashboard/level", icon: Shield, label: "Level" },
   { href: "/dashboard/user", icon: Users, label: "User" },
+  { href: "/dashboard/hak-akses", icon: ShieldCheck, label: "Akses & Role" },
 ];
 
 const TOOLS_NAV = [
   { href: "/dashboard/laporan", icon: BarChart3, label: "Laporan" },
   { href: "/dashboard/keuangan", icon: Wallet, label: "Keuangan", badge: 2 },
+  {
+    href: "/dashboard/sponsorship",
+    icon: Handshake,
+    label: "Sponsorship",
+    subItems: [
+      { href: "/dashboard/sponsorship/brand", label: "Brand" },
+      { href: "/dashboard/sponsorship/kategori-brand", label: "Kategori Brand" },
+      { href: "/dashboard/sponsorship/bidang-brand", label: "Bidang Brand" },
+    ],
+  },
 ];
 
 const PROFILE_NAV = [

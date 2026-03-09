@@ -41,6 +41,8 @@ export async function POST(req: NextRequest) {
         userId: user.id,
         username: user.username,
         level: user.level?.nama_level,
+        m_level_id: user.m_level_id,
+        m_jabatan_id: user.m_jabatan_id,
       },
       JWT_SECRET,
       { expiresIn: "7d" }, // Token berlaku 7 hari

@@ -1,0 +1,11 @@
+model Jenjang {
+    id        BigInt    @id @default(autoincrement())
+    nama      String    @unique @db.VarChar(10)
+    deskripsi String?   @db.Text
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    Sekolah   Sekolah[]
+    deleted   Boolean   @default(false)
+
+    @@map("m_jenjang")
+}

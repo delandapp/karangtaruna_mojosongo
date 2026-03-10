@@ -1,0 +1,14 @@
+model Kota {
+    id            BigInt      @id @default(autoincrement())
+    m_provinsi_id BigInt?
+    kode_wilayah  String?     @unique
+    nama          String
+    createdAt     DateTime    @default(now())
+    updatedAt     DateTime    @updatedAt
+    Provinsi      Provinsi?   @relation(fields: [m_provinsi_id], references: [id])
+    Kecamatan     Kecamatan[]
+    Sekolah       Sekolah[]
+
+    @@index([m_provinsi_id])
+    @@map("m_kota")
+}

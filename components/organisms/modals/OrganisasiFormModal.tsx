@@ -36,7 +36,6 @@ import {
   useCreateOrganisasiMutation,
   useUpdateOrganisasiMutation,
   Organisasi,
-  MediaSosial,
 } from "@/features/api/organisasiApi";
 
 const mediaSosialSchema = z.object({
@@ -195,22 +194,22 @@ export function OrganisasiFormModal({
     try {
       const processedMediaSosial = values.media_sosial
         ? {
-            instagram: values.media_sosial.instagram
-              ? `https://instagram.com/${values.media_sosial.instagram.replace(/^@/, "")}`
-              : null,
-            facebook: values.media_sosial.facebook
-              ? `https://facebook.com/${values.media_sosial.facebook}`
-              : null,
-            tiktok: values.media_sosial.tiktok
-              ? `https://tiktok.com/@${values.media_sosial.tiktok.replace(/^@/, "")}`
-              : null,
-            youtube: values.media_sosial.youtube
-              ? `https://youtube.com/@${values.media_sosial.youtube.replace(/^@/, "")}`
-              : null,
-            whatsapp: values.media_sosial.whatsapp
-              ? `https://wa.me/62${values.media_sosial.whatsapp.replace(/^0/, "")}`
-              : null,
-          }
+          instagram: values.media_sosial.instagram
+            ? `https://instagram.com/${values.media_sosial.instagram.replace(/^@/, "")}`
+            : null,
+          facebook: values.media_sosial.facebook
+            ? `https://facebook.com/${values.media_sosial.facebook}`
+            : null,
+          tiktok: values.media_sosial.tiktok
+            ? `https://tiktok.com/@${values.media_sosial.tiktok.replace(/^@/, "")}`
+            : null,
+          youtube: values.media_sosial.youtube
+            ? `https://youtube.com/@${values.media_sosial.youtube.replace(/^@/, "")}`
+            : null,
+          whatsapp: values.media_sosial.whatsapp
+            ? `https://wa.me/62${values.media_sosial.whatsapp.replace(/^0/, "")}`
+            : null,
+        }
         : null;
 
       const payload = {
@@ -266,33 +265,30 @@ export function OrganisasiFormModal({
           <button
             type="button"
             onClick={() => setActiveTab("informasi")}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === "informasi"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === "informasi"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
           >
             Informasi Umum
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("alamat")}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === "alamat"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === "alamat"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
           >
             Area & Alamat
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("sosmed")}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === "sosmed"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === "sosmed"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
           >
             Sosial Media
           </button>
@@ -519,9 +515,10 @@ export function OrganisasiFormModal({
                         <div className="absolute left-3 flex items-center justify-center text-muted-foreground w-5 h-5">
                           <FaInstagram />
                         </div>
+
                         <Input
-                          placeholder="username"
-                          className="pl-14"
+                          placeholder="@username"
+                          className="pl-10"
                           {...field}
                         />
                       </div>
@@ -541,12 +538,9 @@ export function OrganisasiFormModal({
                         <div className="absolute left-3 flex items-center justify-center text-muted-foreground w-5 h-5">
                           <FaFacebook />
                         </div>
-                        <span className="absolute left-10 text-muted-foreground text-sm">
-                          @
-                        </span>
                         <Input
-                          placeholder="username"
-                          className="pl-14"
+                          placeholder="@username"
+                          className="pl-10"
                           {...field}
                         />
                       </div>
@@ -591,12 +585,9 @@ export function OrganisasiFormModal({
                         <div className="absolute left-3 flex items-center justify-center text-muted-foreground w-5 h-5">
                           <FaTiktok />
                         </div>
-                        <span className="absolute left-10 text-muted-foreground text-sm">
-                          @
-                        </span>
                         <Input
-                          placeholder="username"
-                          className="pl-14"
+                          placeholder="@username"
+                          className="pl-10"
                           {...field}
                         />
                       </div>
@@ -616,12 +607,9 @@ export function OrganisasiFormModal({
                         <div className="absolute left-3 flex items-center justify-center text-muted-foreground w-5 h-5">
                           <FaYoutube />
                         </div>
-                        <span className="absolute left-10 text-muted-foreground text-sm">
-                          @
-                        </span>
                         <Input
                           placeholder="channel_name"
-                          className="pl-14"
+                          className="pl-10"
                           {...field}
                         />
                       </div>

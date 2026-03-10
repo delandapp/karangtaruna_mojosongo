@@ -1,0 +1,11 @@
+model Provinsi {
+    id           BigInt    @id @default(autoincrement())
+    kode_wilayah String?   @unique
+    nama         String
+    createdAt    DateTime  @default(now())
+    updatedAt    DateTime  @updatedAt
+    Kota         Kota[]
+    Sekolah      Sekolah[]
+
+    @@map("m_provinsi")
+}

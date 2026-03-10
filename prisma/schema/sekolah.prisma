@@ -1,0 +1,30 @@
+model Sekolah {
+    id                           BigInt     @id @default(autoincrement())
+    kode_wilayah_induk_provinsi  String?
+    kode_wilayah_induk_kota      String?
+    kode_wilayah_induk_kecamatan String?
+    kode_wilayah_induk_kelurahan String?
+    m_jenjang_id                 BigInt?
+    jenis_sekolah                String?    @default("Negeri")
+    nama                         String
+    alamat                       String?
+    npsn                         String?
+    email                        String?
+    phone                        String?
+    kode_pos                     String?
+    rt                           String?
+    rw                           String?
+    bujur                        String?
+    lintang                      String?
+    akreditasi                   String?
+    createdAt                    DateTime   @default(now())
+    updatedAt                    DateTime   @updatedAt
+    Jenjang                      Jenjang?   @relation(fields: [m_jenjang_id], references: [id])
+    Provinsi                     Provinsi?  @relation(fields: [kode_wilayah_induk_provinsi], references: [kode_wilayah])
+    Kota                         Kota?      @relation(fields: [kode_wilayah_induk_kota], references: [kode_wilayah])
+    Kecamatan                    Kecamatan? @relation(fields: [kode_wilayah_induk_kecamatan], references: [kode_wilayah])
+    Kelurahan                    Kelurahan? @relation(fields: [kode_wilayah_induk_kelurahan], references: [kode_wilayah])
+
+    @@index([kode_wilayah_induk_provinsi, kode_wilayah_induk_kecamatan, m_jenjang_id])
+    @@map("m_sekolah")
+}

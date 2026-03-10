@@ -1,13 +1,25 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Oswald, Source_Serif_4, Manrope } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { Toaster } from "@/components/ui/sonner";
 
-const inter = Inter({
+const fontTitle = Oswald({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-inter",
+  variable: "--font-title",
+});
+
+const fontBody = Source_Serif_4({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-body",
+});
+
+const fontUi = Manrope({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-ui",
 });
 
 export const metadata: Metadata = {
@@ -34,7 +46,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className={`${fontTitle.variable} ${fontBody.variable} ${fontUi.variable} font-sans antialiased`}>
         <Providers>
           {children}
           <Toaster position="top-right" richColors closeButton />

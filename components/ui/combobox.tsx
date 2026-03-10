@@ -169,30 +169,30 @@ export function ComboBox({
 
   // Kalkulasi className untuk Button berdasarkan state
   const classButton = cn(
-    "w-full justify-between rounded-full h-10 md:h-12 border transition-colors duration-300",
+    "flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] h-9 focus-visible:ring-[3px] focus-visible:ring-ring/50 outline-none",
     {
       // Disabled State
-      "bg-gray-100 border-gray-300 text-gray-500 opacity-50 cursor-not-allowed dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400":
+      "bg-muted/50 border-input text-muted-foreground opacity-50 cursor-not-allowed":
         disabled,
       // Error State
-      "bg-white border-error-500 text-error-900 focus:ring-2 focus:ring-error-500/20 dark:bg-slate-900 dark:border-error-500 dark:text-error-400":
+      "bg-background border-destructive text-destructive focus:ring-destructive/20":
         error && !disabled,
       // Success State
-      "bg-white border-success-500 text-success-900 focus:ring-2 focus:ring-success-500/20 dark:bg-slate-900 dark:border-success-500 dark:text-success-400":
+      "bg-background border-success-500 text-success-900 focus:ring-success-500/20":
         success && !disabled,
       // Default State
-      "bg-white border-none hover:bg-gray-50 focus:ring-2 focus:ring-brand-500/20 dark:bg-slate-900 dark:border-gray-800 dark:hover:bg-slate-800 ":
+      "bg-muted/50 border-input hover:bg-accent hover:text-accent-foreground focus:border-ring":
         !disabled && !error && !success,
       // Text color based on selection
-      "text-gray-900 dark:text-white": !!selectedValue,
-      "text-gray-400 dark:text-gray-400": !selectedValue,
+      "text-foreground": !!selectedValue,
+      "text-muted-foreground font-normal": !selectedValue,
     }
   );
 
   return (
     <div className="w-full">
       {label && (
-        <label className="block mb-2 text-sm font-normal text-gray-400 dark:text-white font-poppins">
+        <label className="block mb-2 text-sm font-normal text-gray-400 dark:text-white font-sans">
           {label}
         </label>
       )}
@@ -231,8 +231,8 @@ export function ComboBox({
           {open && (
             <PopoverContent
               asChild
-              className="w-[var(--radix-popover-trigger-width)] p-0 z-99"
-              style={{ pointerEvents: "auto" }}
+              className="w-[var(--radix-popover-trigger-width)] p-0 z-50 min-w-0"
+              style={{ width: "var(--radix-popover-trigger-width)" }}
               onOpenAutoFocus={(e) => e.preventDefault()} // Mencegah fokus otomatis yang mengganggu
             >
               <motion.div

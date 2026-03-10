@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Color Palette — Karang Taruna 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&family=Syne+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0A0C10;
+    --surface: #111318;
+    --card: #161A22;
+    --border: rgba(255,255,255,0.07);
+
+    /* PRIMARY PALETTE */
+    --primary-50: #E8FFF5;
+    --primary-100: #BDFCE0;
+    --primary-200: #7CF5C1;
+    --primary-300: #2EEAA0;
+    --primary-400: #00D97E;
+    --primary-500: #00BC6A;   /* MAIN */
+    --primary-600: #009A55;
+    --primary-700: #007540;
+    --primary-800: #005430;
+    --primary-900: #003320;
+
+    /* ACCENT PALETTE */
+    --accent-50: #FFF5E8;
+    --accent-100: #FFE4BD;
+    --accent-200: #FFCB7A;
+    --accent-300: #FFB040;
+    --accent-400: #FF9A14;
+    --accent-500: #F57C00;   /* MAIN */
+    --accent-600: #C95E00;
+    --accent-700: #9A4300;
+    --accent-800: #6E2D00;
+    --accent-900: #3D1600;
+
+    /* BLUE ACCENT */
+    --blue-50: #EAF3FF;
+    --blue-100: #C0DCFF;
+    --blue-200: #86BFFF;
+    --blue-300: #4DA3FF;
+    --blue-400: #1A8AFF;
+    --blue-500: #0071F5;   /* MAIN */
+    --blue-600: #0059C9;
+    --blue-700: #00429A;
+    --blue-800: #002D6E;
+    --blue-900: #001840;
+
+    /* NEUTRAL */
+    --n-50: #F7F8FA;
+    --n-100: #ECEEF2;
+    --n-200: #D5D9E2;
+    --n-300: #B2BAC9;
+    --n-400: #8891A5;
+    --n-500: #5F6880;
+    --n-600: #404858;
+    --n-700: #282F3E;
+    --n-800: #161A22;
+    --n-900: #0A0C10;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: #F0F2F7;
+    font-family: 'Space Grotesk', sans-serif;
+    min-height: 100vh;
+    padding: 48px 24px;
+  }
+
+  /* ── HEADER ── */
+  .hero {
+    max-width: 960px;
+    margin: 0 auto 64px;
+    text-align: center;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,188,106,0.12);
+    border: 1px solid rgba(0,188,106,0.3);
+    color: var(--primary-300);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 100px;
+    margin-bottom: 24px;
+  }
+  .badge::before { content: '◆'; font-size: 8px; }
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(36px, 6vw, 72px);
+    font-weight: 800;
+    line-height: 1.0;
+    letter-spacing: -0.03em;
+    margin-bottom: 16px;
+  }
+  h1 span.green { color: var(--primary-400); }
+  h1 span.orange { color: var(--accent-400); }
+  .subtitle {
+    color: var(--n-400);
+    font-size: 15px;
+    max-width: 540px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
+
+  /* ── SECTION TITLES ── */
+  .section { max-width: 960px; margin: 0 auto 56px; }
+  .section-label {
+    font-family: 'Syne Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--n-500);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── PALETTE GRID ── */
+  .palette-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .palette-name .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .swatches {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 8px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .swatch {
+    aspect-ratio: 1/1.6;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 8px 6px;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.2s ease, z-index 0s;
+  }
+  .swatch:hover { transform: scaleY(1.08); z-index: 10; }
+  .swatch.main::after {
+    content: '★';
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: rgba(255,255,255,0.6);
+  }
+  .swatch-num {
+    font-family: 'Syne Mono', monospace;
+    font-size: 9px;
+    font-weight: 500;
+    opacity: 0.7;
+    line-height: 1;
+  }
+  .swatch-hex {
+    font-family: 'Syne Mono', monospace;
+    font-size: 9px;
+    opacity: 0.55;
+    line-height: 1.4;
+  }
+
+  /* ── PALETTE ROW ── */
+  .palette-row { margin-bottom: 40px; }
+  .palette-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .palette-use {
+    font-size: 12px;
+    color: var(--n-500);
+    max-width: 400px;
+    line-height: 1.5;
+  }
+
+  /* ── USAGE CARDS ── */
+  .usage-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .usage-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    transition: border-color 0.2s;
+  }
+  .usage-card:hover { border-color: rgba(255,255,255,0.15); }
+  .usage-card-label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--n-500);
+    margin-bottom: 12px;
+    font-family: 'Syne Mono', monospace;
+  }
+  .usage-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .chip-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .chip-hex { font-family: 'Syne Mono', monospace; font-size: 10px; color: var(--n-500); }
+  .usage-desc {
+    font-size: 12px;
+    color: var(--n-500);
+    line-height: 1.6;
+  }
+
+  /* ── PREVIEW CARDS ── */
+  .preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+  }
+
+  /* News card preview */
+  .news-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+  .news-img {
+    height: 140px;
+    background: linear-gradient(135deg, #003320 0%, #007540 50%, #00BC6A 100%);
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    padding: 16px;
+  }
+  .news-img-2 { background: linear-gradient(135deg, #001840 0%, #00429A 50%, #1A8AFF 100%); }
+  .news-img-3 { background: linear-gradient(135deg, #3D1600 0%, #9A4300 50%, #FF9A14 100%); }
+  .news-tag {
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 100px;
+  }
+  .news-body { padding: 16px; }
+  .news-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: 8px;
+  }
+  .news-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--n-500);
+  }
+  .news-meta-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--n-600); }
+  .read-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary-400);
+    cursor: pointer;
+  }
+  .read-btn::after { content: '→'; }
+
+  /* Stat card preview */
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px;
+  }
+  .stat-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 40px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-num.green { color: var(--primary-400); }
+  .stat-num.orange { color: var(--accent-400); }
+  .stat-num.blue { color: var(--blue-400); }
+  .stat-label { color: var(--n-400); font-size: 13px; margin-bottom: 16px; }
+  .stat-bar { height: 4px; background: rgba(255,255,255,0.08); border-radius: 100px; overflow: hidden; }
+  .stat-fill { height: 100%; border-radius: 100px; }
+  .stat-fill.green { background: var(--primary-500); width: 72%; }
+  .stat-fill.orange { background: var(--accent-500); width: 48%; }
+  .stat-fill.blue { background: var(--blue-500); width: 85%; }
+
+  /* Button preview */
+  .btn-row { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn {
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif;
+    transition: opacity 0.2s, transform 0.15s;
+  }
+  .btn:hover { opacity: 0.85; transform: translateY(-1px); }
+  .btn-primary { background: var(--primary-500); color: #fff; }
+  .btn-accent { background: var(--accent-500); color: #fff; }
+  .btn-blue { background: var(--blue-500); color: #fff; }
+  .btn-ghost { background: transparent; color: var(--n-300); border: 1px solid var(--border); }
+  .btn-outline-green { background: transparent; color: var(--primary-400); border: 1px solid var(--primary-600); }
+
+  /* ── TYPOGRAPHY SCALE ── */
+  .type-row {
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .type-meta { font-family: 'Syne Mono', monospace; font-size: 10px; color: var(--n-600); width: 100px; flex-shrink: 0; }
+  .type-sample { line-height: 1.2; }
+
+  /* ── DARK TOKENS ── */
+  .token-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .token-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .token-preview {
+    height: 60px;
+  }
+  .token-info { padding: 12px; }
+  .token-name { font-family: 'Syne Mono', monospace; font-size: 11px; color: var(--n-300); margin-bottom: 2px; }
+  .token-val { font-size: 11px; color: var(--n-600); }
+
+  /* ── GRADIENT SHOWCASE ── */
+  .grad-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .grad-card {
+    border-radius: 16px;
+    padding: 24px 20px;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+  .grad-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.9);
+    margin-bottom: 4px;
+  }
+  .grad-code { font-family: 'Syne Mono', monospace; font-size: 10px; color: rgba(255,255,255,0.45); }
+
+  /* animate on scroll feel */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .section { animation: fadeUp 0.5s ease both; }
+
+  /* copy tooltip */
+  .copied-toast {
+    position: fixed;
+    bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--primary-500);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: transform 0.3s ease;
+    pointer-events: none;
+    z-index: 999;
+  }
+  .copied-toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="copied-toast" id="toast">✓ HEX disalin!</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="badge">UI/UX Design System · 2026</div>
+  <h1>Color Palette<br><span class="green">Karang Taruna</span> <span class="orange">×</span> Gen Z</h1>
+  <p class="subtitle">Palet warna modern untuk website berita organisasi kepemudaan. Dirancang mengikuti tren UI/UX 2026 — dark mode first, vibrant accents, dan glassmorphism.</p>
+</div>
+
+<!-- PRIMARY GREEN -->
+<div class="section">
+  <div class="section-label">01 · Primary Color</div>
+  <div class="palette-row">
+    <div class="palette-meta">
+      <div class="palette-name"><span class="dot" style="background:#00BC6A"></span> Hijau Karang Taruna</div>
+      <div class="palette-use">Warna utama identitas. Digunakan untuk CTA button, link aktif, highlight berita penting, dan elemen brand.</div>
+    </div>
+    <div class="swatches">
+      <div class="swatch" style="background:#E8FFF5;color:#003320" onclick="copy('#E8FFF5')"><span class="swatch-num">50</span><span class="swatch-hex">#E8FFF5</span></div>
+      <div class="swatch" style="background:#BDFCE0;color:#003320" onclick="copy('#BDFCE0')"><span class="swatch-num">100</span><span class="swatch-hex">#BDFCE0</span></div>
+      <div class="swatch" style="background:#7CF5C1;color:#003320" onclick="copy('#7CF5C1')"><span class="swatch-num">200</span><span class="swatch-hex">#7CF5C1</span></div>
+      <div class="swatch" style="background:#2EEAA0;color:#003320" onclick="copy('#2EEAA0')"><span class="swatch-num">300</span><span class="swatch-hex">#2EEAA0</span></div>
+      <div class="swatch" style="background:#00D97E;color:#003320" onclick="copy('#00D97E')"><span class="swatch-num">400</span><span class="swatch-hex">#00D97E</span></div>
+      <div class="swatch main" style="background:#00BC6A;color:#fff" onclick="copy('#00BC6A')"><span class="swatch-num">500</span><span class="swatch-hex">#00BC6A</span></div>
+      <div class="swatch" style="background:#009A55;color:#fff" onclick="copy('#009A55')"><span class="swatch-num">600</span><span class="swatch-hex">#009A55</span></div>
+      <div class="swatch" style="background:#007540;color:#fff" onclick="copy('#007540')"><span class="swatch-num">700</span><span class="swatch-hex">#007540</span></div>
+      <div class="swatch" style="background:#005430;color:#fff" onclick="copy('#005430')"><span class="swatch-num">800</span><span class="swatch-hex">#005430</span></div>
+      <div class="swatch" style="background:#003320;color:#fff" onclick="copy('#003320')"><span class="swatch-num">900</span><span class="swatch-hex">#003320</span></div>
+    </div>
+  </div>
+
+  <!-- ACCENT ORANGE -->
+  <div class="palette-row">
+    <div class="palette-meta">
+      <div class="palette-name"><span class="dot" style="background:#F57C00"></span> Oranye Energi</div>
+      <div class="palette-use">Warna aksen untuk badge "breaking news", kategori event, dan elemen yang butuh perhatian tinggi.</div>
+    </div>
+    <div class="swatches">
+      <div class="swatch" style="background:#FFF5E8;color:#3D1600" onclick="copy('#FFF5E8')"><span class="swatch-num">50</span><span class="swatch-hex">#FFF5E8</span></div>
+      <div class="swatch" style="background:#FFE4BD;color:#3D1600" onclick="copy('#FFE4BD')"><span class="swatch-num">100</span><span class="swatch-hex">#FFE4BD</span></div>
+      <div class="swatch" style="background:#FFCB7A;color:#3D1600" onclick="copy('#FFCB7A')"><span class="swatch-num">200</span><span class="swatch-hex">#FFCB7A</span></div>
+      <div class="swatch" style="background:#FFB040;color:#3D1600" onclick="copy('#FFB040')"><span class="swatch-num">300</span><span class="swatch-hex">#FFB040</span></div>
+      <div class="swatch" style="background:#FF9A14;color:#3D1600" onclick="copy('#FF9A14')"><span class="swatch-num">400</span><span class="swatch-hex">#FF9A14</span></div>
+      <div class="swatch main" style="background:#F57C00;color:#fff" onclick="copy('#F57C00')"><span class="swatch-num">500</span><span class="swatch-hex">#F57C00</span></div>
+      <div class="swatch" style="background:#C95E00;color:#fff" onclick="copy('#C95E00')"><span class="swatch-num">600</span><span class="swatch-hex">#C95E00</span></div>
+      <div class="swatch" style="background:#9A4300;color:#fff" onclick="copy('#9A4300')"><span class="swatch-num">700</span><span class="swatch-hex">#9A4300</span></div>
+      <div class="swatch" style="background:#6E2D00;color:#fff" onclick="copy('#6E2D00')"><span class="swatch-num">800</span><span class="swatch-hex">#6E2D00</span></div>
+      <div class="swatch" style="background:#3D1600;color:#fff" onclick="copy('#3D1600')"><span class="swatch-num">900</span><span class="swatch-hex">#3D1600</span></div>
+    </div>
+  </div>
+
+  <!-- BLUE INFO -->
+  <div class="palette-row">
+    <div class="palette-meta">
+      <div class="palette-name"><span class="dot" style="background:#0071F5"></span> Biru Info</div>
+      <div class="palette-use">Warna pendukung untuk link, badge informasi, kategori resmi pemerintahan, dan status update.</div>
+    </div>
+    <div class="swatches">
+      <div class="swatch" style="background:#EAF3FF;color:#001840" onclick="copy('#EAF3FF')"><span class="swatch-num">50</span><span class="swatch-hex">#EAF3FF</span></div>
+      <div class="swatch" style="background:#C0DCFF;color:#001840" onclick="copy('#C0DCFF')"><span class="swatch-num">100</span><span class="swatch-hex">#C0DCFF</span></div>
+      <div class="swatch" style="background:#86BFFF;color:#001840" onclick="copy('#86BFFF')"><span class="swatch-num">200</span><span class="swatch-hex">#86BFFF</span></div>
+      <div class="swatch" style="background:#4DA3FF;color:#001840" onclick="copy('#4DA3FF')"><span class="swatch-num">300</span><span class="swatch-hex">#4DA3FF</span></div>
+      <div class="swatch" style="background:#1A8AFF;color:#fff" onclick="copy('#1A8AFF')"><span class="swatch-num">400</span><span class="swatch-hex">#1A8AFF</span></div>
+      <div class="swatch main" style="background:#0071F5;color:#fff" onclick="copy('#0071F5')"><span class="swatch-num">500</span><span class="swatch-hex">#0071F5</span></div>
+      <div class="swatch" style="background:#0059C9;color:#fff" onclick="copy('#0059C9')"><span class="swatch-num">600</span><span class="swatch-hex">#0059C9</span></div>
+      <div class="swatch" style="background:#00429A;color:#fff" onclick="copy('#00429A')"><span class="swatch-num">700</span><span class="swatch-hex">#00429A</span></div>
+      <div class="swatch" style="background:#002D6E;color:#fff" onclick="copy('#002D6E')"><span class="swatch-num">800</span><span class="swatch-hex">#002D6E</span></div>
+      <div class="swatch" style="background:#001840;color:#fff" onclick="copy('#001840')"><span class="swatch-num">900</span><span class="swatch-hex">#001840</span></div>
+    </div>
+  </div>
+
+  <!-- NEUTRAL -->
+  <div class="palette-row">
+    <div class="palette-meta">
+      <div class="palette-name"><span class="dot" style="background:#5F6880"></span> Neutral / Base</div>
+      <div class="palette-use">Warna untuk background, teks, border, dan elemen struktural. Dark mode diutamakan (900–700).</div>
+    </div>
+    <div class="swatches">
+      <div class="swatch" style="background:#F7F8FA;color:#0A0C10" onclick="copy('#F7F8FA')"><span class="swatch-num">50</span><span class="swatch-hex">#F7F8FA</span></div>
+      <div class="swatch" style="background:#ECEEF2;color:#0A0C10" onclick="copy('#ECEEF2')"><span class="swatch-num">100</span><span class="swatch-hex">#ECEEF2</span></div>
+      <div class="swatch" style="background:#D5D9E2;color:#0A0C10" onclick="copy('#D5D9E2')"><span class="swatch-num">200</span><span class="swatch-hex">#D5D9E2</span></div>
+      <div class="swatch" style="background:#B2BAC9;color:#0A0C10" onclick="copy('#B2BAC9')"><span class="swatch-num">300</span><span class="swatch-hex">#B2BAC9</span></div>
+      <div class="swatch" style="background:#8891A5;color:#fff" onclick="copy('#8891A5')"><span class="swatch-num">400</span><span class="swatch-hex">#8891A5</span></div>
+      <div class="swatch" style="background:#5F6880;color:#fff" onclick="copy('#5F6880')"><span class="swatch-num">500</span><span class="swatch-hex">#5F6880</span></div>
+      <div class="swatch" style="background:#404858;color:#fff" onclick="copy('#404858')"><span class="swatch-num">600</span><span class="swatch-hex">#404858</span></div>
+      <div class="swatch" style="background:#282F3E;color:#fff" onclick="copy('#282F3E')"><span class="swatch-num">700</span><span class="swatch-hex">#282F3E</span></div>
+      <div class="swatch main" style="background:#161A22;color:#fff" onclick="copy('#161A22')"><span class="swatch-num">800</span><span class="swatch-hex">#161A22</span></div>
+      <div class="swatch main" style="background:#0A0C10;color:#fff" onclick="copy('#0A0C10')"><span class="swatch-num">900</span><span class="swatch-hex">#0A0C10</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- GRADIENTS -->
+<div class="section">
+  <div class="section-label">02 · Gradient Presets</div>
+  <div class="grad-grid">
+    <div class="grad-card" style="background:linear-gradient(135deg,#003320,#00BC6A)">
+      <div class="grad-name">Karang Utama</div>
+      <div class="grad-code">#003320 → #00BC6A</div>
+    </div>
+    <div class="grad-card" style="background:linear-gradient(135deg,#00BC6A,#1A8AFF)">
+      <div class="grad-name">Muda Digital</div>
+      <div class="grad-code">#00BC6A → #1A8AFF</div>
+    </div>
+    <div class="grad-card" style="background:linear-gradient(135deg,#FF9A14,#F57C00)">
+      <div class="grad-name">Breaking News</div>
+      <div class="grad-code">#FF9A14 → #F57C00</div>
+    </div>
+    <div class="grad-card" style="background:linear-gradient(135deg,#001840,#0071F5)">
+      <div class="grad-name">Info Resmi</div>
+      <div class="grad-code">#001840 → #0071F5</div>
+    </div>
+    <div class="grad-card" style="background:linear-gradient(135deg,#0A0C10,#282F3E)">
+      <div class="grad-name">Dark Surface</div>
+      <div class="grad-code">#0A0C10 → #282F3E</div>
+    </div>
+    <div class="grad-card" style="background:linear-gradient(135deg,#003320 0%,#001840 50%,#3D1600 100%)">
+      <div class="grad-name">Tricolor Mesh</div>
+      <div class="grad-code">Hijau · Biru · Oranye</div>
+    </div>
+  </div>
+</div>
+
+<!-- USAGE GUIDE -->
+<div class="section">
+  <div class="section-label">03 · Panduan Penggunaan</div>
+  <div class="usage-grid">
+    <div class="usage-card">
+      <div class="usage-card-label">Background & Surface</div>
+      <div class="usage-chips">
+        <div class="chip"><div class="chip-dot" style="background:#0A0C10;border:1px solid #333"></div> Page BG <span class="chip-hex">#0A0C10</span></div>
+        <div class="chip"><div class="chip-dot" style="background:#111318;border:1px solid #333"></div> App Shell <span class="chip-hex">#111318</span></div>
+        <div class="chip"><div class="chip-dot" style="background:#161A22;border:1px solid #333"></div> Card <span class="chip-hex">#161A22</span></div>
+        <div class="chip"><div class="chip-dot" style="background:#282F3E;border:1px solid #444"></div> Modal <span class="chip-hex">#282F3E</span></div>
+      </div>
+      <div class="usage-desc">Gunakan nilai gelap (800–900) sebagai latar halaman. Card satu tingkat lebih terang. Hindari background putih polos.</div>
+    </div>
+    <div class="usage-card">
+      <div class="usage-card-label">Teks & Tipografi</div>
+      <div class="usage-chips">
+        <div class="chip"><div class="chip-dot" style="background:#F7F8FA"></div> Judul <span class="chip-hex">#F7F8FA</span></div>
+        <div class="chip"><div class="chip-dot" style="background:#D5D9E2"></div> Body <span class="chip-hex">#D5D9E2</span></div>
+        <div class="chip"><div class="chip-dot" style="background:#8891A5"></div> Muted <span class="chip-hex">#8891A5</span></div>
+        <div class="chip"><div class="chip-dot" style="background:#5F6880"></div> Label <span class="chip-hex">#5F6880</span></div>
+      </div>
+      <div class="usage-desc">Teks judul gunakan warna terang (50–100). Teks body dan caption gunakan Neutral 300–400. Label & placeholder gunakan 500–600.</div>
+    </div>
+    <div class="usage-card">
+      <div class="usage-card-label">CTA & Interaktif</div>
+      <div class="usage-chips">
+        <div class="chip"><div class="chip-dot" style="background:#00BC6A"></div> Primary CTA <span class="chip-hex">#00BC6A</span></div>
+        <div class="chip"><div class="chip-dot" style="background:#F57C00"></div> Alert CTA <span class="chip-hex">#F57C00</span></div>
+        <div class="chip"><div class="chip-dot" style="background:#0071F5"></div> Link / Info <span class="chip-hex">#0071F5</span></div>
+      </div>
+      <div class="usage-desc">Tombol utama "Baca Selengkapnya", "Gabung", "Daftar" pakai Green-500. Notifikasi penting dan breaking news pakai Orange-500.</div>
+    </div>
+    <div class="usage-card">
+      <div class="usage-card-label">Border & Divider</div>
+      <div class="usage-chips">
+        <div class="chip"><div class="chip-dot" style="background:#282F3E"></div> Strong border <span class="chip-hex">#282F3E</span></div>
+        <div class="chip"><div class="chip-dot" style="background:rgba(255,255,255,0.07)"></div> Subtle border <span class="chip-hex">rgba 7%</span></div>
+      </div>
+      <div class="usage-desc">Divider dan outline card cukup dengan opacity sangat rendah (5–10%). Hindari garis terlalu tebal yang merusak kesan bersih.</div>
+    </div>
+  </div>
+</div>
+
+<!-- DESIGN TOKENS -->
+<div class="section">
+  <div class="section-label">04 · Design Tokens (CSS Variables)</div>
+  <div class="token-grid">
+    <div class="token-card"><div class="token-preview" style="background:#0A0C10"></div><div class="token-info"><div class="token-name">--color-bg</div><div class="token-val">#0A0C10</div></div></div>
+    <div class="token-card"><div class="token-preview" style="background:#161A22"></div><div class="token-info"><div class="token-name">--color-surface</div><div class="token-val">#161A22</div></div></div>
+    <div class="token-card"><div class="token-preview" style="background:#00BC6A"></div><div class="token-info"><div class="token-name">--color-primary</div><div class="token-val">#00BC6A</div></div></div>
+    <div class="token-card"><div class="token-preview" style="background:#00D97E"></div><div class="token-info"><div class="token-name">--color-primary-light</div><div class="token-val">#00D97E</div></div></div>
+    <div class="token-card"><div class="token-preview" style="background:#F57C00"></div><div class="token-info"><div class="token-name">--color-accent</div><div class="token-val">#F57C00</div></div></div>
+    <div class="token-card"><div class="token-preview" style="background:#FF9A14"></div><div class="token-info"><div class="token-name">--color-accent-light</div><div class="token-val">#FF9A14</div></div></div>
+    <div class="token-card"><div class="token-preview" style="background:#0071F5"></div><div class="token-info"><div class="token-name">--color-info</div><div class="token-val">#0071F5</div></div></div>
+    <div class="token-card"><div class="token-preview" style="background:#F7F8FA"></div><div class="token-info"><div class="token-name">--color-text</div><div class="token-val">#F7F8FA</div></div></div>
+    <div class="token-card"><div class="token-preview" style="background:#8891A5"></div><div class="token-info"><div class="token-name">--color-text-muted</div><div class="token-val">#8891A5</div></div></div>
+    <div class="token-card"><div class="token-preview" style="background:#282F3E"></div><div class="token-info"><div class="token-name">--color-border</div><div class="token-val">#282F3E</div></div></div>
+  </div>
+</div>
+
+<!-- COMPONENT PREVIEW -->
+<div class="section">
+  <div class="section-label">05 · Preview Komponen</div>
+  <div class="preview-grid">
+    <!-- News card 1 -->
+    <div class="news-card">
+      <div class="news-img">
+        <span class="news-tag">Kegiatan</span>
+      </div>
+      <div class="news-body">
+        <div class="news-title">Festival Karang Taruna 2026 Resmi Dibuka di Alun-Alun Kota</div>
+        <div class="news-meta">
+          <span>2 jam lalu</span>
+          <span class="news-meta-dot"></span>
+          <span>Admin KT</span>
+        </div>
+        <div class="read-btn">Baca selengkapnya</div>
+      </div>
+    </div>
+    <!-- News card 2 -->
+    <div class="news-card">
+      <div class="news-img news-img-2">
+        <span class="news-tag">Info Resmi</span>
+      </div>
+      <div class="news-body">
+        <div class="news-title">Pendaftaran Anggota Baru Gelombang II Telah Dibuka</div>
+        <div class="news-meta">
+          <span>Kemarin</span>
+          <span class="news-meta-dot"></span>
+          <span>Pengurus</span>
+        </div>
+        <div class="read-btn">Baca selengkapnya</div>
+      </div>
+    </div>
+    <!-- News card 3 -->
+    <div class="news-card">
+      <div class="news-img news-img-3">
+        <span class="news-tag" style="color:#FF9A14;background:rgba(0,0,0,0.6)">⚡ Breaking</span>
+      </div>
+      <div class="news-body">
+        <div class="news-title">Karang Taruna Raih Penghargaan Nasional Bidang Sosial</div>
+        <div class="news-meta">
+          <span>1 hari lalu</span>
+          <span class="news-meta-dot"></span>
+          <span>Redaksi</span>
+        </div>
+        <div class="read-btn">Baca selengkapnya</div>
+      </div>
+    </div>
+    <!-- Stat cards -->
+    <div class="stat-card">
+      <div class="stat-num green">1.240</div>
+      <div class="stat-label">Anggota Aktif</div>
+      <div class="stat-bar"><div class="stat-fill green"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num orange">36</div>
+      <div class="stat-label">Program Berjalan</div>
+      <div class="stat-bar"><div class="stat-fill orange"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num blue">580</div>
+      <div class="stat-label">Berita Tayang</div>
+      <div class="stat-bar"><div class="stat-fill blue"></div></div>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div style="margin-top:28px">
+    <div class="section-label" style="margin-bottom:16px">Button Variants</div>
+    <div class="btn-row">
+      <button class="btn btn-primary">Gabung Sekarang</button>
+      <button class="btn btn-accent">⚡ Breaking News</button>
+      <button class="btn btn-blue">Info Resmi</button>
+      <button class="btn btn-outline-green">Lihat Program</button>
+      <button class="btn btn-ghost">Selengkapnya</button>
+    </div>
+  </div>
+</div>
+
+<div style="text-align:center;padding:40px 0 20px;color:#404858;font-size:12px;font-family:'Syne Mono',monospace;">
+  Klik warna mana saja untuk menyalin kode HEX · Karang Taruna Design System 2026
+</div>
+
+<script>
+  function copy(hex) {
+    navigator.clipboard.writeText(hex).catch(()=>{});
+    const t = document.getElementById('toast');
+    t.textContent = '✓ ' + hex + ' disalin!';
+    t.classList.add('show');
+    setTimeout(()=> t.classList.remove('show'), 2000);
+  }
+</script>
+</body>
+</html>

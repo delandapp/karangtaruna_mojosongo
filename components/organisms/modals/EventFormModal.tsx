@@ -41,32 +41,34 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { ComboBox } from "@/components/ui/combobox";
 import {
   useCreateEventMutation,
   useUpdateEventMutation,
   type JenisEvent,
   type StatusEvent,
 } from "@/features/api/eventApi";
+import { useGetOrganisasisQuery } from "@/features/api/organisasiApi";
 
 // ── Enum options ───────────────────────────────────────────
 const JENIS_OPTIONS: { value: JenisEvent; label: string }[] = [
-  { value: "festival",    label: "Festival"     },
-  { value: "lomba",       label: "Lomba"        },
-  { value: "seminar",     label: "Seminar"      },
-  { value: "bakti_sosial",label: "Bakti Sosial" },
-  { value: "olahraga",    label: "Olahraga"     },
-  { value: "seni_budaya", label: "Seni & Budaya"},
-  { value: "pelatihan",   label: "Pelatihan"    },
-  { value: "lainnya",     label: "Lainnya"      },
+  { value: "festival", label: "Festival" },
+  { value: "lomba", label: "Lomba" },
+  { value: "seminar", label: "Seminar" },
+  { value: "bakti_sosial", label: "Bakti Sosial" },
+  { value: "olahraga", label: "Olahraga" },
+  { value: "seni_budaya", label: "Seni & Budaya" },
+  { value: "pelatihan", label: "Pelatihan" },
+  { value: "lainnya", label: "Lainnya" },
 ];
 
 const STATUS_OPTIONS: { value: StatusEvent; label: string }[] = [
   { value: "perencanaan", label: "Perencanaan" },
-  { value: "persiapan",   label: "Persiapan"   },
-  { value: "siap",        label: "Siap"        },
+  { value: "persiapan", label: "Persiapan" },
+  { value: "siap", label: "Siap" },
   { value: "berlangsung", label: "Berlangsung" },
-  { value: "selesai",     label: "Selesai"     },
-  { value: "dibatalkan",  label: "Dibatalkan"  },
+  { value: "selesai", label: "Selesai" },
+  { value: "dibatalkan", label: "Dibatalkan" },
 ];
 
 const JENIS_VALUES = JENIS_OPTIONS.map((o) => o.value) as [JenisEvent, ...JenisEvent[]];
@@ -76,15 +78,15 @@ const STATUS_VALUES = STATUS_OPTIONS.map((o) => o.value) as [StatusEvent, ...Sta
 const toNum = (v: unknown) => (v === "" || v === null || v === undefined ? undefined : Number(v));
 
 const eventFormSchema = z.object({
-  nama_event:      z.string().min(3, "Minimal 3 karakter").max(200),
-  tema_event:      z.string().max(200).optional().or(z.literal("")),
-  deskripsi:       z.string().max(5000).optional().or(z.literal("")),
-  jenis_event:     z.enum(JENIS_VALUES, { error: "Jenis event wajib dipilih" }),
-  status_event:    z.enum(STATUS_VALUES).optional(),
-  tanggal_mulai:   z.date({ error: "Tanggal mulai wajib diisi" }),
+  nama_event: z.string().min(3, "Minimal 3 karakter").max(200),
+  tema_event: z.string().max(200).optional().or(z.literal("")),
+  deskripsi: z.string().max(5000).optional().or(z.literal("")),
+  jenis_event: z.enum(JENIS_VALUES, { error: "Jenis event wajib dipilih" }),
+  status_event: z.enum(STATUS_VALUES).optional(),
+  tanggal_mulai: z.date({ error: "Tanggal mulai wajib diisi" }),
   tanggal_selesai: z.date({ error: "Tanggal selesai wajib diisi" }),
-  lokasi:          z.string().max(255).optional().or(z.literal("")),
-  target_peserta:  z.preprocess(toNum, z.number().int().min(0).optional()),
+  lokasi: z.string().max(255).optional().or(z.literal("")),
+  target_peserta: z.preprocess(toNum, z.number().int().min(0).optional()),
   m_organisasi_id: z.preprocess(toNum, z.number().int().min(1, "ID Organisasi wajib diisi")),
 });
 
@@ -145,16 +147,28 @@ export function EventFormModal({
   const [createEvent] = useCreateEventMutation();
   const [updateEvent] = useUpdateEventMutation();
 
+  const { data: organisasiResponse, isLoading: isOrganisasiLoading } = useGetOrganisasisQuery({
+    limit: 100, // Fetching all orgs for combobox
+  });
+
+  const organisasis = organisasiResponse?.data || [];
+
+  // Format for combobox
+  const organisasiOptions = organisasis.map((org: any) => ({
+    id: org.id.toString(),
+    nama: org.nama_org || "Organisasi",
+  }));
+
   const form = useForm<EventFormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(eventFormSchema) as any,
     defaultValues: {
-      nama_event:      "",
-      tema_event:      "",
-      deskripsi:       "",
-      status_event:    "perencanaan",
-      lokasi:          "",
-      target_peserta:  0,
+      nama_event: "",
+      tema_event: "",
+      deskripsi: "",
+      status_event: "perencanaan",
+      lokasi: "",
+      target_peserta: 0,
       m_organisasi_id: 1,
     },
   });
@@ -163,15 +177,15 @@ export function EventFormModal({
     if (!isOpen) return;
     if (isEditing && initialData) {
       form.reset({
-        nama_event:      initialData.nama_event      || "",
-        tema_event:      initialData.tema_event      || "",
-        deskripsi:       initialData.deskripsi       || "",
-        jenis_event:     initialData.jenis_event,
-        status_event:    initialData.status_event    || "perencanaan",
-        tanggal_mulai:   new Date(initialData.tanggal_mulai),
+        nama_event: initialData.nama_event || "",
+        tema_event: initialData.tema_event || "",
+        deskripsi: initialData.deskripsi || "",
+        jenis_event: initialData.jenis_event,
+        status_event: initialData.status_event || "perencanaan",
+        tanggal_mulai: new Date(initialData.tanggal_mulai),
         tanggal_selesai: new Date(initialData.tanggal_selesai),
-        lokasi:          initialData.lokasi          || "",
-        target_peserta:  initialData.target_peserta  || 0,
+        lokasi: initialData.lokasi || "",
+        target_peserta: initialData.target_peserta || 0,
         m_organisasi_id: initialData.m_organisasi_id || 1,
       });
     } else {
@@ -184,15 +198,15 @@ export function EventFormModal({
     try {
       const payload = {
         m_organisasi_id: values.m_organisasi_id,
-        nama_event:      values.nama_event,
-        jenis_event:     values.jenis_event,
-        status_event:    values.status_event,
-        tanggal_mulai:   values.tanggal_mulai.toISOString(),
+        nama_event: values.nama_event,
+        jenis_event: values.jenis_event,
+        status_event: values.status_event,
+        tanggal_mulai: values.tanggal_mulai.toISOString(),
         tanggal_selesai: values.tanggal_selesai.toISOString(),
-        tema_event:      values.tema_event  || undefined,
-        deskripsi:       values.deskripsi   || undefined,
-        lokasi:          values.lokasi      || undefined,
-        target_peserta:  values.target_peserta || undefined,
+        tema_event: values.tema_event || undefined,
+        deskripsi: values.deskripsi || undefined,
+        lokasi: values.lokasi || undefined,
+        target_peserta: values.target_peserta || undefined,
       };
 
       if (isEditing) {
@@ -272,7 +286,7 @@ export function EventFormModal({
                     <FormLabel>Jenis Event <span className="text-destructive">*</span></FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger className="bg-muted/50 focus:ring-primary/50">
+                        <SelectTrigger className="bg-muted/50 focus:ring-primary/50 w-full">
                           <SelectValue placeholder="Pilih jenis..." />
                         </SelectTrigger>
                       </FormControl>
@@ -293,9 +307,9 @@ export function EventFormModal({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status Event</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} >
                       <FormControl>
-                        <SelectTrigger className="bg-muted/50 focus:ring-primary/50">
+                        <SelectTrigger className="bg-muted/50 focus:ring-primary/50 w-full">
                           <SelectValue placeholder="Pilih status..." />
                         </SelectTrigger>
                       </FormControl>
@@ -377,9 +391,23 @@ export function EventFormModal({
               name="m_organisasi_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>ID Organisasi <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
-                    <Input type="number" min={1} placeholder="1" {...field} className="bg-muted/50 focus-visible:ring-primary/50" />
+                    <ComboBox
+                      label="Organisasi Pengusul"
+                      selected={
+                        field.value
+                          ? organisasiOptions.find((o: any) => o.id === field.value.toString())
+                          : null
+                      }
+                      onChange={(selectedItem: any) => {
+                        field.onChange(selectedItem ? parseInt(selectedItem.id, 10) : undefined);
+                      }}
+                      data={organisasiOptions}
+                      title="Organisasi"
+                      valueKey="id"
+                      labelKey="nama"
+                      loadingSearch={isOrganisasiLoading}
+                    />
                   </FormControl>
                   <FormMessage className="text-xs" />
                 </FormItem>

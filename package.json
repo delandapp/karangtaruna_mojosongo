@@ -3,10 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "dotenv -e .env.development -- next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "sync:provinsi": "npx dotenv-cli -e .env.development -- npx tsx scripts/SyncProvinsi.ts",
+    "sync:kota": "npx dotenv-cli -e .env.development -- npx tsx scripts/SyncKota.ts",
+    "sync:kecamatan": "npx dotenv-cli -e .env.development -- npx tsx scripts/SyncKecamatan.ts",
+    "sync:kelurahan": "npx dotenv-cli -e .env.development -- npx tsx scripts/SyncKelurahan.ts",
+    "sync:jenjang": "npx dotenv-cli -e .env.development -- npx tsx scripts/SyncJenjang.ts",
+    "sync:sekolah": "npx dotenv-cli -e .env.development -- npx tsx scripts/SyncSekolah.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -18,6 +24,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
+    "dotenv": "^17.3.1",
     "framer-motion": "^12.35.1",
     "ioredis": "^5.10.0",
     "jose": "^6.1.3",

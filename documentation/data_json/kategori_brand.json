@@ -1,0 +1,305 @@
+{
+  "company_categories": [
+    {
+      "id": 1,
+      "category": "Rintisan (Startup)",
+      "description": "Perusahaan baru, fokus pada branding & user acquisition",
+      "examples": [
+        "Aplikasi lokal baru",
+        "Tech startup",
+        "Fintech baru",
+        "E-commerce startup"
+      ],
+      "scale": "local",
+      "sponsorship_potential": "high",
+      "typical_budget_range": {
+        "min": 10000000,
+        "max": 100000000,
+        "currency": "IDR"
+      },
+      "engagement_strategy": "Tawarkan exposure digital & user acquisition metrics",
+      "decision_maker": "Founder/CEO",
+      "approval_timeline": "Fast (1-2 minggu)"
+    },
+    {
+      "id": 2,
+      "category": "UMKM / Bisnis Lokal",
+      "description": "Usaha mikro/kecil di sekitar lokasi event",
+      "examples": [
+        "Kafe lokal",
+        "Toko alat tulis",
+        "Restoran daerah",
+        "Bengkel lokal"
+      ],
+      "scale": "micro",
+      "sponsorship_potential": "medium",
+      "typical_budget_range": {
+        "min": 5000000,
+        "max": 50000000,
+        "currency": "IDR"
+      },
+      "engagement_strategy": "Tawarkan paket affordable dengan ROI jelas untuk lokal",
+      "decision_maker": "Pemilik/Pengusaha",
+      "approval_timeline": "Fast (1 minggu)"
+    },
+    {
+      "id": 3,
+      "category": "Menengah (Mid-Size)",
+      "description": "Perusahaan yang sudah stabil namun masih berkembang secara regional",
+      "examples": [
+        "Distributor regional",
+        "Manufacture lokal",
+        "Retail chain regional"
+      ],
+      "scale": "regional",
+      "sponsorship_potential": "high",
+      "typical_budget_range": {
+        "min": 50000000,
+        "max": 200000000,
+        "currency": "IDR"
+      },
+      "engagement_strategy": "Highlight market expansion & brand awareness regional",
+      "decision_maker": "Marketing Manager/Director",
+      "approval_timeline": "Medium (2-4 minggu)"
+    },
+    {
+      "id": 4,
+      "category": "Perusahaan Nasional",
+      "description": "Perusahaan besar dengan jangkauan seluruh Indonesia",
+      "examples": [
+        "Indofood",
+        "Telkom",
+        "Astra",
+        "Unilever Indonesia",
+        "Mayora"
+      ],
+      "scale": "national",
+      "sponsorship_potential": "very_high",
+      "typical_budget_range": {
+        "min": 200000000,
+        "max": 1000000000,
+        "currency": "IDR"
+      },
+      "engagement_strategy": "Presentasi ROI nasional & alignment dengan brand values",
+      "decision_maker": "Brand Manager/CMO",
+      "approval_timeline": "Long (1-3 bulan)"
+    },
+    {
+      "id": 5,
+      "category": "Multinasional (MNC)",
+      "description": "Perusahaan global yang beroperasi di banyak negara",
+      "examples": [
+        "Coca-Cola",
+        "Google",
+        "Unilever",
+        "Samsung",
+        "Nike",
+        "McDonald's"
+      ],
+      "scale": "global",
+      "sponsorship_potential": "very_high",
+      "typical_budget_range": {
+        "min": 500000000,
+        "max": 5000000000,
+        "currency": "IDR"
+      },
+      "engagement_strategy": "Global brand alignment, ESG goals, & international exposure",
+      "decision_maker": "Regional Director/VP Marketing",
+      "approval_timeline": "Very Long (3-6 bulan)"
+    },
+    {
+      "id": 6,
+      "category": "BUMN / BUMD",
+      "description": "Perusahaan milik negara atau daerah",
+      "examples": [
+        "Pertamina",
+        "Bank Jatim",
+        "PLN",
+        "Garuda Indonesia",
+        "Telkom"
+      ],
+      "scale": "national",
+      "sponsorship_potential": "high",
+      "typical_budget_range": {
+        "min": 100000000,
+        "max": 1000000000,
+        "currency": "IDR"
+      },
+      "engagement_strategy": "Alignment dengan program pemerintah & CSR initiatives",
+      "decision_maker": "Direktur/Head of CSR",
+      "approval_timeline": "Long (2-4 bulan)",
+      "special_requirements": ["Proposal formal", "Surat izin", "LPJ lengkap"]
+    },
+    {
+      "id": 7,
+      "category": "Instansi Pemerintahan",
+      "description": "Lembaga negara atau kedinasan",
+      "examples": ["Kemenparekraf", "Dinas Pendidikan", "Kemenpora", "Pemda"],
+      "scale": "national",
+      "sponsorship_potential": "medium",
+      "typical_budget_range": {
+        "min": 50000000,
+        "max": 500000000,
+        "currency": "IDR"
+      },
+      "engagement_strategy": "Highlight public benefit & community impact",
+      "decision_maker": "Kepala Dinas/Menteri",
+      "approval_timeline": "Very Long (3-6 bulan)",
+      "special_requirements": [
+        "MoU",
+        "Surat resmi",
+        "Laporan pertanggungjawaban"
+      ]
+    },
+    {
+      "id": 8,
+      "category": "LSM / NGO",
+      "description": "Organisasi non-profit atau yayasan internasional",
+      "examples": ["UNICEF", "WWF", "Dompet Dhuafa", "Greenpeace", "Red Cross"],
+      "scale": "global",
+      "sponsorship_potential": "medium",
+      "typical_budget_range": {
+        "min": 25000000,
+        "max": 300000000,
+        "currency": "IDR"
+      },
+      "engagement_strategy": "Focus on social impact & cause marketing partnership",
+      "decision_maker": "Program Director/Executive Director",
+      "approval_timeline": "Medium (1-2 bulan)",
+      "special_requirements": [
+        "Alignment dengan misi organisasi",
+        "Transparansi dana"
+      ]
+    }
+  ],
+  "sponsorship_matrix": {
+    "by_company_scale": {
+      "micro": {
+        "categories": ["UMKM / Bisnis Lokal"],
+        "recommended_tier": "bronze",
+        "approach": "Direct contact, simple proposal"
+      },
+      "local": {
+        "categories": ["Rintisan (Startup)"],
+        "recommended_tier": "bronze_silver",
+        "approach": "Digital-first pitch, metrics-driven"
+      },
+      "regional": {
+        "categories": ["Menengah (Mid-Size)"],
+        "recommended_tier": "silver",
+        "approach": "Regional market data, growth potential"
+      },
+      "national": {
+        "categories": [
+          "Perusahaan Nasional",
+          "BUMN / BUMD",
+          "Instansi Pemerintahan"
+        ],
+        "recommended_tier": "gold_platinum",
+        "approach": "Formal proposal, ROI analysis, compliance"
+      },
+      "global": {
+        "categories": ["Multinasional (MNC)", "LSM / NGO"],
+        "recommended_tier": "platinum",
+        "approach": "Brand alignment, ESG, international standards"
+      }
+    }
+  },
+  "priority_scoring": {
+    "high_priority": [
+      {
+        "category_id": 5,
+        "reason": "Budget besar, brand prestige tinggi",
+        "success_rate": "30-40%"
+      },
+      {
+        "category_id": 4,
+        "reason": "Budget besar, decision lebih cepat dari MNC",
+        "success_rate": "40-50%"
+      },
+      {
+        "category_id": 6,
+        "reason": "Budget stabil, program CSR konsisten",
+        "success_rate": "35-45%"
+      }
+    ],
+    "medium_priority": [
+      {
+        "category_id": 3,
+        "reason": "Growth mindset, budget cukup",
+        "success_rate": "50-60%"
+      },
+      {
+        "category_id": 1,
+        "reason": "Fast decision, butuh exposure",
+        "success_rate": "60-70%"
+      }
+    ],
+    "low_priority": [
+      {
+        "category_id": 2,
+        "reason": "Budget terbatas",
+        "success_rate": "40-50%"
+      },
+      {
+        "category_id": 7,
+        "reason": "Proses birokrasi panjang",
+        "success_rate": "20-30%"
+      },
+      {
+        "category_id": 8,
+        "reason": "Budget terbatas, fokus pada cause",
+        "success_rate": "30-40%"
+      }
+    ]
+  },
+  "engagement_tips": {
+    "startup": [
+      "Tawarkan equity-free exposure",
+      "Highlight user acquisition metrics",
+      "Flexible payment terms"
+    ],
+    "umkm": [
+      "Paket bundling dengan F&B vendor",
+      "Booth di lokasi strategis",
+      "Direct sales opportunity"
+    ],
+    "mid_size": [
+      "Regional market penetration data",
+      "Competitor analysis",
+      "Long-term partnership offer"
+    ],
+    "national": [
+      "National media coverage",
+      "Brand safety assurance",
+      "Detailed ROI projection"
+    ],
+    "mnc": [
+      "Global brand guidelines compliance",
+      "ESG & sustainability alignment",
+      "International PR opportunities"
+    ],
+    "bumn": [
+      "Program pemerintah alignment",
+      "CSR & community impact",
+      "Complete documentation"
+    ],
+    "government": [
+      "Public benefit emphasis",
+      "Transparency & accountability",
+      "Official MoU required"
+    ],
+    "ngo": [
+      "Cause marketing synergy",
+      "Social impact metrics",
+      "Joint campaign opportunities"
+    ]
+  },
+  "metadata": {
+    "total_categories": 8,
+    "last_updated": "2026-03-10",
+    "version": "1.0",
+    "purpose": "Company categorization for sponsorship targeting",
+    "related_data": "industry_categories.json"
+  }
+}

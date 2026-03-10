@@ -1,0 +1,52 @@
+// =============================================================================
+// ENUM — digunakan PostgreSQL native, lebih cepat dari String untuk filter/index
+// =============================================================================
+
+enum TierSponsor {
+    platinum
+    gold
+    silver
+    bronze
+    inkind
+
+    @@map("tier_sponsor")
+}
+
+enum JenisKontribusi {
+    uang
+    barang
+    jasa
+    campuran
+
+    @@map("jenis_kontribusi")
+}
+
+enum StatusPipeline {
+    prospek
+    dihubungi
+    negosiasi
+    dikonfirmasi
+    lunas
+    selesai
+    batal
+
+    @@map("status_pipeline")
+}
+
+enum ResponsProposal {
+    diterima
+    ditolak
+    negosiasi
+    menunggu
+
+    @@map("respons_proposal")
+}
+
+enum TierProposal {
+    platinum
+    gold
+    silver
+    bronze
+
+    @@map("tier_proposal")
+}

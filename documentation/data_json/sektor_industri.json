@@ -1,0 +1,523 @@
+{
+  "seed_data": {
+    "m_sektor_industri": [
+      {
+        "id": 1,
+        "nama_sektor": "Pertanian & Perkebunan",
+        "deskripsi_sektor": "Budidaya tanaman pangan, hortikultura, perkebunan kelapa sawit, karet, kopi, teh, dan komoditas pertanian lainnya"
+      },
+      {
+        "id": 2,
+        "nama_sektor": "Peternakan & Perikanan",
+        "deskripsi_sektor": "Usaha peternakan hewan, unggas, budidaya ikan air tawar, air payau, dan laut termasuk akuakultur"
+      },
+      {
+        "id": 3,
+        "nama_sektor": "Kehutanan",
+        "deskripsi_sektor": "Pengelolaan hutan, hasil hutan kayu dan non-kayu, serta jasa lingkungan kehutanan"
+      },
+      {
+        "id": 4,
+        "nama_sektor": "Pertambangan & Quarry",
+        "deskripsi_sektor": "Eksplorasi dan eksploitasi batubara, minyak bumi, gas alam, mineral logam, dan bahan galian"
+      },
+      {
+        "id": 5,
+        "nama_sektor": "Migas (Minyak & Gas)",
+        "deskripsi_sektor": "Industri hulu dan hilir minyak bumi serta gas alam termasuk kilang dan distribusi"
+      },
+      {
+        "id": 6,
+        "nama_sektor": "Industri Makanan & Minuman",
+        "deskripsi_sektor": "Produksi makanan olahan, minuman ringan, alkohol, susu, roti, dan produk pangan konsumen"
+      },
+      {
+        "id": 7,
+        "nama_sektor": "Industri Tekstil & Garmen",
+        "deskripsi_sektor": "Pemintalan serat, penenunan, pembuatan kain, pakaian jadi, dan aksesori fashion"
+      },
+      {
+        "id": 8,
+        "nama_sektor": "Industri Kulit & Alas Kaki",
+        "deskripsi_sektor": "Penyamakan kulit, pembuatan sepatu, tas, jaket, dan produk kulit lainnya"
+      },
+      {
+        "id": 9,
+        "nama_sektor": "Industri Kayu & Rotan",
+        "deskripsi_sektor": "Penggergajian kayu, furniture, kerajinan rotan, dan produk olahan kayu"
+      },
+      {
+        "id": 10,
+        "nama_sektor": "Industri Kertas & Percetakan",
+        "deskripsi_sektor": "Pulp, kertas, karton, percetakan buku, koran, kemasan, dan media cetak"
+      },
+      {
+        "id": 11,
+        "nama_sektor": "Industri Kimia & Farmasi",
+        "deskripsi_sektor": "Bahan kimia dasar, obat-obatan, kosmetik, sabun, deterjen, dan produk kimia konsumen"
+      },
+      {
+        "id": 12,
+        "nama_sektor": "Industri Karet & Plastik",
+        "deskripsi_sektor": "Ban, produk karet teknis, kemasan plastik, pipa, dan komponen polimer"
+      },
+      {
+        "id": 13,
+        "nama_sektor": "Industri Semen & Beton",
+        "deskripsi_sektor": "Produksi semen, beton ready mix, precast, dan material konstruksi berbasis semen"
+      },
+      {
+        "id": 14,
+        "nama_sektor": "Industri Logam Dasar",
+        "deskripsi_sektor": "Peletakan bijih besi, baja, aluminium, tembaga, dan logam non-ferrous lainnya"
+      },
+      {
+        "id": 15,
+        "nama_sektor": "Industri Mesin & Peralatan",
+        "deskripsi_sektor": "Mesin industri, peralatan pertanian, konstruksi, dan mesin khusus manufaktur"
+      },
+      {
+        "id": 16,
+        "nama_sektor": "Industri Otomotif",
+        "deskripsi_sektor": "Manufaktur mobil, sepeda motor, komponen kendaraan, dan industri pendukung otomotif"
+      },
+      {
+        "id": 17,
+        "nama_sektor": "Industri Elektronika",
+        "deskripsi_sektor": "Peralatan elektronik konsumen, komponen elektronik, dan perangkat listrik rumah tangga"
+      },
+      {
+        "id": 18,
+        "nama_sektor": "Industri Kapal & Maritim",
+        "deskripsi_sektor": "Pembangunan kapal, perbaikan kapal, industri galangan, dan peralatan maritim"
+      },
+      {
+        "id": 19,
+        "nama_sektor": "Industri Dirgantara",
+        "deskripsi_sektor": "Pesawat terbang, komponen aerospace, MRO, dan industri pertahanan udara"
+      },
+      {
+        "id": 20,
+        "nama_sektor": "Konstruksi & Infrastruktur",
+        "deskripsi_sektor": "Kontraktor bangunan, jalan, jembatan, tol, bandara, pelabuhan, dan infrastruktur publik"
+      },
+      {
+        "id": 21,
+        "nama_sektor": "Properti & Real Estate",
+        "deskripsi_sektor": "Developer perumahan, apartemen, gedung komersial, kawasan industri, dan manajemen properti"
+      },
+      {
+        "id": 22,
+        "nama_sektor": "Perbankan Konvensional",
+        "deskripsi_sektor": "Bank umum swasta nasional, bank pemerintah, dan bank daerah konvensional"
+      },
+      {
+        "id": 23,
+        "nama_sektor": "Perbankan Syariah",
+        "deskripsi_sektor": "Bank umum syariah, unit usaha syariah, dan bank pembiayaan syariah"
+      },
+      {
+        "id": 24,
+        "nama_sektor": "Lembaga Keuangan Non-Bank",
+        "deskripsi_sektor": "Multifinance, leasing, pegadaian, modal ventura, dan lembaga pembiayaan"
+      },
+      {
+        "id": 25,
+        "nama_sektor": "Asuransi & Reasuransi",
+        "deskripsi_sektor": "Asuransi jiwa, kesehatan, umum, syariah, dan perusahaan reasuransi"
+      },
+      {
+        "id": 26,
+        "nama_sektor": "Pasar Modal & Investasi",
+        "deskripsi_sektor": "Sekuritas, reksadana, manajer investasi, bursa efek, dan perdagangan saham"
+      },
+      {
+        "id": 27,
+        "nama_sektor": "Fintech & Pembayaran Digital",
+        "deskripsi_sektor": "E-wallet, payment gateway, P2P lending, crowdfunding, dan layanan finansial digital"
+      },
+      {
+        "id": 28,
+        "nama_sektor": "Telekomunikasi",
+        "deskripsi_sektor": "Operator seluler, fixed line, internet service provider, dan infrastruktur telekomunikasi"
+      },
+      {
+        "id": 29,
+        "nama_sektor": "Teknologi Informasi",
+        "deskripsi_sektor": "Software house, IT consulting, sistem integrator, cloud services, dan cybersecurity"
+      },
+      {
+        "id": 30,
+        "nama_sektor": "E-Commerce & Retail Digital",
+        "deskripsi_sektor": "Marketplace, online store, social commerce, dan platform belanja daring"
+      },
+      {
+        "id": 31,
+        "nama_sektor": "Retail Tradisional & Modern",
+        "deskripsi_sektor": "Pasar tradisional, minimarket, supermarket, hypermarket, dan department store"
+      },
+      {
+        "id": 32,
+        "nama_sektor": "Grosir & Distribusi",
+        "deskripsi_sektor": "Distributor produk FMCG, grosir, supply chain, dan perdagangan besar"
+      },
+      {
+        "id": 33,
+        "nama_sektor": "Transportasi Darat",
+        "deskripsi_sektor": "Angkutan bus, truk, taksi, ride-hailing, logistik, dan jasa pengiriman darat"
+      },
+      {
+        "id": 34,
+        "nama_sektor": "Transportasi Laut",
+        "deskripsi_sektor": "Pelayaran, shipping line, pelabuhan, jasa kepelabuhanan, dan angkutan laut"
+      },
+      {
+        "id": 35,
+        "nama_sektor": "Transportasi Udara",
+        "deskripsi_sektor": "Maskapai penerbangan, bandara, ground handling, dan jasa penerbangan"
+      },
+      {
+        "id": 36,
+        "nama_sektor": "Logistik & Supply Chain",
+        "deskripsi_sektor": "Gudang, cold storage, freight forwarding, kurir, ekspedisi, dan manajemen rantai pasok"
+      },
+      {
+        "id": 37,
+        "nama_sektor": "Perhotelan & Akomodasi",
+        "deskripsi_sektor": "Hotel, resort, homestay, hostel, apartemen servis, dan layanan akomodasi"
+      },
+      {
+        "id": 38,
+        "nama_sektor": "Restoran & Kuliner",
+        "deskripsi_sektor": "Restoran, cafe, fast food, catering, food court, dan layanan makanan"
+      },
+      {
+        "id": 39,
+        "nama_sektor": "Travel & Pariwisata",
+        "deskripsi_sektor": "Agen travel, tour operator, OTA, destinasi wisata, dan jasa pariwisata"
+      },
+      {
+        "id": 40,
+        "nama_sektor": "Kesehatan & Rumah Sakit",
+        "deskripsi_sektor": "Rumah sakit, klinik, puskesmas, laboratorium, dan fasilitas kesehatan"
+      },
+      {
+        "id": 41,
+        "nama_sektor": "Farmasi & Apotek",
+        "deskripsi_sektor": "Produksi obat, distribusi farmasi, apotek, dan toko obat"
+      },
+      {
+        "id": 42,
+        "nama_sektor": "Alat Kesehatan",
+        "deskripsi_sektor": "Produksi dan distribusi alat medis, diagnostik, dan peralatan kesehatan"
+      },
+      {
+        "id": 43,
+        "nama_sektor": "Pendidikan Formal",
+        "deskripsi_sektor": "Sekolah dasar, menengah, universitas, akademi, dan institusi pendidikan formal"
+      },
+      {
+        "id": 44,
+        "nama_sektor": "Pendidikan Non-Formal",
+        "deskripsi_sektor": "Kursus, pelatihan, bimbingan belajar, bootcamp, dan pendidikan keterampilan"
+      },
+      {
+        "id": 45,
+        "nama_sektor": "Edu-Tech",
+        "deskripsi_sektor": "Platform pembelajaran online, LMS, aplikasi edukasi, dan teknologi pendidikan"
+      },
+      {
+        "id": 46,
+        "nama_sektor": "Media Cetak",
+        "deskripsi_sektor": "Surat kabar, majalah, tabloid, buletin, dan penerbitan media cetak"
+      },
+      {
+        "id": 47,
+        "nama_sektor": "Media Elektronik",
+        "deskripsi_sektor": "Stasiun TV, radio, broadcasting, dan media penyiaran elektronik"
+      },
+      {
+        "id": 48,
+        "nama_sektor": "Media Digital",
+        "deskripsi_sektor": "Portal berita online, media sosial, content platform, dan media digital"
+      },
+      {
+        "id": 49,
+        "nama_sektor": "Produksi Film & Konten",
+        "deskripsi_sektor": "Rumah produksi, studio film, produksi video, animasi, dan konten kreatif"
+      },
+      {
+        "id": 50,
+        "nama_sektor": "Musik & Entertainment",
+        "deskripsi_sektor": "Label musik, produksi musik, konser, festival, dan industri hiburan musik"
+      },
+      {
+        "id": 51,
+        "nama_sektor": "Gaming & Esports",
+        "deskripsi_sektor": "Game developer, publisher, platform gaming, tim esports, dan turnamen"
+      },
+      {
+        "id": 52,
+        "nama_sektor": "Olahraga Profesional",
+        "deskripsi_sektor": "Liga olahraga, klub profesional, event olahraga, dan manajemen atlet"
+      },
+      {
+        "id": 53,
+        "nama_sektor": "Fitness & Wellness",
+        "deskripsi_sektor": "Gym, pusat kebugaran, yoga, spa, dan layanan kesehatan kebugaran"
+      },
+      {
+        "id": 54,
+        "nama_sektor": "Kecantikan & Kosmetik",
+        "deskripsi_sektor": "Produksi kosmetik, skincare, salon, klinik kecantikan, dan produk perawatan"
+      },
+      {
+        "id": 55,
+        "nama_sektor": "Fashion & Apparel",
+        "deskripsi_sektor": "Desainer, brand pakaian, footwear, aksesoris, dan industri mode"
+      },
+      {
+        "id": 56,
+        "nama_sektor": "Furniture & Home Decor",
+        "deskripsi_sektor": "Furniture rumah, kantor, dekorasi interior, dan perlengkapan rumah tangga"
+      },
+      {
+        "id": 57,
+        "nama_sektor": "Energi & Ketenagalistrikan",
+        "deskripsi_sektor": "Pembangkit listrik, distribusi listrik, energi terbarukan, dan utilitas energi"
+      },
+      {
+        "id": 58,
+        "nama_sektor": "Air & Sanitasi",
+        "deskripsi_sektor": "Penyediaan air bersih, pengolahan air, sanitasi, dan pengelolaan limbah cair"
+      },
+      {
+        "id": 59,
+        "nama_sektor": "Pengelolaan Sampah",
+        "deskripsi_sektor": "Pengumpulan sampah, recycling, waste-to-energy, dan manajemen limbah padat"
+      },
+      {
+        "id": 60,
+        "nama_sektor": "Lingkungan & Konservasi",
+        "deskripsi_sektor": "Konservasi alam, reboisasi, pengelolaan lingkungan, dan jasa lingkungan"
+      },
+      {
+        "id": 61,
+        "nama_sektor": "Kementerian & Lembaga",
+        "deskripsi_sektor": "Kementerian, lembaga pemerintah non-kementerian, dan badan negara"
+      },
+      {
+        "id": 62,
+        "nama_sektor": "Pemerintah Daerah",
+        "deskripsi_sektor": "Provinsi, kabupaten, kota, dinas daerah, dan instansi pemerintah lokal"
+      },
+      {
+        "id": 63,
+        "nama_sektor": "BUMN",
+        "deskripsi_sektor": "Badan Usaha Milik Negara di berbagai sektor industri dan jasa"
+      },
+      {
+        "id": 64,
+        "nama_sektor": "BUMD",
+        "deskripsi_sektor": "Badan Usaha Milik Daerah milik pemerintah provinsi/kabupaten/kota"
+      },
+      {
+        "id": 65,
+        "nama_sektor": "LSM Nasional",
+        "deskripsi_sektor": "Lembaga swadaya masyarakat, yayasan, dan organisasi non-profit domestik"
+      },
+      {
+        "id": 66,
+        "nama_sektor": "LSM Internasional",
+        "deskripsi_sektor": "Organisasi non-profit internasional, foundation, dan lembaga amal global"
+      },
+      {
+        "id": 67,
+        "nama_sektor": "Organisasi Keagamaan",
+        "deskripsi_sektor": "Majelis agama, yayasan keagamaan, pesantren, dan organisasi berbasis faith"
+      },
+      {
+        "id": 68,
+        "nama_sektor": "Serikat Pekerja",
+        "deskripsi_sektor": "Serikat buruh, asosiasi pekerja, dan organisasi ketenagakerjaan"
+      },
+      {
+        "id": 69,
+        "nama_sektor": "Asosiasi Industri",
+        "deskripsi_sektor": "Kadin, asosiasi sektoral, chamber of commerce, dan organisasi industri"
+      },
+      {
+        "id": 70,
+        "nama_sektor": "Koperasi",
+        "deskripsi_sektor": "Koperasi simpan pinjam, koperasi konsumen, produsen, dan serba usaha"
+      },
+      {
+        "id": 71,
+        "nama_sektor": "Startup Teknologi",
+        "deskripsi_sektor": "Perusahaan rintisan berbasis teknologi, digital platform, dan inovasi tech"
+      },
+      {
+        "id": 72,
+        "nama_sektor": "Startup Non-Teknologi",
+        "deskripsi_sektor": "Perusahaan rintisan di sektor tradisional dengan model bisnis inovatif"
+      },
+      {
+        "id": 73,
+        "nama_sektor": "Inkubator & Akselerator",
+        "deskripsi_sektor": "Program inkubasi bisnis, akselerator startup, dan venture builder"
+      },
+      {
+        "id": 74,
+        "nama_sektor": "Venture Capital",
+        "deskripsi_sektor": "Perusahaan modal ventura, investor institusional, dan fund management"
+      },
+      {
+        "id": 75,
+        "nama_sektor": "Private Equity",
+        "deskripsi_sektor": "Investasi ekuitas swasta, buyout fund, dan growth capital"
+      },
+      {
+        "id": 76,
+        "nama_sektor": "Konsultan Manajemen",
+        "deskripsi_sektor": "Konsultasi strategi, operasional, transformasi bisnis, dan advisory"
+      },
+      {
+        "id": 77,
+        "nama_sektor": "Konsultan Hukum",
+        "deskripsi_sektor": "Kantor pengacara, firma hukum, legal consulting, dan jasa hukum"
+      },
+      {
+        "id": 78,
+        "nama_sektor": "Konsultan Pajak & Akuntansi",
+        "deskripsi_sektor": "Akuntan publik, konsultan pajak, audit, dan jasa akuntansi"
+      },
+      {
+        "id": 79,
+        "nama_sektor": "Konsultan HR & Rekrutmen",
+        "deskripsi_sektor": "Headhunter, recruitment agency, HR consulting, dan talent management"
+      },
+      {
+        "id": 80,
+        "nama_sektor": "Marketing & Advertising",
+        "deskripsi_sektor": "Agen iklan, digital marketing, creative agency, dan komunikasi pemasaran"
+      },
+      {
+        "id": 81,
+        "nama_sektor": "Event Organizer",
+        "deskripsi_sektor": "Penyelenggara event, pameran, konferensi, wedding organizer, dan MICE"
+      },
+      {
+        "id": 82,
+        "nama_sektor": "Public Relations",
+        "deskripsi_sektor": "Humas, corporate communication, media relations, dan crisis management"
+      },
+      {
+        "id": 83,
+        "nama_sektor": "Research & Survey",
+        "deskripsi_sektor": "Lembaga riset, surveyor, market research, dan data analytics"
+      },
+      {
+        "id": 84,
+        "nama_sektor": "Laboratorium & Testing",
+        "deskripsi_sektor": "Lab pengujian, sertifikasi, kalibrasi, dan quality control"
+      },
+      {
+        "id": 85,
+        "nama_sektor": "Keamanan & Safety",
+        "deskripsi_sektor": "Security service, safety consultant, fire protection, dan loss prevention"
+      },
+      {
+        "id": 86,
+        "nama_sektor": "Cleaning Service",
+        "deskripsi_sektor": "Jasa kebersihan, pest control, facility management, dan housekeeping"
+      },
+      {
+        "id": 87,
+        "nama_sektor": "Catering & Food Service",
+        "deskripsi_sektor": "Jasa boga, catering korporat, meal prep, dan layanan makanan institusi"
+      },
+      {
+        "id": 88,
+        "nama_sektor": "Laundry & Dry Cleaning",
+        "deskripsi_sektor": "Jasa cuci pakaian, dry cleaning, laundry kiloan, dan linen service"
+      },
+      {
+        "id": 89,
+        "nama_sektor": "Otomotif & Bengkel",
+        "deskripsi_sektor": "Bengkel resmi, bengkel umum, sparepart, detailing, dan servis kendaraan"
+      },
+      {
+        "id": 90,
+        "nama_sektor": "Dealer & Showroom",
+        "deskripsi_sektor": "Penjualan mobil, motor, alat berat, dan showroom kendaraan baru/bekas"
+      },
+      {
+        "id": 91,
+        "nama_sektor": "Sewa & Rental",
+        "deskripsi_sektor": "Rental mobil, alat berat, equipment, properti, dan jasa penyewaan"
+      },
+      {
+        "id": 92,
+        "nama_sektor": "E-commerce Enabler",
+        "deskripsi_sektor": "3PL, fulfillment, e-commerce consultant, dan layanan pendukung online selling"
+      },
+      {
+        "id": 93,
+        "nama_sektor": "Social Media & Influencer",
+        "deskripsi_sektor": "Content creator, influencer agency, social media management, dan KOL"
+      },
+      {
+        "id": 94,
+        "nama_sektor": "Streaming & OTT",
+        "deskripsi_sektor": "Platform streaming video, musik, audio, dan over-the-top media services"
+      },
+      {
+        "id": 95,
+        "nama_sektor": "Blockchain & Crypto",
+        "deskripsi_sektor": "Cryptocurrency exchange, blockchain development, Web3, dan aset digital"
+      },
+      {
+        "id": 96,
+        "nama_sektor": "AI & Data Science",
+        "deskripsi_sektor": "Artificial intelligence, machine learning, big data, dan analytics solutions"
+      },
+      {
+        "id": 97,
+        "nama_sektor": "IoT & Smart Devices",
+        "deskripsi_sektor": "Internet of Things, smart home, connected devices, dan sensor technology"
+      },
+      {
+        "id": 98,
+        "nama_sektor": "Renewable Energy",
+        "deskripsi_sektor": "Energi surya, angin, biomassa, hidro, dan energi terbarukan lainnya"
+      },
+      {
+        "id": 99,
+        "nama_sektor": "Electric Vehicle",
+        "deskripsi_sektor": "Kendaraan listrik, baterai, charging station, dan ekosistem EV"
+      },
+      {
+        "id": 100,
+        "nama_sektor": "Lainnya",
+        "deskripsi_sektor": "Sektor industri yang tidak termasuk dalam kategori di atas atau sektor emerging baru"
+      }
+    ]
+  },
+  "metadata": {
+    "total_sectors": 100,
+    "country": "Indonesia",
+    "language": "id",
+    "version": "1.0",
+    "last_updated": "2026-03-10",
+    "compatible_with": "m_sektor_industri Prisma model",
+    "notes": [
+      "Data mencakup sektor tradisional dan emerging industry",
+      "ID 100 reserved untuk kategori Lainnya/Uncategorized",
+      "Dapat diperluas sesuai kebutuhan bisnis",
+      "Sektor dapat memiliki sub-sektor di tabel terpisah jika diperlukan"
+    ]
+  },
+  "seed_script_example": {
+    "typescript_prisma": "// Example seed script using Prisma\nimport { PrismaClient } from '@prisma/client'\nimport sectorsData from './sectors.json'\n\nconst prisma = new PrismaClient()\n\nasync function main() {\n  for (const sector of sectorsData.seed_data.m_sektor_industri) {\n    await prisma.m_sektor_industri.upsert({\n      where: { nama_sektor: sector.nama_sektor },\n      update: {},\n      create: sector,\n    })\n  }\n  console.log('✅ Seeded m_sektor_industri successfully')\n}\n\nmain()\n  .catch((e) => {\n    console.error(e)\n    process.exit(1)\n  })\n  .finally(async () => {\n    await prisma.$disconnect()\n  })"
+  }
+}

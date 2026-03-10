@@ -1,0 +1,478 @@
+{
+  "sponsorship_categories": [
+    {
+      "id": 1,
+      "category": "Minuman Isotonik & Energi",
+      "description": "Minuman penambah ion/stamina",
+      "examples": [
+        "Extra Joss",
+        "Pocari Sweat",
+        "Kratingdaeng",
+        "Red Bull",
+        "Hemaviton",
+        "Larutan Penyegar"
+      ],
+      "sponsorship_tier": "platinum"
+    },
+    {
+      "id": 2,
+      "category": "Air Minum Dalam Kemasan",
+      "description": "Air mineral botol/galon",
+      "examples": ["Aqua", "Le Minerale", "Cleo", "VIT", "Club", "Pristine"],
+      "sponsorship_tier": "gold"
+    },
+    {
+      "id": 3,
+      "category": "Kopi & Teh Kemasan",
+      "description": "Kopi siap minum, teh botol, minuman manis",
+      "examples": [
+        "Teh Botol Sosro",
+        "Nescafe",
+        "Kopi Kenangan",
+        "Kopiko 78",
+        "Torabika",
+        "Good Day"
+      ],
+      "sponsorship_tier": "gold"
+    },
+    {
+      "id": 4,
+      "category": "Makanan Ringan (Snack)",
+      "description": "Biskuit, keripik, cokelat, permen",
+      "examples": [
+        "Chitato",
+        "Silverqueen",
+        "Taro",
+        "Roma",
+        "Oreo",
+        "Beng-Beng"
+      ],
+      "sponsorship_tier": "silver"
+    },
+    {
+      "id": 5,
+      "category": "Telekomunikasi & Provider",
+      "description": "Penyedia jaringan seluler & internet",
+      "examples": ["Telkomsel", "Indosat", "XL", "Biznet", "Indihome", "Tri"],
+      "sponsorship_tier": "platinum"
+    },
+    {
+      "id": 6,
+      "category": "Perbankan & Keuangan",
+      "description": "Bank konvensional, bank syariah, lembaga kredit",
+      "examples": [
+        "BCA",
+        "Bank Mandiri",
+        "BNI",
+        "BRI",
+        "CIMB Niaga",
+        "Danamon"
+      ],
+      "sponsorship_tier": "platinum"
+    },
+    {
+      "id": 7,
+      "category": "Dompet Digital (E-Wallet)",
+      "description": "Layanan pembayaran cashless",
+      "examples": ["GoPay", "OVO", "DANA", "ShopeePay", "LinkAja", "Flip"],
+      "sponsorship_tier": "gold"
+    },
+    {
+      "id": 8,
+      "category": "E-Commerce & Startup",
+      "description": "Platform belanja online atau layanan digital",
+      "examples": [
+        "Tokopedia",
+        "Shopee",
+        "Blibli",
+        "Tiket.com",
+        "Lazada",
+        "Bukalapak"
+      ],
+      "sponsorship_tier": "platinum"
+    },
+    {
+      "id": 9,
+      "category": "Transportasi & Logistik",
+      "description": "Aplikasi ride-hailing dan jasa pengiriman/ekspedisi",
+      "examples": ["Gojek", "Grab", "JNE", "J&T", "SiCepat", "Anteraja"],
+      "sponsorship_tier": "gold"
+    },
+    {
+      "id": 10,
+      "category": "Otomotif & Aksesoris",
+      "description": "Merek motor/mobil, oli, helm, suku cadang",
+      "examples": [
+        "Honda",
+        "Yamaha",
+        "Pertamina Enduro",
+        "KYT",
+        "Toyota",
+        "Daihatsu"
+      ],
+      "sponsorship_tier": "platinum"
+    },
+    {
+      "id": 11,
+      "category": "Perawatan Diri & Kecantikan",
+      "description": "Skincare, kosmetik, sabun, parfum",
+      "examples": [
+        "Wardah",
+        "Kahf",
+        "MS Glow",
+        "Rexona",
+        "Somethinc",
+        "Scarlett"
+      ],
+      "sponsorship_tier": "gold"
+    },
+    {
+      "id": 12,
+      "category": "Kesehatan & Farmasi",
+      "description": "Suplemen, obat herbal, vitamin, rumah sakit/klinik",
+      "examples": [
+        "Tolak Angin",
+        "Antangin",
+        "Imboost",
+        "Halodoc",
+        "Kimia Farma",
+        "Kalbe"
+      ],
+      "sponsorship_tier": "gold"
+    },
+    {
+      "id": 13,
+      "category": "Fashion & Apparel",
+      "description": "Pakaian, sepatu, tas, perlengkapan outdoor",
+      "examples": ["Eiger", "Erigo", "Specs", "Aerostreet", "Uniqlo", "H&M"],
+      "sponsorship_tier": "silver"
+    },
+    {
+      "id": 14,
+      "category": "Pendidikan & Edu-Tech",
+      "description": "Universitas, lembaga kursus, aplikasi belajar",
+      "examples": [
+        "Ruangguru",
+        "English First",
+        "Universitas Lokal",
+        "Zenius",
+        "Pahamify",
+        "CoLearn"
+      ],
+      "sponsorship_tier": "silver"
+    },
+    {
+      "id": 15,
+      "category": "Media & Broadcasting",
+      "description": "Portal berita, stasiun TV, radio",
+      "examples": ["Prambors", "Narasi", "Kompas", "Detik", "Trans TV", "RCTI"],
+      "sponsorship_tier": "gold"
+    },
+    {
+      "id": 16,
+      "category": "Rokok",
+      "description": "Produk tembakau",
+      "examples": [
+        "Jarum Super",
+        "Gudang Garam",
+        "Djarum",
+        "Sampoerna",
+        "Bentoel",
+        "Wismilak"
+      ],
+      "sponsorship_tier": "platinum"
+    },
+    {
+      "id": 17,
+      "category": "Instansi Pemerintah / BUMN",
+      "description": "Kementerian, Dinas daerah, BUMN non-komersial",
+      "examples": [
+        "PLN",
+        "Pertamina",
+        "Dinas Pariwisata",
+        "Kemenparekraf",
+        "Telkom",
+        "Garuda Indonesia"
+      ],
+      "sponsorship_tier": "platinum"
+    },
+    {
+      "id": 18,
+      "category": "Makanan & Restoran (F&B)",
+      "description": "Restoran, fast food, catering, food delivery",
+      "examples": [
+        "McDonald's",
+        "KFC",
+        "Indomie",
+        "Pizza Hut",
+        "Starbucks",
+        "Chatime"
+      ],
+      "sponsorship_tier": "gold"
+    },
+    {
+      "id": 19,
+      "category": "Teknologi & Software",
+      "description": "Software house, IT services, cloud services",
+      "examples": ["Google", "Microsoft", "Apple", "Samsung", "Xiaomi", "OPPO"],
+      "sponsorship_tier": "platinum"
+    },
+    {
+      "id": 20,
+      "category": "Properti & Real Estate",
+      "description": "Developer perumahan, apartemen, properti komersial",
+      "examples": [
+        "Agung Podomoro",
+        "Ciputra",
+        "Sinar Mas Land",
+        "Pondok Indah",
+        "Summarecon",
+        "BSI"
+      ],
+      "sponsorship_tier": "platinum"
+    },
+    {
+      "id": 21,
+      "category": "Travel & Pariwisata",
+      "description": "Agen travel, hotel, resort, destinasi wisata",
+      "examples": [
+        "Traveloka",
+        "Pegipegi",
+        "Airbnb",
+        "Marriott",
+        "Hotel Indonesia",
+        "Dufan"
+      ],
+      "sponsorship_tier": "gold"
+    },
+    {
+      "id": 22,
+      "category": "Gaming & Esports",
+      "description": "Game developer, platform gaming, tim esports",
+      "examples": [
+        "Mobile Legends",
+        "Free Fire",
+        "RRQ",
+        "EVOS",
+        "Steam",
+        "PlayStation"
+      ],
+      "sponsorship_tier": "gold"
+    },
+    {
+      "id": 23,
+      "category": "Olahraga & Fitness",
+      "description": "Gym, peralatan olahraga, event olahraga",
+      "examples": [
+        "Nike",
+        "Adidas",
+        "Decathlon",
+        "Celebrity Fitness",
+        "Anytime Fitness",
+        "Liga Indonesia"
+      ],
+      "sponsorship_tier": "platinum"
+    },
+    {
+      "id": 24,
+      "category": "Hiburan & Entertainment",
+      "description": "Event organizer, konser, festival, bioskop",
+      "examples": [
+        "Dyandra",
+        "Promotor Musik",
+        "CGV",
+        "XXI",
+        "We Are One",
+        "Java Jazz"
+      ],
+      "sponsorship_tier": "gold"
+    },
+    {
+      "id": 25,
+      "category": "Non-Profit & NGO",
+      "description": "Organisasi sosial, yayasan, lembaga amal",
+      "examples": [
+        "Dompet Dhuafa",
+        "Rumah Zakat",
+        "UNICEF",
+        "Greenpeace",
+        "WWF",
+        "Kitabisa"
+      ],
+      "sponsorship_tier": "silver"
+    },
+    {
+      "id": 26,
+      "category": "Asuransi",
+      "description": "Perusahaan asuransi jiwa, kesehatan, umum",
+      "examples": [
+        "Prudential",
+        "Allianz",
+        "AXA",
+        "Manulife",
+        "Astra Life",
+        "BRI Life"
+      ],
+      "sponsorship_tier": "gold"
+    },
+    {
+      "id": 27,
+      "category": "Energi & Utilitas",
+      "description": "Listrik, gas, energi terbarukan",
+      "examples": [
+        "PLN",
+        "Pertamina Gas",
+        "Sun Energy",
+        "Star Energy",
+        "Medco",
+        "Adaro"
+      ],
+      "sponsorship_tier": "platinum"
+    },
+    {
+      "id": 28,
+      "category": "Home & Living",
+      "description": "Furniture, peralatan rumah tangga, dekorasi",
+      "examples": [
+        "IKEA",
+        "Informa",
+        "Ace Hardware",
+        "Depo Bangunan",
+        "Krisbow",
+        "Indohome"
+      ],
+      "sponsorship_tier": "silver"
+    },
+    {
+      "id": 29,
+      "category": "Pet Care",
+      "description": "Makanan hewan, klinik hewan, aksesori pet",
+      "examples": [
+        "Royal Canin",
+        "Whiskas",
+        "Pet Kingdom",
+        "Hartz",
+        "Pro Plan",
+        "Me-O"
+      ],
+      "sponsorship_tier": "bronze"
+    },
+    {
+      "id": 30,
+      "category": "Pertanian & Perkebunan",
+      "description": "Agribisnis, pupuk, alat pertanian",
+      "examples": [
+        "Sang Hyang Seri",
+        "Pertamina Patra Niaga",
+        "Syngenta",
+        "Bayer",
+        "Corteva",
+        "East West Seed"
+      ],
+      "sponsorship_tier": "silver"
+    },
+    {
+      "id": 31,
+      "category": "Logistik & Supply Chain",
+      "description": "Gudang, distribusi, cold chain",
+      "examples": ["DHL", "FedEx", "UPS", "Waresix", "Kargo Tech", "Deliveree"],
+      "sponsorship_tier": "gold"
+    },
+    {
+      "id": 32,
+      "category": "Konten Kreator & Influencer",
+      "description": "YouTuber, TikToker, content creator agency",
+      "examples": [
+        "Raditya Dika",
+        "Jess No Limit",
+        "Tahilalats",
+        "Gita Savitri",
+        "Deddy Corbuzier",
+        "Atta Halilintar"
+      ],
+      "sponsorship_tier": "gold"
+    },
+    {
+      "id": 33,
+      "category": "Event & Conference",
+      "description": "Penyelenggara event, pameran, konferensi",
+      "examples": [
+        "Indonesia Convention Exhibition",
+        "Jakarta EEWS",
+        "GIIAS",
+        "IIMS",
+        "Pameran Indonesia"
+      ],
+      "sponsorship_tier": "silver"
+    },
+    {
+      "id": 34,
+      "category": "Elektronik Konsumen",
+      "description": "Gadget, elektronik rumah, aksesoris",
+      "examples": [
+        "Samsung",
+        "LG",
+        "Polytron",
+        "Sharp",
+        "Panasonic",
+        "Philips"
+      ],
+      "sponsorship_tier": "gold"
+    },
+    {
+      "id": 35,
+      "category": "Streaming & Digital Content",
+      "description": "Platform streaming video, musik, podcast",
+      "examples": ["Netflix", "Spotify", "Disney+", "Vidio", "Vision+", "Joox"],
+      "sponsorship_tier": "gold"
+    }
+  ],
+  "sponsorship_tiers": {
+    "platinum": {
+      "min_budget": 500000000,
+      "visibility": "Highest",
+      "benefits": [
+        "Logo utama",
+        "Stage naming",
+        "VIP access",
+        "Media coverage prioritas"
+      ]
+    },
+    "gold": {
+      "min_budget": 200000000,
+      "visibility": "High",
+      "benefits": [
+        "Logo besar",
+        "Booth premium",
+        "Social media mention",
+        "Product placement"
+      ]
+    },
+    "silver": {
+      "min_budget": 100000000,
+      "visibility": "Medium",
+      "benefits": [
+        "Logo sedang",
+        "Booth standard",
+        "Website listing",
+        "Merchandise placement"
+      ]
+    },
+    "bronze": {
+      "min_budget": 50000000,
+      "visibility": "Basic",
+      "benefits": [
+        "Logo kecil",
+        "Flyer mention",
+        "Certificate",
+        "Networking access"
+      ]
+    }
+  },
+  "metadata": {
+    "total_categories": 35,
+    "last_updated": "2026-03-10",
+    "version": "1.0",
+    "purpose": "Sponsorship categorization and grouping"
+  }
+}

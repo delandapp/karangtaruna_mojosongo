@@ -20,6 +20,7 @@ import {
   Download,
   MoreHorizontal,
 } from "lucide-react";
+import { TablePagination } from "../../molecules/TablePagination";
 
 type Status = "Selesai" | "Proses" | "Menunggu" | "Dibatalkan";
 
@@ -94,7 +95,8 @@ const TABS = ["Semua", "Selesai", "Proses", "Menunggu", "Dibatalkan"] as const;
 
 export function DataTable() {
   const [activeTab, setActiveTab] = useState<string>("Semua");
-  const [currentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
   const filtered =
     activeTab === "Semua"
@@ -225,23 +227,17 @@ export function DataTable() {
         </div>
 
         {/* Pagination */}
-        <div className="mt-4 flex items-center justify-end gap-1">
-          <button
-            type="button"
-            disabled={currentPage <= 1}
-            className="flex size-8 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-accent disabled:opacity-40 transition-colors"
-          >
-            <ChevronLeft className="size-4" />
-          </button>
-          <span className="flex size-8 items-center justify-center rounded-md bg-primary text-xs font-medium text-primary-foreground">
-            1
-          </span>
-          <button
-            type="button"
-            className="flex size-8 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-accent transition-colors"
-          >
-            <ChevronRight className="size-4" />
-          </button>
+        <div className="mt-4 border-t border-border/50">
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(filtered.length / limit) || 1}
+            onPageChange={setCurrentPage}
+            limit={limit}
+            onLimitChange={(newLimit) => {
+              setLimit(newLimit);
+              setCurrentPage(1);
+            }}
+          />
         </div>
       </CardContent>
     </Card>

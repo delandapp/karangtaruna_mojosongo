@@ -1,11 +1,14 @@
-model Provinsi {
-    id           BigInt    @id @default(autoincrement())
-    kode_wilayah String?   @unique
-    nama         String
-    createdAt    DateTime  @default(now())
-    updatedAt    DateTime  @updatedAt
-    Kota         Kota[]
-    Sekolah      Sekolah[]
+model m_provinsi {
+    id              BigInt         @id @default(autoincrement())
+    kode_wilayah    String?        @unique
+    nama            String
+    createdAt       DateTime       @default(now())
+    updatedAt       DateTime       @updatedAt
+    m_kota          m_kota[]
+    m_sekolah       m_sekolah[]
+    m_perusahaan    m_perusahaan[]
+    dibuat_pada     DateTime       @default(now())
+    diperbarui_pada DateTime       @updatedAt
 
     @@map("m_provinsi")
 }

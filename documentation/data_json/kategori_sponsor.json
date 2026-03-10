@@ -1,0 +1,266 @@
+[
+  {
+    "nama_kategori": "Title Sponsor",
+    "deskripsi_kategori": "Sponsor utama yang namanya tercantum dalam nama event (Naming Rights). Memiliki hak eksklusivitas tertinggi dan visibility maksimal di semua materi promosi"
+  },
+  {
+    "nama_kategori": "Platinum Sponsor",
+    "deskripsi_kategori": "Tingkat sponsorship tertinggi setelah Title Sponsor. Mendapat prioritas placement logo, booth premium, dan akses VIP ke seluruh rangkaian acara"
+  },
+  {
+    "nama_kategori": "Gold Sponsor",
+    "deskripsi_kategori": "Tingkat sponsorship tinggi dengan visibility besar. Logo ditampilkan di materi promosi utama, stage, dan merchandise event"
+  },
+  {
+    "nama_kategori": "Silver Sponsor",
+    "deskripsi_kategori": "Tingkat sponsorship menengah dengan visibility cukup. Logo ditampilkan di selected materi promosi dan mendapat booth standard"
+  },
+  {
+    "nama_kategori": "Bronze Sponsor",
+    "deskripsi_kategori": "Tingkat sponsorship entry-level dengan visibility dasar. Logo ditampilkan di website dan materi promosi tertentu"
+  },
+  {
+    "nama_kategori": "Sponsor Utama",
+    "deskripsi_kategori": "Sponsor kunci yang mendukung inti acara. Posisi setara Gold-Platinum dengan fokus pada brand association dengan event"
+  },
+  {
+    "nama_kategori": "Sponsor Pendukung",
+    "deskripsi_kategori": "Sponsor yang mendukung kelancaran acara dengan kontribusi produk, layanan, atau dana dalam skala menengah"
+  },
+  {
+    "nama_kategori": "Official Partner",
+    "deskripsi_kategori": "Partner resmi yang menjadi penyedia eksklusif untuk kategori produk/layanan tertentu dalam event (contoh: Official Payment Partner)"
+  },
+  {
+    "nama_kategori": "Strategic Partner",
+    "deskripsi_kategori": "Partner strategis yang terlibat dalam perencanaan dan eksekusi event dengan kontribusi jangka panjang dan kolaborasi mendalam"
+  },
+  {
+    "nama_kategori": "Media Partner",
+    "deskripsi_kategori": "Media yang memberikan coverage dan promosi untuk event sebagai pertukaran exposure. Termasuk portal berita, TV, radio, dan media online"
+  },
+  {
+    "nama_kategori": "Digital Media Partner",
+    "deskripsi_kategori": "Media partner khusus platform digital seperti social media, influencer, content creator, dan online publication"
+  },
+  {
+    "nama_kategori": "Community Partner",
+    "deskripsi_kategori": "Organisasi komunitas yang membantu mobilisasi peserta dan promosi event ke anggota komunitas mereka"
+  },
+  {
+    "nama_kategori": "Venue Partner",
+    "deskripsi_kategori": "Pemilik atau pengelola venue yang menyediakan lokasi event dengan harga khusus atau sebagai bagian dari sponsorship"
+  },
+  {
+    "nama_kategori": "Technology Partner",
+    "deskripsi_kategori": "Penyedia solusi teknologi untuk event seperti sistem registrasi, aplikasi event, WiFi, AV equipment, dan infrastruktur digital"
+  },
+  {
+    "nama_kategori": "Payment Partner",
+    "deskripsi_kategori": "Penyedia layanan pembayaran eksklusif untuk transaksi tiket dan merchandise event (e-wallet, bank, payment gateway)"
+  },
+  {
+    "nama_kategori": "Logistics Partner",
+    "deskripsi_kategori": "Penyedia jasa logistik dan pengiriman untuk kebutuhan operasional event termasuk transportasi equipment dan distribusi"
+  },
+  {
+    "nama_kategori": "Hospitality Partner",
+    "deskripsi_kategori": "Penyedia layanan akomodasi, transportasi VIP, dan layanan tamu khusus untuk peserta dan sponsor event"
+  },
+  {
+    "nama_kategori": "Food & Beverage Partner",
+    "deskripsi_kategori": "Penyedia konsumsi eksklusif untuk event termasuk catering, vendor makanan, dan beverage station"
+  },
+  {
+    "nama_kategori": "Merchandise Partner",
+    "deskripsi_kategori": "Penyedia merchandise official event seperti kaos, tote bag, lanyard, dan souvenir lainnya"
+  },
+  {
+    "nama_kategori": "Knowledge Partner",
+    "deskripsi_kategori": "Partner yang menyediakan konten intelektual seperti pembicara, materi edukasi, riset, atau sertifikasi untuk event"
+  },
+  {
+    "nama_kategori": "Associate Sponsor",
+    "deskripsi_kategori": "Sponsor asosiasi dengan keterlibatan terbatas pada sesi atau area tertentu dalam event"
+  },
+  {
+    "nama_kategori": "In-Kind Sponsor",
+    "deskripsi_kategori": "Sponsor yang berkontribusi dalam bentuk barang atau jasa bukan uang (produk, equipment, layanan) sebagai nilai sponsorship"
+  },
+  {
+    "nama_kategori": "Cash Sponsor",
+    "deskripsi_kategori": "Sponsor yang berkontribusi dalam bentuk dana tunai untuk mendukung operasional dan produksi event"
+  },
+  {
+    "nama_kategori": "Session Sponsor",
+    "deskripsi_kategori": "Sponsor yang mengadopsi sesi tertentu dalam acara (keynote, workshop, panel discussion) dengan branding eksklusif di sesi tersebut"
+  },
+  {
+    "nama_kategori": "Workshop Sponsor",
+    "deskripsi_kategori": "Sponsor khusus untuk sesi workshop atau training dengan hak branding dan akses ke peserta workshop"
+  },
+  {
+    "nama_kategori": "Networking Sponsor",
+    "deskripsi_kategori": "Sponsor untuk sesi networking, coffee break, atau cocktail hour dengan opportunity interaksi langsung dengan peserta"
+  },
+  {
+    "nama_kategori": "Awards Sponsor",
+    "deskripsi_kategori": "Sponsor untuk kategori penghargaan atau trophy dalam event yang mencakup production cost dan branding award"
+  },
+  {
+    "nama_kategori": "Registration Sponsor",
+    "deskripsi_kategori": "Sponsor yang mensubsidi biaya registrasi peserta atau menyediakan free ticket dengan branding di badge dan materi registrasi"
+  },
+  {
+    "nama_kategori": "VIP Lounge Sponsor",
+    "deskripsi_kategori": "Sponsor eksklusif untuk area VIP lounge dengan hak hospitality dan networking dengan tamu VIP"
+  },
+  {
+    "nama_kategori": "Exhibition Sponsor",
+    "deskripsi_kategori": "Sponsor yang mendapat booth di area pameran dengan paket lengkap termasuk construction dan fasilitas booth"
+  },
+  {
+    "nama_kategori": "Booth Sponsor",
+    "deskripsi_kategori": "Sponsor paket booth standard di area exhibition dengan fasilitas dasar dan visibility di floor plan"
+  },
+  {
+    "nama_kategori": "Virtual Sponsor",
+    "deskripsi_kategori": "Sponsor khusus untuk event hybrid/virtual dengan placement di platform digital, virtual booth, dan online activation"
+  },
+  {
+    "nama_kategori": "Sustainability Partner",
+    "deskripsi_kategori": "Partner yang mendukung aspek keberlanjutan event seperti carbon offset, waste management, dan green initiatives"
+  },
+  {
+    "nama_kategori": "CSR Partner",
+    "deskripsi_kategori": "Partner untuk program Corporate Social Responsibility yang terintegrasi dengan event untuk dampak sosial"
+  },
+  {
+    "nama_kategori": "Government Partner",
+    "deskripsi_kategori": "Instansi pemerintah yang mendukung event sebagai bentuk dukungan kebijakan atau program nasional/daerah"
+  },
+  {
+    "nama_kategori": "International Partner",
+    "deskripsi_kategori": "Partner dari luar negeri yang membawa perspektif global dan jaringan internasional untuk event"
+  },
+  {
+    "nama_kategori": "Academic Partner",
+    "deskripsi_kategori": "Universitas atau institusi akademik yang mendukung event dengan konten riset, pembicara, dan mobilisasi mahasiswa"
+  },
+  {
+    "nama_kategori": "Startup Partner",
+    "deskripsi_kategori": "Kolaborasi dengan startup untuk innovation zone, pitch session, atau startup exhibition dalam event"
+  },
+  {
+    "nama_kategori": "Broadcasting Partner",
+    "deskripsi_kategori": "Partner untuk live streaming, TV broadcast, atau radio coverage yang memperluas jangkauan audiens event"
+  },
+  {
+    "nama_kategori": "Production Partner",
+    "deskripsi_kategori": "Partner yang mendukung produksi event termasuk stage, lighting, sound system, dan technical production"
+  },
+  {
+    "nama_kategori": "Security Partner",
+    "deskripsi_kategori": "Penyedia layanan keamanan untuk menjamin keselamatan peserta, sponsor, dan aset event"
+  },
+  {
+    "nama_kategori": "Insurance Partner",
+    "deskripsi_kategori": "Penyedia asuransi event yang melindungi penyelenggara, peserta, dan sponsor dari risiko yang tidak diinginkan"
+  },
+  {
+    "nama_kategori": "Health & Safety Partner",
+    "deskripsi_kategori": "Partner yang menyediakan layanan medis, protokol kesehatan, dan emergency response untuk event"
+  },
+  {
+    "nama_kategori": "Transportation Partner",
+    "deskripsi_kategori": "Penyedia layanan transportasi untuk shuttle peserta, logistik VIP, atau mobility solutions selama event"
+  },
+  {
+    "nama_kategori": "Printing Partner",
+    "deskripsi_kategori": "Penyedia jasa cetak untuk semua materi promosi, badge, signage, dan dokumentasi event"
+  },
+  {
+    "nama_kategori": "Photography Partner",
+    "deskripsi_kategori": "Partner dokumentasi visual termasuk fotografi, videografi, dan content creation untuk event"
+  },
+  {
+    "nama_kategori": "Entertainment Partner",
+    "deskripsi_kategori": "Penyedia hiburan untuk opening, closing, atau entertainment segment dalam event (musik, performance, dll)"
+  },
+  {
+    "nama_kategori": "Gift & Souvenir Partner",
+    "deskripsi_kategori": "Penyedia gift bag, souvenir, dan goodie bag untuk peserta dan tamu undangan event"
+  },
+  {
+    "nama_kategori": "Apparel Partner",
+    "deskripsi_kategori": "Penyedia seragam event seperti kaos, jaket, atau dress code untuk panitia, volunteer, dan peserta"
+  },
+  {
+    "nama_kategori": "Connectivity Partner",
+    "deskripsi_kategori": "Penyedia layanan internet dan konektivitas untuk memastikan kelancaran operasional digital event"
+  },
+  {
+    "nama_kategori": "Social Media Partner",
+    "deskripsi_kategori": "Partner khusus untuk amplifikasi di platform social media termasuk paid ads, organic content, dan influencer activation"
+  },
+  {
+    "nama_kategori": "PR & Communications Partner",
+    "deskripsi_kategori": "Partner yang menangani public relations, press release, media relations, dan komunikasi eksternal event"
+  },
+  {
+    "nama_kategori": "Content Partner",
+    "deskripsi_kategori": "Partner yang menyediakan konten berkualitas untuk sesi event seperti artikel, video, atau materi presentasi"
+  },
+  {
+    "nama_kategori": "Certification Partner",
+    "deskripsi_kategori": "Lembaga sertifikasi yang menyediakan sertifikat resmi atau CPD points untuk peserta event"
+  },
+  {
+    "nama_kategori": "Recruitment Partner",
+    "deskripsi_kategori": "Partner yang memfasilitasi job fair, career expo, atau recruitment session dalam event"
+  },
+  {
+    "nama_kategori": "Environmental Partner",
+    "deskripsi_kategori": "Partner yang fokus pada aspek lingkungan seperti zero waste, carbon neutral, dan eco-friendly practices"
+  },
+  {
+    "nama_kategori": "Social Impact Partner",
+    "deskripsi_kategori": "Partner yang membantu menciptakan dampak sosial positif melalui program yang terintegrasi dengan event"
+  },
+  {
+    "nama_kategori": "Tourism Partner",
+    "deskripsi_kategori": "Dinas pariwisata atau destination marketing organization yang mempromosikan destinasi melalui event"
+  },
+  {
+    "nama_kategori": "Hotel Partner",
+    "deskripsi_kategori": "Hotel yang menyediakan akomodasi khusus untuk peserta dan speaker dengan rate khusus"
+  },
+  {
+    "nama_kategori": "Airline Partner",
+    "deskripsi_kategori": "Maskapai penerbangan yang menyediakan diskon tiket atau sponsorship untuk transportasi peserta internasional"
+  },
+  {
+    "nama_kategori": "Energy Partner",
+    "deskripsi_kategori": "Penyedia solusi energi untuk event termasuk power supply, generator, atau renewable energy solutions"
+  },
+  {
+    "nama_kategori": "Water Partner",
+    "deskripsi_kategori": "Penyedia air minum untuk konsumsi peserta selama event dengan branding di botol dan water station"
+  },
+  {
+    "nama_kategori": "Telecom Partner",
+    "deskripsi_kategori": "Operator telekomunikasi yang menyediakan layanan khusus, booth, atau promosi untuk peserta event"
+  },
+  {
+    "nama_kategori": "Innovation Partner",
+    "deskripsi_kategori": "Partner yang membawa inovasi terbaru untuk dipamerkan atau didemonstrasikan dalam event"
+  },
+  {
+    "nama_kategori": "Co-Organizer",
+    "deskripsi_kategori": "Partner yang terlibat sebagai co-organizer dengan pembagian tanggung jawab dan revenue sharing"
+  },
+  {
+    "nama_kategori": "Lainnya",
+    "deskripsi_kategori": "Kategori sponsor lainnya yang tidak termasuk dalam klasifikasi di atas atau untuk kategori custom sesuai kebutuhan event"
+  }
+]

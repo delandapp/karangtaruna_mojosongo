@@ -31,6 +31,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { KategoriBrandFormModal } from "../modals/sponsorship/KategoriBrandFormModal";
+import { TablePagination } from "../../molecules/TablePagination";
 import {
   useGetKategoriBrandsQuery,
   useDeleteKategoriBrandMutation,
@@ -47,7 +48,7 @@ export function KategoriBrandTable() {
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
-  const limit = 10;
+  const [limit, setLimit] = useState(10);
 
   // Form Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -200,7 +201,7 @@ export function KategoriBrandTable() {
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
-                          className="size-8 p-0 text-foreground opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity data-[state=open]:opacity-100"
+                          className="size-8 p-0 text-foreground opacity-100 sm:group-hover:opacity-100 transition-opacity data-[state=open]:opacity-100"
                         >
                           <span className="sr-only">Buka menu</span>
                           <MoreHorizontal className="size-4" />
@@ -216,9 +217,9 @@ export function KategoriBrandTable() {
                         <DropdownMenuSeparator className="bg-border/50" />
                         <DropdownMenuItem
                           onClick={() => handleEdit(item)}
-                          className="cursor-pointer"
+                          className="cursor-pointer focus:bg-gray-200/20"
                         >
-                          <Pencil className="mr-2 size-4 text-primary" />
+                          <Pencil className="mr-2 size-4" />
                           <span>Edit Data</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem
@@ -227,7 +228,7 @@ export function KategoriBrandTable() {
                           }
                           className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive"
                         >
-                          <Trash2 className="mr-2 size-4" />
+                          <Trash2 className="mr-2 size-4 text-destructive" />
                           <span>Hapus Data</span>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -240,65 +241,17 @@ export function KategoriBrandTable() {
         </Table>
 
         {/* Pagination Controls */}
-        {!loading && total > 1 && (
-          <div className="flex items-center justify-between border-t border-border/50 px-4 py-3 sm:px-6 bg-muted/20">
-            <div className="flex flex-1 justify-between sm:hidden">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                Sebelumnya
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(total, p + 1))}
-                disabled={page === total}
-              >
-                Selanjutnya
-              </Button>
-            </div>
-            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  Halaman{" "}
-                  <span className="font-medium text-foreground">{page}</span>{" "}
-                  dari{" "}
-                  <span className="font-medium text-foreground">{total}</span>
-                </p>
-              </div>
-              <div>
-                <nav
-                  className="isolate inline-flex -space-x-px rounded-md shadow-sm bg-card"
-                  aria-label="Pagination"
-                >
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-r-none border-border/50"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                  >
-                    Tersebelum
-                  </Button>
-                  <div className="px-4 py-1.5 border-y border-border/50 text-sm font-medium text-foreground bg-muted/10">
-                    {page}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-l-none border-border/50"
-                    onClick={() => setPage((p) => Math.min(total, p + 1))}
-                    disabled={page === total}
-                  >
-                    Selanjutnya
-                  </Button>
-                </nav>
-              </div>
-            </div>
-          </div>
+        {!loading && total > 0 && (
+          <TablePagination
+            currentPage={page}
+            totalPages={total}
+            onPageChange={setPage}
+            limit={limit}
+            onLimitChange={(newLimit) => {
+              setLimit(newLimit);
+              setPage(1);
+            }}
+          />
         )}
       </div>
 

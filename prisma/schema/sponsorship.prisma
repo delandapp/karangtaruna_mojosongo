@@ -45,117 +45,194 @@ model m_brand {
   @@index([m_kategori_brand_id])
 }
 
-// -----------------------------------------------------------------------------
+// =============================================================================
+// MASTER: SKALA PERUSAHAAN
+// Contoh: "Mikro", "Kecil", "Menengah", "Besar"
+// =============================================================================
+model m_skala_perusahaan {
+  id   Int    @id @default(autoincrement())
+  nama String @unique @db.VarChar(30)
+
+  perusahaan m_perusahaan[]
+
+  @@map("m_skala_perusahaan")
+}
+
+// =============================================================================
+// MASTER: SEKTOR INDUSTRI
+// Contoh: "Manufaktur", "Perbankan", "Kuliner", "Otomotif"
+// =============================================================================
+model m_sektor_industri {
+  id               Int     @id @default(autoincrement())
+  nama_sektor      String  @unique @db.VarChar(100)
+  deskripsi_sektor String? @db.Text
+
+  perusahaan m_perusahaan[]
+
+  dibuat_pada     DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
+
+  @@map("m_sektor_industri")
+}
+
+// =============================================================================
+// MASTER: PERUSAHAAN
+// Database perusahaan umum — bisa dipakai lintas modul (sponsor, brand, mitra, dll)
+// =============================================================================
+model m_perusahaan {
+  id                           Int     @id @default(autoincrement())
+  m_sektor_industri_id         Int?
+  m_skala_perusahaan_id        Int?
+  kode_wilayah_induk_provinsi  String?
+  kode_wilayah_induk_kota      String?
+  kode_wilayah_induk_kecamatan String?
+  kode_wilayah_induk_kelurahan String?
+  // Identitas
+  nama                         String  @db.VarChar(200)
+
+  // Kontak
+  nama_kontak    String? @db.VarChar(150)
+  jabatan_kontak String? @db.VarChar(100)
+  no_handphone   String? @db.VarChar(20)
+  email          String? @db.VarChar(150)
+  website        String? @db.VarChar(255)
+  instagram      String? @db.VarChar(100)
+  linkedin       String? @db.VarChar(255)
+  whatsapp       String? @db.VarChar(20)
+
+  // Lokasi
+  alamat String? @db.Text
+
+  // Informasi Tambahan
+  sumber_informasi String? @db.VarChar(255)
+  catatan          String? @db.Text
+  logo_url         String? @db.VarChar(500)
+
+  // Relasi
+  sektor          m_sektor_industri?  @relation(fields: [m_sektor_industri_id], references: [id], onDelete: SetNull)
+  skala           m_skala_perusahaan? @relation(fields: [m_skala_perusahaan_id], references: [id], onDelete: SetNull)
+  m_provinsi      m_provinsi?         @relation(fields: [kode_wilayah_induk_provinsi], references: [kode_wilayah])
+  m_kota          m_kota?             @relation(fields: [kode_wilayah_induk_kota], references: [kode_wilayah])
+  m_kecamatan     m_kecamatan?        @relation(fields: [kode_wilayah_induk_kecamatan], references: [kode_wilayah])
+  m_kelurahan     m_kelurahan?        @relation(fields: [kode_wilayah_induk_kelurahan], references: [kode_wilayah])
+  Sponsor         m_sponsor[]
+  dibuat_pada     DateTime            @default(now())
+  diperbarui_pada DateTime            @updatedAt
+
+  @@index([m_sektor_industri_id])
+  @@index([m_skala_perusahaan_id])
+  @@index([nama]) // sering di-search by nama
+  @@map("m_perusahaan")
+}
+
+// =============================================================================
 // MASTER: KATEGORI SPONSOR
-// Contoh: "Perbankan", "Kuliner", "Otomotif", "UMKM"
-// -----------------------------------------------------------------------------
+// Khusus konteks sponsorship — terpisah dari m_sektor_industri
+// Contoh: "Sponsor Utama", "Sponsor Pendukung", "Media Partner"
+// =============================================================================
 model m_kategori_sponsor {
   id                 Int     @id @default(autoincrement())
-  nama_kategori      String  @unique
-  deskripsi_kategori String?
+  nama_kategori      String  @unique @db.VarChar(100)
+  deskripsi_kategori String? @db.Text
 
-  // Relasi
   sponsors m_sponsor[]
 
-  dibuat_pada    DateTime @default(now())
+  dibuat_pada     DateTime @default(now())
   diperbarui_pada DateTime @updatedAt
+
+  @@map("m_kategori_sponsor")
 }
 
-// -----------------------------------------------------------------------------
-// MASTER: SPONSOR / PERUSAHAAN
-// Database sponsor yang bisa dipakai lintas event
-// -----------------------------------------------------------------------------
+// =============================================================================
+// MASTER: SPONSOR
+// Hanya menyimpan data SPONSORSHIP — kontak & profil perusahaan ada di m_perusahaan
+// =============================================================================
 model m_sponsor {
-  id                   Int  @id @default(autoincrement())
+  id                    Int  @id @default(autoincrement())
+  m_perusahaan_id       Int // FK ke m_perusahaan — WAJIB, bukan nullable
   m_kategori_sponsor_id Int?
 
-  nama_perusahaan   String
-  nama_kontak       String?
-  no_handphone      String?
-  email             String?
-  alamat            String? @db.Text
-  logo_url          String?
-  instagram         String?
-  website           String?
-  total_disponsori  Decimal? @db.Decimal(15, 2)
-  catatan           String?  @db.Text
+  // Satu-satunya field unik konteks sponsorship
+  total_disponsori Decimal? @db.Decimal(15, 2) // akumulasi dari semua event
 
   // Relasi
-  kategori          m_kategori_sponsor? @relation(fields: [m_kategori_sponsor_id], references: [id], onDelete: SetNull)
-  event_sponsor     event_sponsor[]
-  proposal_sponsor  proposal_sponsor[]
+  m_perusahaan     m_perusahaan        @relation(fields: [m_perusahaan_id], references: [id])
+  kategori         m_kategori_sponsor? @relation(fields: [m_kategori_sponsor_id], references: [id], onDelete: SetNull)
+  event_sponsor    event_sponsor[]
+  proposal_sponsor proposal_sponsor[]
 
-  dibuat_pada    DateTime @default(now())
+  dibuat_pada     DateTime @default(now())
   diperbarui_pada DateTime @updatedAt
 
+  @@unique([m_perusahaan_id]) // 1 perusahaan = 1 entri sponsor
   @@index([m_kategori_sponsor_id])
+  @@map("m_sponsor")
 }
 
 // =============================================================================
-// MODUL 5 — SPONSORSHIP
+// EVENT SPONSOR (Pivot: Event ↔ Sponsor)
 // =============================================================================
-
-// -----------------------------------------------------------------------------
-// EVENT SPONSOR (Pivot: Event ↔ Sponsor dengan detail kontribusi)
-// -----------------------------------------------------------------------------
 model event_sponsor {
-  id           Int  @id @default(autoincrement())
-  event_id     Int
-  m_sponsor_id  Int
+  id                Int  @id @default(autoincrement())
+  event_id          Int
+  m_sponsor_id      Int
   ditangani_oleh_id Int?
 
-  tier                String   // "platinum" | "gold" | "silver" | "bronze" | "inkind"
-  jenis_kontribusi    String   // "uang" | "barang" | "jasa" | "campuran"
-  jumlah_disepakati   Decimal? @db.Decimal(15, 2)
-  jumlah_diterima     Decimal? @db.Decimal(15, 2)
-  deskripsi_inkind    String?  @db.Text
-  benefit_disepakati  Json?    // array benefit yang dijanjikan
-  benefit_terealisasi Json?    // array benefit yang sudah dilaksanakan
-  status_pipeline     String   @default("prospek")
-  // "prospek" | "dihubungi" | "negosiasi" | "dikonfirmasi" | "lunas" | "selesai" | "batal"
-  url_mou             String?  // dokumen MOU digital
+  tier             TierSponsor // Enum — bukan String bebas
+  jenis_kontribusi JenisKontribusi // Enum — bukan String bebas
+  status_pipeline  StatusPipeline  @default(prospek) // Enum — bukan String bebas
+
+  jumlah_disepakati   Decimal?  @db.Decimal(15, 2)
+  jumlah_diterima     Decimal?  @db.Decimal(15, 2)
+  deskripsi_inkind    String?   @db.Text
+  benefit_disepakati  Json? // array benefit yang dijanjikan
+  benefit_terealisasi Json? // array benefit yang sudah dilaksanakan
+  url_mou             String?   @db.VarChar(500)
   dikonfirmasi_pada   DateTime?
 
   // Relasi
-  event          event    @relation(fields: [event_id],          references: [id], onDelete: Cascade)
-  sponsor        m_sponsor @relation(fields: [m_sponsor_id],      references: [id])
-  ditangani_oleh m_user?  @relation("sponsor_ditangani_oleh",    fields: [ditangani_oleh_id], references: [id], onDelete: SetNull)
+  event          event     @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  sponsor        m_sponsor @relation(fields: [m_sponsor_id], references: [id])
+  ditangani_oleh m_user?   @relation("sponsor_ditangani_oleh", fields: [ditangani_oleh_id], references: [id], onDelete: SetNull)
 
-  dibuat_pada    DateTime @default(now())
+  dibuat_pada     DateTime @default(now())
   diperbarui_pada DateTime @updatedAt
 
   @@unique([event_id, m_sponsor_id])
   @@index([event_id])
   @@index([m_sponsor_id])
   @@index([ditangani_oleh_id])
-  @@index([status_pipeline])
+  @@index([status_pipeline]) // Enum index — sangat efisien di PostgreSQL
+  @@map("event_sponsor")
 }
 
-// -----------------------------------------------------------------------------
+// =============================================================================
 // PROPOSAL SPONSOR
-// Tracking setiap pengiriman proposal ke calon sponsor
-// -----------------------------------------------------------------------------
+// =============================================================================
 model proposal_sponsor {
-  id           Int @id @default(autoincrement())
-  event_id     Int
-  m_sponsor_id  Int
+  id              Int @id @default(autoincrement())
+  event_id        Int
+  m_sponsor_id    Int
   dikirim_oleh_id Int
 
-  tier_diusulkan  String   // "platinum" | "gold" | "silver" | "bronze"
-  url_file_proposal String?
-  dikirim_pada    DateTime?
-  followup_pada   DateTime?
-  respons         String?  // "diterima" | "ditolak" | "negosiasi" | "menunggu"
-  catatan         String?  @db.Text
+  tier_diusulkan TierProposal // Enum
+  respons        ResponsProposal? // Enum — nullable karena belum tentu ada respons
+
+  url_file_proposal String?   @db.VarChar(500)
+  dikirim_pada      DateTime?
+  followup_pada     DateTime?
+  catatan           String?   @db.Text
 
   // Relasi
-  event       event    @relation(fields: [event_id],      references: [id], onDelete: Cascade)
-  sponsor     m_sponsor @relation(fields: [m_sponsor_id],  references: [id])
-  dikirim_oleh m_user  @relation("proposal_dikirim_oleh", fields: [dikirim_oleh_id], references: [id])
+  event        event     @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  sponsor      m_sponsor @relation(fields: [m_sponsor_id], references: [id])
+  dikirim_oleh m_user    @relation("proposal_dikirim_oleh", fields: [dikirim_oleh_id], references: [id])
 
   dibuat_pada DateTime @default(now())
 
   @@index([event_id])
   @@index([m_sponsor_id])
   @@index([dikirim_oleh_id])
+  @@index([respons]) // filter by status respons
+  @@map("proposal_sponsor")
 }

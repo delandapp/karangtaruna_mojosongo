@@ -1,14 +1,17 @@
-model Kecamatan {
+model m_kecamatan {
     // 
-    id           BigInt      @id @default(autoincrement())
-    m_kota_id    BigInt?
-    kode_wilayah String?     @unique
-    nama         String
-    createdAt    DateTime    @default(now())
-    updatedAt    DateTime    @updatedAt
-    Kota         Kota?       @relation(fields: [m_kota_id], references: [id])
-    Kelurahan    Kelurahan[]
-    Sekolah      Sekolah[]
+    id              BigInt         @id @default(autoincrement())
+    m_kota_id       BigInt?
+    kode_wilayah    String?        @unique
+    nama            String
+    createdAt       DateTime       @default(now())
+    updatedAt       DateTime       @updatedAt
+    m_kota          m_kota?        @relation(fields: [m_kota_id], references: [id])
+    m_kelurahan     m_kelurahan[]
+    m_sekolah       m_sekolah[]
+    m_perusahaan    m_perusahaan[]
+    dibuat_pada     DateTime       @default(now())
+    diperbarui_pada DateTime       @updatedAt
 
     @@index([m_kota_id])
     @@map("m_kecamatan")

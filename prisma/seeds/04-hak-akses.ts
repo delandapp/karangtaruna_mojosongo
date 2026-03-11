@@ -9,11 +9,13 @@ export async function seedHakAkses(prisma: PrismaClient) {
   await prisma.m_hak_akses.deleteMany({});
 
   // Ambil semua level yang dibutuhkan sekaligus
-  const [superuserLvl, ketuaLvl, adminLvl, wakilKetuaLvl] = await Promise.all([
+  const [superuserLvl, ketuaLvl, adminLvl, wakilKetuaLvl, sekretarisLvl, bendaharaLvl] = await Promise.all([
     prisma.m_level.findUnique({ where: { nama_level: "superuser" } }),
     prisma.m_level.findUnique({ where: { nama_level: "ketua" } }),
     prisma.m_level.findUnique({ where: { nama_level: "admin" } }),
     prisma.m_level.findUnique({ where: { nama_level: "wakil ketua" } }),
+    prisma.m_level.findUnique({ where: { nama_level: "sekretaris" } }),
+    prisma.m_level.findUnique({ where: { nama_level: "bendahara" } }),
   ]);
 
   // Helper: buat hak akses + rules sekaligus
@@ -56,6 +58,15 @@ export async function seedHakAkses(prisma: PrismaClient) {
     ketuaLvl?.id,
     adminLvl?.id,
     wakilKetuaLvl?.id,
+  ].filter((id): id is number => id !== undefined);
+
+  const anggaranLevelIds = [
+    superuserLvl?.id,
+    ketuaLvl?.id,
+    adminLvl?.id,
+    wakilKetuaLvl?.id,
+    sekretarisLvl?.id,
+    bendaharaLvl?.id,
   ].filter((id): id is number => id !== undefined);
 
   // ── API: Users ──────────────────────────────────────────────────────────────
@@ -226,6 +237,23 @@ export async function seedHakAkses(prisma: PrismaClient) {
       "/api/events",
       item.method,
       eventLevelIds,
+    );
+  }
+
+  // ── API: Anggaran ────────────────────────────────────────────────────────────
+  const apiAnggaran = [
+    { nama: "Read Anggaran", tipe: "read", method: "GET" },
+    { nama: "Create Anggaran", tipe: "create", method: "POST" },
+    { nama: "Update Anggaran", tipe: "update", method: "PUT" },
+    { nama: "Delete Anggaran", tipe: "delete", method: "DELETE" },
+  ];
+  for (const item of apiAnggaran) {
+    await buatHakAkses(
+      item.nama,
+      item.tipe,
+      "/api/events/anggaran",
+      item.method,
+      anggaranLevelIds,
     );
   }
 }

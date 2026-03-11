@@ -8,6 +8,8 @@ import { panitiaApi } from "@/features/api/panitiaApi";
 import { rundownApi } from "@/features/api/rundownApi";
 import { tugasApi } from "@/features/api/tugasApi";
 import { rapatApi } from "@/features/api/rapatApi";
+import { anggaranApi } from "@/features/api/anggaranApi";
+import { keuanganApi } from "@/features/api/keuanganApi";
 
 export const store = configureStore({
     reducer: {
@@ -18,6 +20,8 @@ export const store = configureStore({
         [rundownApi.reducerPath]: rundownApi.reducer,
         [tugasApi.reducerPath]: tugasApi.reducer,
         [rapatApi.reducerPath]: rapatApi.reducer,
+        [anggaranApi.reducerPath]: anggaranApi.reducer,
+        [keuanganApi.reducerPath]: keuanganApi.reducer,
         auth: authReducer,
     },
     middleware: (getDefaultMiddleware) =>
@@ -28,7 +32,9 @@ export const store = configureStore({
             panitiaApi.middleware,
             rundownApi.middleware,
             tugasApi.middleware,
-            rapatApi.middleware
+            rapatApi.middleware,
+            anggaranApi.middleware,
+            keuanganApi.middleware
         ),
 });
 

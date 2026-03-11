@@ -45,6 +45,11 @@ export const REDIS_KEYS = {
     ALL_PREFIX: (eventId: number) => `event:${eventId}:tugas:all:*`,
     SINGLE: (eventId: number, id: number) => `event:${eventId}:tugas:${id}`,
   },
+  ANGGARAN: {
+    ALL: (eventId: number) => `event:${eventId}:anggaran:all`,
+    ALL_PREFIX: (eventId: number) => `event:${eventId}:anggaran:all:*`,
+    SINGLE: (eventId: number, id: number) => `event:${eventId}:anggaran:${id}`,
+  },
   RAPAT: {
     ALL: "master:rapat:all",
     ALL_PREFIX: "master:rapat:all:*",

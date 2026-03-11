@@ -61,7 +61,9 @@ export async function setCache(
  */
 export async function invalidateCachePrefix(prefix: string): Promise<void> {
   try {
-    const keys = await redis.keys(prefix); // Use keys or scan for prefix
+    // Use wildcard pattern so all keys that START WITH prefix are matched
+    const pattern = prefix.endsWith("*") ? prefix : `${prefix}*`;
+    const keys = await redis.keys(pattern);
     if (keys.length > 0) {
       await redis.del(...keys);
     }

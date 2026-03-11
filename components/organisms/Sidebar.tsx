@@ -44,7 +44,15 @@ const MASTER_NAV = [
 
 const TOOLS_NAV = [
   { href: "/dashboard/laporan", icon: BarChart3, label: "Laporan" },
-  { href: "/dashboard/keuangan", icon: Wallet, label: "Keuangan", badge: 2 },
+  {
+    href: "/dashboard/keuangan",
+    icon: Wallet,
+    label: "Keuangan",
+    subItems: [
+      { href: "/dashboard/keuangan/anggaran", label: "Anggaran" },
+      { href: "/dashboard/keuangan/transaksi", label: "Transaksi" },
+    ],
+  },
   {
     href: "/dashboard/sponsorship",
     icon: Handshake,

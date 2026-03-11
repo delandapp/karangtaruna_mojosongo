@@ -886,3 +886,74 @@ Endpoint untuk mengelola master data event (`event`). Kode event (`kode_event`) 
   }
 }
 ```
+
+---
+
+## 8. Event - Anggota Panitia
+
+Endpoint untuk mengelola panitia dalam suatu event.
+
+### 8.1 Get All Panitia per Event
+**Endpoint:** `GET /api/events/:event_id/panitia`
+
+### 8.2 Get Panitia by ID
+**Endpoint:** `GET /api/events/:event_id/panitia/:id`
+
+### 8.3 Create Panitia
+**Endpoint:** `POST /api/events/:event_id/panitia`
+
+### 8.4 Update Panitia
+**Endpoint:** `PUT /api/events/:event_id/panitia/:id`
+
+### 8.5 Delete Panitia
+**Endpoint:** `DELETE /api/events/:event_id/panitia/:id`
+
+---
+
+## 9. Event - Rundown Acara
+
+Endpoint untuk mengelola rundown (susunan acara) event.
+
+### 9.1 Get All Rundown per Event
+**Endpoint:** `GET /api/events/:event_id/rundown`
+
+### 9.2 Create Rundown
+**Endpoint:** `POST /api/events/:event_id/rundown`
+
+*(Update dan Delete menggunakan `/api/events/:event_id/rundown/:id`)*
+
+---
+
+## 10. Event - Tugas Event
+
+Endpoint untuk mengelola task/tugas panitia dalam suatu event.
+
+### 10.1 Get All Tugas per Event
+**Endpoint:** `GET /api/events/:event_id/tugas`
+
+### 10.2 Create Tugas
+**Endpoint:** `POST /api/events/:event_id/tugas`
+
+*(Update dan Delete menggunakan `/api/events/:event_id/tugas/:id`)*
+
+---
+
+## 11. Event - Anggaran
+
+Endpoint untuk mengelola rancangan anggaran (pemasukan & pengeluaran) event.
+
+### 11.1 Get All Anggaran per Event
+**Endpoint:** `GET /api/events/:event_id/anggaran`
+
+### 11.2 Get Anggaran by ID
+**Endpoint:** `GET /api/events/:event_id/anggaran/:id`
+
+### 11.3 Create Anggaran
+**Endpoint:** `POST /api/events/:event_id/anggaran`
+
+### 11.4 Update Anggaran
+**Endpoint:** `PUT /api/events/:event_id/anggaran/:id`
+
+### 11.5 Delete Anggaran
+**Endpoint:** `DELETE /api/events/:event_id/anggaran/:id`
+

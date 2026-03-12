@@ -22,6 +22,18 @@ const PROTECTED_ROUTES = ["/dashboard"];
 
 export async function middleware(req: NextRequest) {
     const { pathname } = req.nextUrl;
+    
+    // Bypass middleware sepenuhnya untuk request internal Next.js (RSC/prefetch/static)
+    // agar tidak terjadi redirect 307 yang tidak terduga pada navigasi SPA
+    if (
+        pathname.startsWith("/_next") || 
+        pathname.startsWith("/api") ||
+        req.headers.has("x-nextjs-data") ||
+        pathname.includes("favicon.ico")
+    ) {
+        return NextResponse.next();
+    }
+
     const token = req.cookies.get("token")?.value;
 
     let isAuthenticated = false;
@@ -52,5 +64,14 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
     // Jalankan middleware pada semua route kecuali static files & API routes
-    matcher: ["/((?!_next/static|_next/image|favicon.ico|api/).*)"],
+    matcher: [
+        /*
+         * Match all request paths except for the ones starting with:
+         * - api (API routes)
+         * - _next/static (static files)
+         * - _next/image (image optimization files)
+         * - favicon.ico (favicon file)
+         */
+        '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    ],
 };

@@ -40,7 +40,7 @@ export const GET = withAuth(async (req: AuthenticatedRequest, props: RouteProps)
     const event = await prisma.event.findUnique({
       where: { id: eventId },
       include: {
-        organisasi:  { select: { id: true, nama_org: true, kelurahan: true } },
+        organisasi:  { select: { id: true, nama_org: true, kode_wilayah_induk_kelurahan: true } },
         dibuat_oleh: { select: { id: true, nama_lengkap: true, username: true } },
       },
     });

@@ -7,6 +7,7 @@ model m_provinsi {
     m_kota          m_kota[]
     m_sekolah       m_sekolah[]
     m_perusahaan    m_perusahaan[]
+    m_organisasi    m_organisasi[]
     dibuat_pada     DateTime       @default(now())
     diperbarui_pada DateTime       @updatedAt
 

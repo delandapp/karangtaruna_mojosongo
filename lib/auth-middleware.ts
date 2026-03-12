@@ -21,7 +21,7 @@ export interface AuthenticatedRequest extends NextRequest {
 type RouteHandler<T extends unknown[] = []> = (
   req: AuthenticatedRequest,
   ...args: T
-) => Promise<NextResponse> | NextResponse;
+) => Promise<NextResponse | Response> | NextResponse | Response;
 
 /**
  * Middleware wrapper untuk memproteksi route handler dengan JWT.
@@ -34,8 +34,8 @@ type RouteHandler<T extends unknown[] = []> = (
  */
 export function withAuth<T extends unknown[]>(
   handler: RouteHandler<T>,
-): (req: NextRequest, ...args: T) => Promise<NextResponse> {
-  return async (req: NextRequest, ...args: T): Promise<NextResponse> => {
+): (req: NextRequest, ...args: T) => Promise<NextResponse | Response> {
+  return async (req: NextRequest, ...args: T): Promise<NextResponse | Response> => {
     try {
       // 1. Ambil token dari header Authorization ATAU dari cookies
       const authHeader = req.headers.get("Authorization");

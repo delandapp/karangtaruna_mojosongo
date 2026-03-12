@@ -9,19 +9,19 @@ export const createOrganisasiSchema = z.object({
     .string()
     .min(3, "Nama organisasi minimal 3 karakter")
     .max(200, "Nama organisasi maksimal 200 karakter"),
-  kelurahan: z
+  kode_wilayah_induk_kelurahan: z
     .string()
     .min(2, "Kelurahan minimal 2 karakter")
     .max(100, "Kelurahan maksimal 100 karakter"),
-  kecamatan: z
+  kode_wilayah_induk_kecamatan: z
     .string()
     .min(2, "Kecamatan minimal 2 karakter")
     .max(100, "Kecamatan maksimal 100 karakter"),
-  kota: z
+  kode_wilayah_induk_kota: z
     .string()
     .min(2, "Kota minimal 2 karakter")
     .max(100, "Kota maksimal 100 karakter"),
-  provinsi: z
+  kode_wilayah_induk_provinsi: z
     .string()
     .min(2, "Provinsi minimal 2 karakter")
     .max(100, "Provinsi maksimal 100 karakter"),

@@ -123,7 +123,7 @@ export function OrganisasiCard({ organisasi, onEdit, onDelete }: OrganisasiCardP
 
             {/* Badge Indicator */}
             <Badge variant="secondary" className="mb-3 uppercase tracking-wider text-[10px] font-semibold text-primary bg-primary/10">
-                KOTA {organisasi.kota.toUpperCase()}
+                KOTA {organisasi.m_kota?.nama?.toUpperCase() || "DAERAH BELUM DISI"}
             </Badge>
 
             {/* Name & Role Wrapper */}
@@ -131,9 +131,9 @@ export function OrganisasiCard({ organisasi, onEdit, onDelete }: OrganisasiCardP
                 <h3 className="text-lg font-bold text-foreground leading-tight px-4 line-clamp-1">
                     {organisasi.nama_org}
                 </h3>
-                <p className="text-sm font-medium text-muted-foreground flex items-center justify-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5" />
-                    {organisasi.kelurahan}, {organisasi.kecamatan}
+                <p className="text-sm font-medium text-muted-foreground flex items-center justify-center gap-1.5 line-clamp-1">
+                    <MapPin className="w-3.5 h-3.5 shrink-0" />
+                    {organisasi.m_kelurahan?.nama || "-"}, {organisasi.m_kecamatan?.nama || "-"}
                 </p>
             </div>
 

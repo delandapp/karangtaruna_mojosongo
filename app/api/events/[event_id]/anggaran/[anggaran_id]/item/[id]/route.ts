@@ -75,6 +75,7 @@ export const PUT = withAuth(async (req: AuthenticatedRequest, props: RouteProps)
         jumlah_satuan: data.jumlah_satuan,
         harga_satuan_rencana: data.harga_satuan_rencana,
         total_rencana,
+        total_realisasi: data.total_realisasi,
         catatan: data.catatan,
       },
     });

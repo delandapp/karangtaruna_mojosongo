@@ -11,6 +11,8 @@ import { rapatApi } from "@/features/api/rapatApi";
 import { anggaranApi } from "@/features/api/anggaranApi";
 import { keuanganApi } from "@/features/api/keuanganApi";
 
+import { wilayahApi } from "@/features/api/wilayahApi";
+
 export const store = configureStore({
     reducer: {
         [apiSlice.reducerPath]: apiSlice.reducer,
@@ -22,6 +24,7 @@ export const store = configureStore({
         [rapatApi.reducerPath]: rapatApi.reducer,
         [anggaranApi.reducerPath]: anggaranApi.reducer,
         [keuanganApi.reducerPath]: keuanganApi.reducer,
+        [wilayahApi.reducerPath]: wilayahApi.reducer,
         auth: authReducer,
     },
     middleware: (getDefaultMiddleware) =>
@@ -34,7 +37,8 @@ export const store = configureStore({
             tugasApi.middleware,
             rapatApi.middleware,
             anggaranApi.middleware,
-            keuanganApi.middleware
+            keuanganApi.middleware,
+            wilayahApi.middleware
         ),
 });
 

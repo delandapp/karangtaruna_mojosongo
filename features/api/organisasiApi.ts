@@ -11,10 +11,14 @@ export interface MediaSosial {
 export interface Organisasi {
   id: number;
   nama_org: string;
-  kelurahan: string;
-  kecamatan: string;
-  kota: string;
-  provinsi: string;
+  kode_wilayah_induk_kelurahan: string;
+  kode_wilayah_induk_kecamatan: string;
+  kode_wilayah_induk_kota: string;
+  kode_wilayah_induk_provinsi: string;
+  m_provinsi?: { id: number; nama: string; kode_wilayah: string } | null;
+  m_kota?: { id: number; nama: string; kode_wilayah: string } | null;
+  m_kecamatan?: { id: number; nama: string; kode_wilayah: string } | null;
+  m_kelurahan?: { id: number; nama: string; kode_wilayah: string } | null;
   logo_url?: string | null;
   visi?: string | null;
   misi?: string | null;
@@ -44,10 +48,10 @@ export interface OrganisasiResponse {
 
 export interface CreateOrganisasiPayload {
   nama_org: string;
-  kelurahan: string;
-  kecamatan: string;
-  kota: string;
-  provinsi: string;
+  kode_wilayah_induk_kelurahan: string;
+  kode_wilayah_induk_kecamatan: string;
+  kode_wilayah_induk_kota: string;
+  kode_wilayah_induk_provinsi: string;
   no_handphone?: string | null;
   email?: string | null;
   alamat?: string | null;

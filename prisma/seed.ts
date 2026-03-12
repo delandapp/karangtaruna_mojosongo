@@ -14,6 +14,8 @@ import { seedSkalaPerusahaan } from "./seeds/06-skala-perusahaan";
 import { seedSektorIndustri } from "./seeds/07-sektor-industri";
 import { seedBidangBrand } from "./seeds/08-bidang-brand";
 import { seedKategoriBrand } from "./seeds/09-kategori-brand";
+import { seedPerusahaan } from "./seeds/10-perusahaan";
+import { seedOrganisasi } from "./seeds/11-organisasi";
 
 // Gunakan DIRECT_URL (koneksi langsung ke PostgreSQL) untuk seeding,
 // bukan DATABASE_URL yang mengarah ke PgBouncer.
@@ -32,6 +34,8 @@ async function main() {
   await seedSektorIndustri(prisma);
   await seedBidangBrand(prisma);
   await seedKategoriBrand(prisma);
+  await seedPerusahaan(prisma);
+  await seedOrganisasi(prisma);
   console.log("Seeding completed!");
 }
 

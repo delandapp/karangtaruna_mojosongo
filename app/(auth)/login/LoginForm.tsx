@@ -63,17 +63,12 @@ export function LoginForm() {
         return;
       }
 
-      const token = json.data?.token;
-      if (token) {
-        document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 3600}; SameSite=Lax`;
-      }
-
       toast.success("Berhasil login!", {
         description: `Selamat datang, ${json.data?.user?.nama_lengkap ?? data.username}!`,
       });
 
-      router.push("/dashboard");
-      router.refresh();
+      // Force a hard navigation to guarantee middleware and RSC recognize the new HttpOnly cookie.
+      window.location.href = "/dashboard";
     } catch {
       toast.error("Koneksi gagal", {
         description: "Periksa koneksi internet Anda dan coba lagi.",

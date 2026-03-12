@@ -41,6 +41,12 @@ export const GET = withAuth(async (req: AuthenticatedRequest, props: RouteProps)
     // 2. Ambil dari database
     const organisasi = await prisma.m_organisasi.findUnique({
       where: { id: organisasiId },
+      include: {
+        m_provinsi: true,
+        m_kota: true,
+        m_kecamatan: true,
+        m_kelurahan: true,
+      },
     });
 
     if (!organisasi) {
@@ -91,10 +97,10 @@ export const PUT = withAuth(async (req: AuthenticatedRequest, props: RouteProps)
       where: { id: organisasiId },
       data: {
         nama_org: validatedData.nama_org,
-        kelurahan: validatedData.kelurahan,
-        kecamatan: validatedData.kecamatan,
-        kota: validatedData.kota,
-        provinsi: validatedData.provinsi,
+        kode_wilayah_induk_kelurahan: validatedData.kode_wilayah_induk_kelurahan,
+        kode_wilayah_induk_kecamatan: validatedData.kode_wilayah_induk_kecamatan,
+        kode_wilayah_induk_kota: validatedData.kode_wilayah_induk_kota,
+        kode_wilayah_induk_provinsi: validatedData.kode_wilayah_induk_provinsi,
         no_handphone: validatedData.no_handphone,
         email: validatedData.email,
         alamat: validatedData.alamat,

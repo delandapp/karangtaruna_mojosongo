@@ -38,6 +38,14 @@ import {
   Organisasi,
 } from "@/features/api/organisasiApi";
 
+import { ComboBox } from "@/components/ui/combobox";
+import {
+  useGetProvinsiQuery,
+  useGetKotaQuery,
+  useGetKecamatanQuery,
+  useGetKelurahanQuery,
+} from "@/features/api/wilayahApi";
+
 const mediaSosialSchema = z.object({
   instagram: z.string().optional().or(z.literal("")),
   facebook: z.string().optional().or(z.literal("")),
@@ -48,10 +56,10 @@ const mediaSosialSchema = z.object({
 
 const formSchema = z.object({
   nama_org: z.string().min(3, "Nama organisasi minimal 3 karakter"),
-  kelurahan: z.string().min(3, "Kelurahan wajib diisi"),
-  kecamatan: z.string().min(3, "Kecamatan wajib diisi"),
-  kota: z.string().min(3, "Kota wajib diisi"),
-  provinsi: z.string().min(3, "Provinsi wajib diisi"),
+  kode_wilayah_induk_kelurahan: z.string().min(3, "Kelurahan wajib diisi"),
+  kode_wilayah_induk_kecamatan: z.string().min(3, "Kecamatan wajib diisi"),
+  kode_wilayah_induk_kota: z.string().min(3, "Kota wajib diisi"),
+  kode_wilayah_induk_provinsi: z.string().min(3, "Provinsi wajib diisi"),
   no_handphone: z.string().max(20).optional().or(z.literal("")),
   email: z
     .string()
@@ -98,10 +106,10 @@ export function OrganisasiFormModal({
     resolver: zodResolver(formSchema),
     defaultValues: {
       nama_org: "",
-      kelurahan: "",
-      kecamatan: "",
-      kota: "",
-      provinsi: "",
+      kode_wilayah_induk_kelurahan: "",
+      kode_wilayah_induk_kecamatan: "",
+      kode_wilayah_induk_kota: "",
+      kode_wilayah_induk_provinsi: "",
       no_handphone: "",
       email: "",
       alamat: "",
@@ -142,10 +150,10 @@ export function OrganisasiFormModal({
 
         form.reset({
           nama_org: initialData.nama_org,
-          kelurahan: initialData.kelurahan,
-          kecamatan: initialData.kecamatan,
-          kota: initialData.kota,
-          provinsi: initialData.provinsi,
+          kode_wilayah_induk_kelurahan: initialData.kode_wilayah_induk_kelurahan,
+          kode_wilayah_induk_kecamatan: initialData.kode_wilayah_induk_kecamatan,
+          kode_wilayah_induk_kota: initialData.kode_wilayah_induk_kota,
+          kode_wilayah_induk_provinsi: initialData.kode_wilayah_induk_provinsi,
           no_handphone: initialData.no_handphone || "",
           email: initialData.email || "",
           alamat: initialData.alamat || "",
@@ -167,10 +175,10 @@ export function OrganisasiFormModal({
       } else {
         form.reset({
           nama_org: "",
-          kelurahan: "",
-          kecamatan: "",
-          kota: "",
-          provinsi: "",
+          kode_wilayah_induk_kelurahan: "",
+          kode_wilayah_induk_kecamatan: "",
+          kode_wilayah_induk_kota: "",
+          kode_wilayah_induk_provinsi: "",
           no_handphone: "",
           email: "",
           alamat: "",
@@ -245,6 +253,22 @@ export function OrganisasiFormModal({
   };
 
   const isLoading = isCreating || isUpdating;
+
+  // Watch region values for cascading
+  const selectedProvinsi = form.watch("kode_wilayah_induk_provinsi");
+  const selectedKota = form.watch("kode_wilayah_induk_kota");
+  const selectedKecamatan = form.watch("kode_wilayah_induk_kecamatan");
+
+  // Fetch Wilayah Data
+  const { data: provinsiRes, isFetching: loadingProv } = useGetProvinsiQuery();
+  const { data: kotaRes, isFetching: loadingKota } = useGetKotaQuery(selectedProvinsi, { skip: !selectedProvinsi });
+  const { data: kecamatanRes, isFetching: loadingKec } = useGetKecamatanQuery(selectedKota, { skip: !selectedKota });
+  const { data: kelurahanRes, isFetching: loadingKel } = useGetKelurahanQuery(selectedKecamatan, { skip: !selectedKecamatan });
+
+  const provinsiData = provinsiRes?.data?.map(i => ({ id: i.kode_wilayah, nama: i.nama })) || [];
+  const kotaData = kotaRes?.data?.map(i => ({ id: i.kode_wilayah, nama: i.nama })) || [];
+  const kecamatanData = kecamatanRes?.data?.map(i => ({ id: i.kode_wilayah, nama: i.nama })) || [];
+  const kelurahanData = kelurahanRes?.data?.map(i => ({ id: i.kode_wilayah, nama: i.nama })) || [];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -417,14 +441,27 @@ export function OrganisasiFormModal({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="provinsi"
+                  name="kode_wilayah_induk_provinsi"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
                         Provinsi <span className="text-destructive">*</span>
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder="Jawa Tengah" {...field} />
+                        <ComboBox
+                          data={provinsiData}
+                          selected={field.value}
+                          onChange={(val) => {
+                            const newProv = typeof val === "string" ? val : val.id.toString();
+                            field.onChange(newProv);
+                            // Reset children when parent changes
+                            form.setValue("kode_wilayah_induk_kota", "");
+                            form.setValue("kode_wilayah_induk_kecamatan", "");
+                            form.setValue("kode_wilayah_induk_kelurahan", "");
+                          }}
+                          title="Provinsi"
+                          disabled={loadingProv || isLoading}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -432,7 +469,7 @@ export function OrganisasiFormModal({
                 />
                 <FormField
                   control={form.control}
-                  name="kota"
+                  name="kode_wilayah_induk_kota"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
@@ -440,7 +477,19 @@ export function OrganisasiFormModal({
                         <span className="text-destructive">*</span>
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder="Surakarta" {...field} />
+                        <ComboBox
+                          data={kotaData}
+                          selected={field.value}
+                          onChange={(val) => {
+                            const newKota = typeof val === "string" ? val : val.id.toString();
+                            field.onChange(newKota);
+                            // Reset children
+                            form.setValue("kode_wilayah_induk_kecamatan", "");
+                            form.setValue("kode_wilayah_induk_kelurahan", "");
+                          }}
+                          title="Kota / Kabupaten"
+                          disabled={!selectedProvinsi || loadingKota || isLoading}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -451,14 +500,25 @@ export function OrganisasiFormModal({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="kecamatan"
+                  name="kode_wilayah_induk_kecamatan"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
                         Kecamatan <span className="text-destructive">*</span>
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder="Jebres" {...field} />
+                        <ComboBox
+                          data={kecamatanData}
+                          selected={field.value}
+                          onChange={(val) => {
+                            const newKec = typeof val === "string" ? val : val.id.toString();
+                            field.onChange(newKec);
+                            // Reset children
+                            form.setValue("kode_wilayah_induk_kelurahan", "");
+                          }}
+                          title="Kecamatan"
+                          disabled={!selectedKota || loadingKec || isLoading}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -466,7 +526,7 @@ export function OrganisasiFormModal({
                 />
                 <FormField
                   control={form.control}
-                  name="kelurahan"
+                  name="kode_wilayah_induk_kelurahan"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
@@ -474,7 +534,16 @@ export function OrganisasiFormModal({
                         <span className="text-destructive">*</span>
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder="Mojosongo" {...field} />
+                        <ComboBox
+                          data={kelurahanData}
+                          selected={field.value}
+                          onChange={(val) => {
+                            const newKel = typeof val === "string" ? val : val.id.toString();
+                            field.onChange(newKel);
+                          }}
+                          title="Kelurahan"
+                          disabled={!selectedKecamatan || loadingKel || isLoading}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

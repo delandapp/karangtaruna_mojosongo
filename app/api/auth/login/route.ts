@@ -6,6 +6,8 @@ import { handleApiError } from "@/lib/error-handler";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
+import { cookies } from "next/headers";
+
 const JWT_SECRET = process.env.JWT_SECRET || "super_secret_fallback_key_123!";
 
 export async function POST(req: NextRequest) {
@@ -49,16 +51,22 @@ export async function POST(req: NextRequest) {
     );
 
     // 5. Setup data yang di-return
-    // *Catatan:* Kita tidak membalikkan `password`
     const { password: _, ...userWithoutPassword } = user;
 
-    // 6. Return response sukses
-    const response = successResponse({
-      user: userWithoutPassword,
-      token, // Anda juga bisa masukkan ke HTTP Only Cookie kalau frontend berbeda
+    // 6. Set HTTPOnly Cookie
+    const cookieStore = await cookies();
+    cookieStore.set("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60, // 7 hari
+      path: "/",
     });
 
-    return response;
+    // 7. Return response sukses (tanpa menyertakan token di JSON body for better security)
+    return successResponse({
+      user: userWithoutPassword,
+    });
   } catch (error) {
     return handleApiError(error);
   }

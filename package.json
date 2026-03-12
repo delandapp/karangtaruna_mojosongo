@@ -12,7 +12,10 @@
     "sync:kecamatan": "npx dotenv-cli -e .env.development -- npx tsx scripts/SyncKecamatan.ts",
     "sync:kelurahan": "npx dotenv-cli -e .env.development -- npx tsx scripts/SyncKelurahan.ts",
     "sync:jenjang": "npx dotenv-cli -e .env.development -- npx tsx scripts/SyncJenjang.ts",
-    "sync:sekolah": "npx dotenv-cli -e .env.development -- npx tsx scripts/SyncSekolah.ts"
+    "sync:sekolah": "npx dotenv-cli -e .env.development -- npx tsx scripts/SyncSekolah.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -58,12 +61,16 @@
     "@types/pg": "^8.18.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/supertest": "^7.2.0",
+    "@vitest/coverage-v8": "^4.1.0",
     "dotenv-cli": "^11.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "postcss": "^8.5.8",
     "shadcn": "^3.8.5",
+    "supertest": "^7.2.2",
     "tailwindcss": "^4.2.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.0"
   }
 }

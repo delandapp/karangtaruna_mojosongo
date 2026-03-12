@@ -20,17 +20,19 @@ export interface ApiResponse<T = any> {
   meta?: PaginationMeta;
 }
 
+// BigInt-safe replacer for NextResponse.json
+function bigIntReplacer(_k: string, v: unknown) {
+  return typeof v === "bigint" ? Number(v) : v;
+}
+
 /**
  * Creates a standardized 200 OK success response for a single item or simple data.
  */
 export function successResponse<T>(data: T, status = 200) {
-  return NextResponse.json<ApiResponse<T>>(
-    {
-      success: true,
-      data,
-    },
-    { status },
-  );
+  return new Response(JSON.stringify({ success: true, data }, bigIntReplacer), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
 /**
@@ -41,14 +43,10 @@ export function paginatedResponse<T>(
   meta: PaginationMeta,
   status = 200,
 ) {
-  return NextResponse.json<ApiResponse<T[]>>(
-    {
-      success: true,
-      data,
-      meta,
-    },
-    { status },
-  );
+  return new Response(JSON.stringify({ success: true, data, meta }, bigIntReplacer), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
 /**

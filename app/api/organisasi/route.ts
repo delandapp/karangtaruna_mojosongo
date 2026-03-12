@@ -49,9 +49,9 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
       ? {
           OR: [
             { nama_org: { contains: searchQuery, mode: "insensitive" as const } },
-            { kelurahan: { contains: searchQuery, mode: "insensitive" as const } },
-            { kecamatan: { contains: searchQuery, mode: "insensitive" as const } },
-            { kota: { contains: searchQuery, mode: "insensitive" as const } },
+            { m_kelurahan: { nama: { contains: searchQuery, mode: "insensitive" as const } } },
+            { m_kecamatan: { nama: { contains: searchQuery, mode: "insensitive" as const } } },
+            { m_kota: { nama: { contains: searchQuery, mode: "insensitive" as const } } },
           ],
         }
       : {};
@@ -59,6 +59,12 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
     const [organisasiList, total] = await Promise.all([
       prisma.m_organisasi.findMany({
         where: whereCondition,
+        include: {
+          m_provinsi: true,
+          m_kota: true,
+          m_kecamatan: true,
+          m_kelurahan: true,
+        },
         skip,
         take: limit,
         orderBy: { dibuat_pada: "desc" },
@@ -101,10 +107,10 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     const newOrganisasi = await prisma.m_organisasi.create({
       data: {
         nama_org: validatedData.nama_org,
-        kelurahan: validatedData.kelurahan,
-        kecamatan: validatedData.kecamatan,
-        kota: validatedData.kota,
-        provinsi: validatedData.provinsi,
+        kode_wilayah_induk_kelurahan: validatedData.kode_wilayah_induk_kelurahan,
+        kode_wilayah_induk_kecamatan: validatedData.kode_wilayah_induk_kecamatan,
+        kode_wilayah_induk_kota: validatedData.kode_wilayah_induk_kota,
+        kode_wilayah_induk_provinsi: validatedData.kode_wilayah_induk_provinsi,
         no_handphone: validatedData.no_handphone,
         email: validatedData.email,
         alamat: validatedData.alamat,

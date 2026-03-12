@@ -17,6 +17,7 @@ export const updateItemAnggaranSchema = z.object({
   deskripsi: z.string().min(1).optional(),
   jumlah_satuan: z.number().int().min(1).optional(),
   harga_satuan_rencana: z.number().min(0).optional(),
+  total_realisasi: z.number().min(0, "Realisasi tidak boleh negatif").optional().nullable(),
   catatan: z.string().optional().nullable(),
 });
 

@@ -60,6 +60,31 @@ function log(level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string) {
   console.log(`${warna[level]}[${level}]${reset} ${ts} — ${msg}`);
 }
 
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchWithRetry(url: string, retries = 3, delayMs = 3000): Promise<any> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(url, { headers: { Accept: "application/json" } });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch (e: any) {
+        throw new Error(`Invalid JSON response: ${text.substring(0, 100).replace(/\n/g, "")}...`);
+      }
+    } catch (err: any) {
+      if (i === retries - 1) throw err;
+      log("WARN", `Fetch gagal (percobaan ${i + 1}/${retries}): ${err.message}. Retrying in ${delayMs / 1000}s...`);
+      await delay(delayMs);
+    }
+  }
+}
+
 function cetakLaporan(report: SyncReport) {
   const sep = "═".repeat(60);
   console.log(`\n${sep}`);
@@ -112,12 +137,7 @@ async function main() {
     const url = `${BASE_URL}?${PARAMS_PROVINSI.toString()}`;
     log("INFO", `Fetching: ${url}`);
 
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const data: KemendikbudProvinsiItem[] = await response.json();
+    const data: KemendikbudProvinsiItem[] = await fetchWithRetry(url);
     report.total = data.length;
     log("INFO", `Diterima ${report.total} data provinsi dari API.`);
 

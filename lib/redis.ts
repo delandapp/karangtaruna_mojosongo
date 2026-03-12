@@ -45,7 +45,10 @@ export async function setCache(
   ttlInSeconds?: number,
 ): Promise<void> {
   try {
-    const serialized = JSON.stringify(value);
+    // BigInt-safe serializer — converts BigInt to Number to prevent JSON crash
+    const bigIntReplacer = (_k: string, v: unknown) =>
+      typeof v === "bigint" ? Number(v) : v;
+    const serialized = JSON.stringify(value, bigIntReplacer);
     if (ttlInSeconds) {
       await redis.set(key, serialized, "EX", ttlInSeconds);
     } else {

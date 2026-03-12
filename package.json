@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "dotenv -e .env.development -- next dev",
-    "build": "next build",
+    "build": "dotenv -e .env.development -- next build",
     "start": "next start",
     "lint": "next lint",
     "sync:provinsi": "npx dotenv-cli -e .env.development -- npx tsx scripts/SyncProvinsi.ts",

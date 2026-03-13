@@ -55,6 +55,21 @@ export const REDIS_KEYS = {
     ALL_PREFIX: "master:rapat:all:*",
     SINGLE: (id: number) => `master:rapat:${id}`,
   },
+  SEKTOR_INDUSTRI: {
+    ALL: "master:sektor_industri:all",
+    ALL_PREFIX: "master:sektor_industri:all:*",
+    SINGLE: (id: number) => `master:sektor_industri:${id}`,
+  },
+  SKALA_PERUSAHAAN: {
+    ALL: "master:skala_perusahaan:all",
+    ALL_PREFIX: "master:skala_perusahaan:all:*",
+    SINGLE: (id: number) => `master:skala_perusahaan:${id}`,
+  },
+  PERUSAHAAN: {
+    ALL: "master:perusahaan:all",
+    ALL_PREFIX: "master:perusahaan:all:*",
+    SINGLE: (id: number) => `master:perusahaan:${id}`,
+  },
 };
 
 // Global cache TTL in seconds (1 Hour by default)

@@ -64,6 +64,15 @@ const TOOLS_NAV = [
         label: "Kategori Brand",
       },
       { href: "/dashboard/sponsorship/bidang-brand", label: "Bidang Brand" },
+      { href: "/dashboard/sponsorship/perusahaan", label: "Perusahaan" },
+      {
+        href: "/dashboard/sponsorship/sektor-industri",
+        label: "Sektor Industri",
+      },
+      {
+        href: "/dashboard/sponsorship/skala-perusahaan",
+        label: "Skala Perusahaan",
+      },
     ],
   },
 ];

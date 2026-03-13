@@ -2,7 +2,7 @@
 
 import React, { use, useCallback, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import { DashboardHeader } from "@/components/organisms/headers/DashboardHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -25,12 +25,6 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-// ── Tab action buttons config ─────────────────────────────────────────────────
-// Each tab can expose an "add" button in the header row next to TabsList.
-// The actual open-state is managed inside each Tab* component via a ref callback.
-// We use a simple approach: pass an `onAddClick` prop down so the button in the
-// header triggers the create modal inside the child tab component.
-
 export default function EventDetailPage(props: PageProps) {
   const params = use(props.params);
   const eventId = parseInt(params.id, 10);
@@ -40,10 +34,14 @@ export default function EventDetailPage(props: PageProps) {
   const tabParam = searchParams.get("tab");
   const activeTab: TabValue = isValidTab(tabParam) ? tabParam : "informasi";
 
-  // Lifted "add" triggers — each is a function that the tab child will update via a callback ref
+  // ── Lifted add triggers (each tab registers its open-form fn) ─────────────
   const [addAnggaran,  setAddAnggaran]  = useState<(() => void) | null>(null);
   const [addPanitia,   setAddPanitia]   = useState<(() => void) | null>(null);
   const [addRundown,   setAddRundown]   = useState<(() => void) | null>(null);
+
+  // ── Lifted refresh triggers (only tabs that need manual refresh) ───────────
+  const [refreshPanitia, setRefreshPanitia] = useState<(() => void) | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const { data: eventData, isLoading: isLoadingEvent } = useGetEventByIdQuery(eventId, {
     skip: isNaN(eventId),
@@ -65,15 +63,29 @@ export default function EventDetailPage(props: PageProps) {
     [router, searchParams]
   );
 
-  // Determine which button to show based on active tab
+  // ── Tab action config ─────────────────────────────────────────────────────
   const tabActions: Record<TabValue, { label: string; handler: (() => void) | null }> = {
-    informasi: { label: "", handler: null },
-    anggaran:  { label: "Buat Anggaran",      handler: addAnggaran },
-    panitia:   { label: "Tambah Panitia",     handler: addPanitia },
-    rundown:   { label: "Tambah Rundown",     handler: addRundown },
+    informasi: { label: "",                 handler: null },
+    anggaran:  { label: "Buat Anggaran",    handler: addAnggaran },
+    panitia:   { label: "Tambah Panitia",   handler: addPanitia },
+    rundown:   { label: "Tambah Rundown",   handler: addRundown },
   };
 
-  const currentAction = tabActions[activeTab];
+  // ── Tab refresh config (only tabs that expose a refresh fn) ───────────────
+  const tabRefreshMap: Partial<Record<TabValue, (() => void) | null>> = {
+    panitia: refreshPanitia,
+  };
+
+  const currentAction  = tabActions[activeTab];
+  const currentRefresh = tabRefreshMap[activeTab] ?? null;
+
+  const handleRefresh = async () => {
+    if (!currentRefresh) return;
+    setIsRefreshing(true);
+    currentRefresh();
+    // Small visual delay so the spin is visible
+    setTimeout(() => setIsRefreshing(false), 800);
+  };
 
   if (isNaN(eventId)) {
     return (
@@ -112,7 +124,7 @@ export default function EventDetailPage(props: PageProps) {
           ) : (
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
 
-              {/* ── Tab bar row with inline action button ── */}
+              {/* ── Tab bar row with action buttons ── */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 w-full">
                 <TabsList className="h-9 w-full sm:w-auto grid grid-cols-4 sm:flex sm:flex-wrap">
                   <TabsTrigger value="informasi" className="text-xs sm:text-sm">Informasi</TabsTrigger>
@@ -121,15 +133,34 @@ export default function EventDetailPage(props: PageProps) {
                   <TabsTrigger value="rundown"   className="text-xs sm:text-sm">Rundown</TabsTrigger>
                 </TabsList>
 
-                {currentAction.handler && (
-                  <Button
-                    size="sm"
-                    onClick={currentAction.handler}
-                    className="w-full sm:w-auto gap-1.5 h-9 shadow-sm shadow-primary/20 hover:shadow-primary/30 transition-all shrink-0"
-                  >
-                    <Plus className="size-3.5" />
-                    {currentAction.label}
-                  </Button>
+                {/* Right-side: Refresh (if tab supports it) + Add button */}
+                {(currentRefresh || currentAction.handler) && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    {currentRefresh && (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={handleRefresh}
+                        disabled={isRefreshing}
+                        className="h-9 w-9"
+                        title="Refresh data"
+                      >
+                        <RefreshCw
+                          className={`size-3.5 ${isRefreshing ? "animate-spin text-muted-foreground" : ""}`}
+                        />
+                      </Button>
+                    )}
+                    {currentAction.handler && (
+                      <Button
+                        size="sm"
+                        onClick={currentAction.handler}
+                        className="w-full sm:w-auto gap-1.5 h-9 shadow-sm shadow-primary/20 hover:shadow-primary/30 transition-all"
+                      >
+                        <Plus className="size-3.5" />
+                        {currentAction.label}
+                      </Button>
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -147,7 +178,11 @@ export default function EventDetailPage(props: PageProps) {
               </TabsContent>
 
               <TabsContent value="panitia">
-                <TabPanitia onRegisterAdd={(fn) => setAddPanitia(() => fn)} />
+                <TabPanitia
+                  eventId={eventId}
+                  onRegisterAdd={(fn) => setAddPanitia(() => fn)}
+                  onRegisterRefresh={(fn) => setRefreshPanitia(() => fn)}
+                />
               </TabsContent>
 
               <TabsContent value="rundown">

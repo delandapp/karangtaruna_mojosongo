@@ -9,13 +9,26 @@ export async function seedHakAkses(prisma: PrismaClient) {
   await prisma.m_hak_akses.deleteMany({});
 
   // Ambil semua level yang dibutuhkan sekaligus
-  const [superuserLvl, ketuaLvl, adminLvl, wakilKetuaLvl, sekretarisLvl, bendaharaLvl] = await Promise.all([
+  const [
+    superuserLvl,
+    ketuaLvl,
+    adminLvl,
+    wakilKetuaLvl,
+    sekretarisLvl,
+    bendaharaLvl,
+    koordinatorLvl,
+    anggotaLvl,
+    humasJabatan,
+  ] = await Promise.all([
     prisma.m_level.findUnique({ where: { nama_level: "superuser" } }),
     prisma.m_level.findUnique({ where: { nama_level: "ketua" } }),
     prisma.m_level.findUnique({ where: { nama_level: "admin" } }),
     prisma.m_level.findUnique({ where: { nama_level: "wakil ketua" } }),
-    prisma.m_level.findUnique({ where: { nama_level: "sekretaris" } }),
+    prisma.m_level.findUnique({ where: { nama_level: "seketaris" } }),
     prisma.m_level.findUnique({ where: { nama_level: "bendahara" } }),
+    prisma.m_level.findUnique({ where: { nama_level: "koordinator" } }),
+    prisma.m_level.findUnique({ where: { nama_level: "anggota" } }),
+    prisma.m_jabatan.findUnique({ where: { nama_jabatan: "Bidang Humas" } }),
   ]);
 
   // Helper: buat hak akses + rules sekaligus
@@ -25,6 +38,7 @@ export async function seedHakAkses(prisma: PrismaClient) {
     endpoint: string,
     method: string,
     allowedLevelIds: number[],
+    allowedRules?: { levelId?: number; jabatanId?: number }[],
   ) => {
     const hak = await prisma.m_hak_akses.create({
       data: {
@@ -37,11 +51,23 @@ export async function seedHakAkses(prisma: PrismaClient) {
       },
     });
 
+    const rulesData: any[] = allowedLevelIds.map((levelId) => ({
+      m_hak_akses_id: hak.id,
+      m_level_id: levelId,
+    }));
+
+    if (allowedRules) {
+      allowedRules.forEach((rule) => {
+        rulesData.push({
+          m_hak_akses_id: hak.id,
+          m_level_id: rule.levelId,
+          m_jabatan_id: rule.jabatanId,
+        });
+      });
+    }
+
     await prisma.m_hak_akses_rule.createMany({
-      data: allowedLevelIds.map((levelId) => ({
-        m_hak_akses_id: hak.id,
-        m_level_id: levelId,
-      })),
+      data: rulesData,
     });
   };
 
@@ -68,6 +94,23 @@ export async function seedHakAkses(prisma: PrismaClient) {
     sekretarisLvl?.id,
     bendaharaLvl?.id,
   ].filter((id): id is number => id !== undefined);
+
+  const perusahaanLevelIds = [
+    superuserLvl?.id,
+    adminLvl?.id,
+    ketuaLvl?.id,
+    wakilKetuaLvl?.id,
+    sekretarisLvl?.id,
+    bendaharaLvl?.id,
+  ].filter((id): id is number => id !== undefined);
+
+  const humasRules = [
+    { levelId: koordinatorLvl?.id, jabatanId: humasJabatan?.id },
+    { levelId: anggotaLvl?.id, jabatanId: humasJabatan?.id },
+  ].filter((r) => r.levelId !== undefined && r.jabatanId !== undefined) as {
+    levelId?: number;
+    jabatanId?: number;
+  }[];
 
   // ── API: Users ──────────────────────────────────────────────────────────────
   const apiUsers = [
@@ -256,4 +299,63 @@ export async function seedHakAkses(prisma: PrismaClient) {
       anggaranLevelIds,
     );
   }
+
+  // ── API: Sponsorship/Sektor Industri ──────────────────────────────────────────────────
+  const apiSektor = [
+    { nama: "Read Sektor Industri", tipe: "read", method: "GET" },
+    { nama: "Create Sektor Industri", tipe: "create", method: "POST" },
+    { nama: "Update Sektor Industri", tipe: "update", method: "PUT" },
+    { nama: "Delete Sektor Industri", tipe: "delete", method: "DELETE" },
+  ];
+  for (const item of apiSektor) {
+    await buatHakAkses(item.nama, item.tipe, "/api/sektor-industri", item.method, perusahaanLevelIds, humasRules);
+  }
+
+  // ── API: Sponsorship/Skala Perusahaan ────────────────────────────────────────────────
+  const apiSkala = [
+    { nama: "Read Skala Perusahaan", tipe: "read", method: "GET" },
+    { nama: "Create Skala Perusahaan", tipe: "create", method: "POST" },
+    { nama: "Update Skala Perusahaan", tipe: "update", method: "PUT" },
+    { nama: "Delete Skala Perusahaan", tipe: "delete", method: "DELETE" },
+  ];
+  for (const item of apiSkala) {
+    await buatHakAkses(item.nama, item.tipe, "/api/skala-perusahaan", item.method, perusahaanLevelIds, humasRules);
+  }
+
+  // ── API: Sponsorship/Perusahaan ──────────────────────────────────────────────────────
+  const apiPerusahaan = [
+    { nama: "Read Perusahaan", tipe: "read", method: "GET" },
+    { nama: "Create Perusahaan", tipe: "create", method: "POST" },
+    { nama: "Update Perusahaan", tipe: "update", method: "PUT" },
+    { nama: "Delete Perusahaan", tipe: "delete", method: "DELETE" },
+  ];
+  for (const item of apiPerusahaan) {
+    await buatHakAkses(item.nama, item.tipe, "/api/perusahaan", item.method, perusahaanLevelIds, humasRules);
+  }
+
+  // ── API: Panitia ─────────────────────────────────────────────────────────────
+  // superuser + admin + ketua + wakil ketua dapat melakukan CRUD panitia
+  const panitiaLevelIds = [
+    superuserLvl?.id,
+    adminLvl?.id,
+    ketuaLvl?.id,
+    wakilKetuaLvl?.id,
+  ].filter((id): id is number => id !== undefined);
+
+  const apiPanitia = [
+    { nama: "Read Panitia",   tipe: "read",   method: "GET" },
+    { nama: "Create Panitia", tipe: "create", method: "POST" },
+    { nama: "Update Panitia", tipe: "update", method: "PUT" },
+    { nama: "Delete Panitia", tipe: "delete", method: "DELETE" },
+  ];
+  for (const item of apiPanitia) {
+    await buatHakAkses(
+      item.nama,
+      item.tipe,
+      "/api/events/panitia",
+      item.method,
+      panitiaLevelIds,
+    );
+  }
 }
+

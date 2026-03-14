@@ -186,7 +186,10 @@ export default function EventDetailPage(props: PageProps) {
               </TabsContent>
 
               <TabsContent value="rundown">
-                <TabRundown onRegisterAdd={(fn) => setAddRundown(() => fn)} />
+                <TabRundown
+                  eventId={eventId}
+                  onRegisterAdd={(fn) => setAddRundown(() => fn)}
+                />
               </TabsContent>
             </Tabs>
           )}

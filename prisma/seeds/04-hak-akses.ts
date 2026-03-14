@@ -357,5 +357,23 @@ export async function seedHakAkses(prisma: PrismaClient) {
       panitiaLevelIds,
     );
   }
+
+  // ── API: Rundown ─────────────────────────────────────────────────────────────
+  // superuser + admin + ketua + wakil ketua dapat melakukan CRUD rundown (sama spt panitia)
+  const apiRundown = [
+    { nama: "Read Rundown",   tipe: "read",   method: "GET" },
+    { nama: "Create Rundown", tipe: "create", method: "POST" },
+    { nama: "Update Rundown", tipe: "update", method: "PUT" },
+    { nama: "Delete Rundown", tipe: "delete", method: "DELETE" },
+  ];
+  for (const item of apiRundown) {
+    await buatHakAkses(
+      item.nama,
+      item.tipe,
+      "/api/events/rundown",
+      item.method,
+      panitiaLevelIds, // Menggunakan panitiaLevelIds sesuai instruksi (sama dengan susunan panitia)
+    );
+  }
 }
 

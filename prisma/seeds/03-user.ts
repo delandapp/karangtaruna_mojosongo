@@ -75,10 +75,18 @@ export async function seedUsers(prisma: PrismaClient) {
     levelId: number,
     jabatanId: number,
   ) => {
-    const fakePhone = "08" + String(phoneCounter++).padStart(9, "0");
+    // Generate unique phone number by turning username into a numeric string
+    const hash = username.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const uniqueHash = (hash * phoneCounter++).toString().substring(0, 8);
+    const fakePhone = "08" + uniqueHash.padStart(9, "0");
+    
     await prisma.m_user.upsert({
       where: { username },
-      update: {},
+      update: {
+        no_handphone: fakePhone, // Update the fake phone just in case it had conflict previously
+        m_level_id: levelId,
+        m_jabatan_id: jabatanId,
+      },
       create: {
         nama_lengkap,
         username,

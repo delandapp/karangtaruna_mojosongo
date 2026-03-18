@@ -31,7 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { HakAksesFormModal } from "../modals/HakAksesFormModal";
+import { HakAksesFormModal } from "../modals/master/HakAksesFormModal";
 import { TablePagination } from "../../molecules/TablePagination";
 import {
   useGetHakAksesQuery,

@@ -31,7 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LevelFormModal } from "../modals/LevelFormModal";
+import { LevelFormModal } from "../modals/master/LevelFormModal";
 import { TablePagination } from "../../molecules/TablePagination";
 import {
   useGetLevelsQuery,

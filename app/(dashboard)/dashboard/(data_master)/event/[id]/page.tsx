@@ -12,9 +12,12 @@ import { TabInformasi } from "@/components/organisms/event/detail/tab-informasi"
 import { TabAnggaran } from "@/components/organisms/event/detail/tab-anggaran";
 import { TabPanitia } from "@/components/organisms/event/detail/tab-panitia";
 import { TabRundown } from "@/components/organisms/event/detail/tab-rundown";
+import { TabSponsorship } from "@/components/organisms/event/detail/tab-sponsorship";
+import { TabSponsorshipManajemen } from "@/components/organisms/event/detail/tab-sponsorship-manajemen";
+import { TabSponsorshipGenerator } from "@/components/organisms/event/detail/tab-sponsorship-generator";
 
 // ── Valid tabs ───────────────────────────────────────────────────────────────
-const VALID_TABS = ["informasi", "anggaran", "panitia", "rundown"] as const;
+const VALID_TABS = ["informasi", "anggaran", "panitia", "rundown", "sponsorship", "sponsorship-manajemen", "sponsorship-generator"] as const;
 type TabValue = (typeof VALID_TABS)[number];
 
 function isValidTab(tab: string | null): tab is TabValue {
@@ -69,6 +72,9 @@ export default function EventDetailPage(props: PageProps) {
     anggaran:  { label: "Buat Anggaran",    handler: addAnggaran },
     panitia:   { label: "Tambah Panitia",   handler: addPanitia },
     rundown:   { label: "Tambah Rundown",   handler: addRundown },
+    sponsorship: { label: "", handler: null },
+    "sponsorship-manajemen": { label: "", handler: null },
+    "sponsorship-generator": { label: "", handler: null },
   };
 
   // ── Tab refresh config (only tabs that expose a refresh fn) ───────────────
@@ -131,6 +137,9 @@ export default function EventDetailPage(props: PageProps) {
                   <TabsTrigger value="anggaran"  className="text-xs sm:text-sm">Anggaran</TabsTrigger>
                   <TabsTrigger value="panitia"   className="text-xs sm:text-sm">Panitia</TabsTrigger>
                   <TabsTrigger value="rundown"   className="text-xs sm:text-sm">Rundown</TabsTrigger>
+                  <TabsTrigger value="sponsorship" className="text-xs sm:text-sm">Sponsorship</TabsTrigger>
+                  <TabsTrigger value="sponsorship-manajemen" className="text-xs sm:text-sm">Pipeline Sponsor</TabsTrigger>
+                  <TabsTrigger value="sponsorship-generator" className="text-xs sm:text-sm">Proposal</TabsTrigger>
                 </TabsList>
 
                 {/* Right-side: Refresh (if tab supports it) + Add button */}
@@ -190,6 +199,18 @@ export default function EventDetailPage(props: PageProps) {
                   eventId={eventId}
                   onRegisterAdd={(fn) => setAddRundown(() => fn)}
                 />
+              </TabsContent>
+
+              <TabsContent value="sponsorship">
+                <TabSponsorship eventId={eventId} />
+              </TabsContent>
+
+              <TabsContent value="sponsorship-manajemen">
+                <TabSponsorshipManajemen eventId={eventId} />
+              </TabsContent>
+
+              <TabsContent value="sponsorship-generator">
+                <TabSponsorshipGenerator eventId={eventId} />
               </TabsContent>
             </Tabs>
           )}

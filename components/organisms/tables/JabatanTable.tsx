@@ -30,7 +30,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { JabatanFormModal } from "../modals/JabatanFormModal";
+import { JabatanFormModal } from "../modals/master/JabatanFormModal";
 import { TablePagination } from "../../molecules/TablePagination";
 import {
   useGetJabatansQuery,

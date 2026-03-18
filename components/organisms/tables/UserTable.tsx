@@ -32,7 +32,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { UserFormModal } from "../modals/UserFormModal";
+import { UserFormModal } from "../modals/master/UserFormModal";
 import { TablePagination } from "../../molecules/TablePagination";
 import {
   useGetUsersQuery,

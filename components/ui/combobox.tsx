@@ -87,22 +87,21 @@ export function ComboBox({
   // State Management
   const [open, setOpen] = React.useState<boolean>(false);
   const [searchQuery, setSearchQuery] = React.useState<string>("");
-  const [displayedData, setDisplayedData] = React.useState<ComboBoxItem[]>(
-    data || []
-  );
+  const [filteredData, setFilteredData] = React.useState<ComboBoxItem[] | null>(null);
   const commandListRef = React.useRef<HTMLDivElement | null>(null);
 
-  // Effect untuk menyinkronkan data dari props ke state internal
-  React.useEffect(() => {
-    setDisplayedData(data || []);
-  }, [data]);
+  // Compute items to render: use filtered result if searching locally, otherwise always use prop data
+  const displayedData = React.useMemo(() => {
+    if (filteredData !== null) return filteredData;
+    return data || [];
+  }, [filteredData, data]);
 
   // Handler untuk membuka/menutup popover
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
     if (!newOpen) {
       setSearchQuery("");
-      setDisplayedData(data || []);
+      setFilteredData(null); // Reset to show all data from prop
     }
   };
 
@@ -112,13 +111,18 @@ export function ComboBox({
       debounce((query: string) => {
         if (useApiSearch && handleSearchData) {
           handleSearchData(query);
+          setFilteredData(null); // API search: reset filter, let data prop handle it
         } else {
-          const filteredData = (data || []).filter((item: ComboBoxItem) =>
-            String(item[labelKey] ?? "")
-              .toLowerCase()
-              .includes(query.toLowerCase())
-          );
-          setDisplayedData(filteredData);
+          if (!query) {
+            setFilteredData(null); // No search: show all from data prop
+          } else {
+            const filtered = (data || []).filter((item: ComboBoxItem) =>
+              String(item[labelKey] ?? "")
+                .toLowerCase()
+                .includes(query.toLowerCase())
+            );
+            setFilteredData(filtered);
+          }
         }
       }, 300),
     [useApiSearch, handleSearchData, data, labelKey]
@@ -241,7 +245,7 @@ export function ComboBox({
                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
                 transition={{ duration: 0.2, ease: "easeInOut" }}
               >
-                <Command shouldFilter={!useApiSearch}>
+                <Command shouldFilter={false}>
                   <CommandInput
                     placeholder={`Cari ${title}...`}
                     className="h-9"
@@ -253,10 +257,13 @@ export function ComboBox({
                       <ModifiedClassicLoader />
                     </div>
                   ) : (
-                    <>
-                      <CommandEmpty>{title} tidak ditemukan.</CommandEmpty>
-                      <CommandList ref={commandListRef}>
-                        <CommandGroup>
+                    <CommandList ref={commandListRef}>
+                      {displayedData.length === 0 && (
+                        <div className="py-6 text-center text-sm text-muted-foreground">
+                          {title} tidak ditemukan.
+                        </div>
+                      )}
+                      <CommandGroup>
                           {displayedData.map((item: ComboBoxItem) => {
                             const isItemSelected =
                               selectedValue?.[valueKey] === item[valueKey];
@@ -295,7 +302,6 @@ export function ComboBox({
                           )}
                         </CommandGroup>
                       </CommandList>
-                    </>
                   )}
                 </Command>
               </motion.div>

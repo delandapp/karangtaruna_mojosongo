@@ -36,6 +36,7 @@ model m_brand {
   // Relasi
   bidang   m_bidang_brand?   @relation(fields: [m_bidang_brand_id], references: [id], onDelete: SetNull)
   kategori m_kategori_brand? @relation(fields: [m_kategori_brand_id], references: [id], onDelete: SetNull)
+  Sponsor  m_sponsor[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -145,18 +146,20 @@ model m_kategori_sponsor {
 
 // =============================================================================
 // MASTER: SPONSOR
-// Hanya menyimpan data SPONSORSHIP — kontak & profil perusahaan ada di m_perusahaan
+// Hanya menyimpan data SPONSORSHIP — kontak & profil perusahaan ada di m_perusahaan / m_brand
 // =============================================================================
 model m_sponsor {
   id                    Int  @id @default(autoincrement())
-  m_perusahaan_id       Int // FK ke m_perusahaan — WAJIB, bukan nullable
+  m_perusahaan_id       Int?
+  m_brand_id            Int?
   m_kategori_sponsor_id Int?
 
   // Satu-satunya field unik konteks sponsorship
   total_disponsori Decimal? @db.Decimal(15, 2) // akumulasi dari semua event
 
   // Relasi
-  m_perusahaan     m_perusahaan        @relation(fields: [m_perusahaan_id], references: [id])
+  m_perusahaan     m_perusahaan?       @relation(fields: [m_perusahaan_id], references: [id])
+  m_brand          m_brand?            @relation(fields: [m_brand_id], references: [id])
   kategori         m_kategori_sponsor? @relation(fields: [m_kategori_sponsor_id], references: [id], onDelete: SetNull)
   event_sponsor    event_sponsor[]
   proposal_sponsor proposal_sponsor[]
@@ -165,6 +168,7 @@ model m_sponsor {
   diperbarui_pada DateTime @updatedAt
 
   @@unique([m_perusahaan_id]) // 1 perusahaan = 1 entri sponsor
+  @@unique([m_brand_id]) // 1 brand = 1 entri sponsor
   @@index([m_kategori_sponsor_id])
   @@map("m_sponsor")
 }

@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-export const PRIORITAS_TUGAS = ["rendah", "sedang", "tinggi", "kritis"] as const;
+export const PRIORITAS_TUGAS = [
+  "rendah",
+  "sedang",
+  "tinggi",
+  "kritis",
+] as const;
 
 export const STATUS_TUGAS = [
   "belum_mulai",

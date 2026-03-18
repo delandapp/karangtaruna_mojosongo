@@ -17,6 +17,9 @@ export const apiSlice = createApi({
     "KategoriBrand",
     "BidangBrand",
     "HakAkses",
+    "Sponsor",
+    "SponsorPipeline",
+    "SponsorProposal",
   ],
   endpoints: () => ({}), // Endpoints awal sengaja dikosongkan
 });

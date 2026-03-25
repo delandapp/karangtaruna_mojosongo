@@ -375,5 +375,22 @@ export async function seedHakAkses(prisma: PrismaClient) {
       panitiaLevelIds, // Menggunakan panitiaLevelIds sesuai instruksi (sama dengan susunan panitia)
     );
   }
+
+  // ── API: E-Proposal ──────────────────────────────────────────────────────────
+  const apiEProposal = [
+    { nama: "Read E-Proposal", tipe: "read", method: "GET" },
+    { nama: "Create E-Proposal", tipe: "create", method: "POST" },
+    { nama: "Update E-Proposal", tipe: "update", method: "PUT" },
+    { nama: "Delete E-Proposal", tipe: "delete", method: "DELETE" },
+  ];
+  for (const item of apiEProposal) {
+    await buatHakAkses(
+      item.nama,
+      item.tipe,
+      "/api/eproposal",
+      item.method,
+      eventLevelIds, // superuser, admin, ketua, wakil ketua
+    );
+  }
 }
 

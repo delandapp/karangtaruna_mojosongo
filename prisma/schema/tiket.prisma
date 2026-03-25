@@ -10,19 +10,19 @@ model jenis_tiket {
   id       Int @id @default(autoincrement())
   event_id Int
 
-  nama_tiket    String
-  kategori_tiket String // "gratis" | "berbayar" | "early_bird" | "vip" | "bundling"
-  harga         Decimal  @db.Decimal(12, 2) @default(0)
-  kuota         Int
-  terjual       Int      @default(0)
-  keuntungan    Json?    // array string keuntungan tiket ini
-  penjualan_buka DateTime
+  nama_tiket      String
+  kategori_tiket  String // "gratis" | "berbayar" | "early_bird" | "vip" | "bundling"
+  harga           Decimal  @default(0) @db.Decimal(12, 2)
+  kuota           Int
+  terjual         Int      @default(0)
+  keuntungan      Json? // array string keuntungan tiket ini
+  penjualan_buka  DateTime
   penjualan_tutup DateTime
-  is_aktif      Boolean  @default(true)
+  is_aktif        Boolean  @default(true)
 
   // Relasi
-  event   event         @relation(fields: [event_id], references: [id], onDelete: Cascade)
-  order   tiket_order[]
+  event event         @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  order tiket_order[]
 
   @@index([event_id])
   @@index([is_aktif])
@@ -37,24 +37,24 @@ model tiket_order {
   jenis_tiket_id Int
   user_id        Int? // null jika beli tanpa login
 
-  nomor_order    String  @unique          // "ORD-20250801-0001"
-  nama_pembeli   String
-  email_pembeli  String
-  hp_pembeli     String
-  jumlah         Int
-  total_harga    Decimal  @db.Decimal(12, 2)
-  status_bayar   String   @default("menunggu")
+  nomor_order     String    @unique // "ORD-20250801-0001"
+  nama_pembeli    String
+  email_pembeli   String
+  hp_pembeli      String
+  jumlah          Int
+  total_harga     Decimal   @db.Decimal(12, 2)
+  status_bayar    String    @default("menunggu")
   // "menunggu" | "lunas" | "gagal" | "dikembalikan"
-  metode_bayar   String?  // "transfer" | "qris" | "gopay" | "ovo" | "dana"
+  metode_bayar    String? // "transfer" | "qris" | "gopay" | "ovo" | "dana"
   bukti_bayar_url String?
-  dibayar_pada   DateTime?
+  dibayar_pada    DateTime?
 
   // Relasi
-  jenis_tiket jenis_tiket    @relation(fields: [jenis_tiket_id], references: [id])
-  user        m_user?        @relation(fields: [user_id],        references: [id], onDelete: SetNull)
+  jenis_tiket  jenis_tiket    @relation(fields: [jenis_tiket_id], references: [id])
+  user         m_user?        @relation(fields: [user_id], references: [id], onDelete: SetNull)
   tiket_terbit tiket_terbit[]
 
-  dibuat_pada    DateTime @default(now())
+  dibuat_pada     DateTime @default(now())
   diperbarui_pada DateTime @updatedAt
 
   @@index([jenis_tiket_id])
@@ -68,19 +68,19 @@ model tiket_order {
 // Setiap tiket punya QR Code unik untuk validasi hari-H
 // -----------------------------------------------------------------------------
 model tiket_terbit {
-  id           Int @id @default(autoincrement())
-  order_id     Int
+  id            Int  @id @default(autoincrement())
+  order_id      Int
   dicek_oleh_id Int?
 
-  kode_tiket   String   @unique // "TKT-20250801-0001"
-  qr_code      String   @db.Text // base64 / data QR
+  kode_tiket    String    @unique // "TKT-20250801-0001"
+  qr_code       String    @db.Text // base64 / data QR
   nama_pemegang String
-  status        String   @default("aktif") // "aktif" | "sudah_dipakai" | "dibatalkan"
+  status        String    @default("aktif") // "aktif" | "sudah_dipakai" | "dibatalkan"
   checkin_pada  DateTime?
 
   // Relasi
-  order      tiket_order @relation(fields: [order_id],     references: [id], onDelete: Cascade)
-  dicek_oleh m_user?     @relation("tiket_dicek_oleh",     fields: [dicek_oleh_id], references: [id], onDelete: SetNull)
+  order      tiket_order @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  dicek_oleh m_user?     @relation("tiket_dicek_oleh", fields: [dicek_oleh_id], references: [id], onDelete: SetNull)
 
   diterbitkan_pada DateTime @default(now())
 

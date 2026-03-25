@@ -11,6 +11,7 @@
   --font-title: var(--font-title), sans-serif;
   --font-body: var(--font-body), serif;
   --font-ui: var(--font-ui), sans-serif;
+  --font-poppins: var(--font-poppins), sans-serif;
 
   /* Primary */
   --color-primary-50: #E8FFF5;

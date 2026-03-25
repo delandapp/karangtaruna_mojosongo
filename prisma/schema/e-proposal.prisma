@@ -1,0 +1,49 @@
+model m_eproposal {
+  id             Int @id @default(autoincrement())
+  event_id       Int @unique
+  dibuat_oleh_id Int
+
+  judul        String
+  slug         String  @unique
+  deskripsi    String? @db.Text
+  file_pdf_url String
+  cover_url    String?
+  is_aktif     Boolean @default(true)
+
+  event       event                      @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  dibuat_oleh m_user                     @relation(fields: [dibuat_oleh_id], references: [id])
+  pengaturan  c_eproposal_pengaturan?
+  daftar_isi  c_eproposal_daftar_isi[]
+
+  dibuat_pada     DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
+
+  @@index([event_id])
+  @@index([slug])
+}
+
+model c_eproposal_pengaturan {
+  id             Int @id @default(autoincrement())
+  m_eproposal_id Int @unique
+
+  auto_flip        Boolean @default(false)
+  sound_effect     Boolean @default(true)
+  bg_music_url     String?
+  theme_color      String  @default("#ffffff")
+  animasi_transisi String  @default("flip") // slide, flip, fade
+
+  eproposal m_eproposal @relation(fields: [m_eproposal_id], references: [id], onDelete: Cascade)
+}
+
+model c_eproposal_daftar_isi {
+  id             Int @id @default(autoincrement())
+  m_eproposal_id Int
+
+  judul   String // Section title
+  halaman Int    // Page number (1-indexed)
+  urutan  Int    // Sort order
+
+  eproposal m_eproposal @relation(fields: [m_eproposal_id], references: [id], onDelete: Cascade)
+
+  @@index([m_eproposal_id])
+}

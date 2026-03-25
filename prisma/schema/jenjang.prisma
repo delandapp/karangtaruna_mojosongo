@@ -1,11 +1,11 @@
 model m_jenjang {
-    id        BigInt      @id @default(autoincrement())
-    nama      String      @unique @db.VarChar(100)
-    deskripsi String?     @db.Text
-    createdAt DateTime    @default(now())
-    updatedAt DateTime    @updatedAt
-    m_sekolah m_sekolah[]
-    deleted   Boolean     @default(false)
+  id        BigInt      @id @default(autoincrement())
+  nama      String      @unique @db.VarChar(100)
+  deskripsi String?     @db.Text
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  m_sekolah m_sekolah[]
+  deleted   Boolean     @default(false)
 
-    @@map("m_jenjang")
+  @@map("m_jenjang")
 }

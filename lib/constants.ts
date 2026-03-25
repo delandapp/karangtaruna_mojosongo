@@ -70,6 +70,16 @@ export const REDIS_KEYS = {
     ALL_PREFIX: "master:perusahaan:all:*",
     SINGLE: (id: number) => `master:perusahaan:${id}`,
   },
+  E_PROPOSAL: {
+    ALL: (eventId: number) => `event:${eventId}:eproposal:all`,
+    ALL_PREFIX: (eventId: number) => `event:${eventId}:eproposal:all:*`,
+    SINGLE: (eventId: number, id: number) => `event:${eventId}:eproposal:${id}`,
+    SINGLE_BY_SLUG: (slug: string) => `eproposal:slug:${slug}`,
+  },
+};
+
+export const S3_BUCKETS = {
+  E_PROPOSAL: "assets-proposal-sponsorship-karang-taruna",
 };
 
 // Global cache TTL in seconds (1 Hour by default)

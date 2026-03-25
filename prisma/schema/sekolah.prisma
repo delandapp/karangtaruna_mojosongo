@@ -1,91 +1,91 @@
 model m_sekolah {
-    id                           BigInt             @id @default(autoincrement())
-    kode_wilayah_induk_provinsi  String?
-    kode_wilayah_induk_kota      String?
-    kode_wilayah_induk_kecamatan String?
-    kode_wilayah_induk_kelurahan String?
-    kode_sekolah                 String?            @unique
-    m_jenjang_id                 BigInt?
-    jenis_sekolah                String?            @default("Negeri")
-    nama                         String
-    alamat                       String?
-    npsn                         String?
-    email                        String?
-    website                      String?
-    phone                        String?
-    kode_pos                     String?
-    rt                           String?
-    rw                           String?
-    bujur                        String?
-    lintang                      String?
-    akreditasi                   String?
-    dibuat_pada                  DateTime           @default(now())
-    diperbarui_pada              DateTime           @updatedAt
-    m_jenjang                    m_jenjang?         @relation(fields: [m_jenjang_id], references: [id])
-    m_provinsi                   m_provinsi?        @relation(fields: [kode_wilayah_induk_provinsi], references: [kode_wilayah])
-    m_kota                       m_kota?            @relation(fields: [kode_wilayah_induk_kota], references: [kode_wilayah])
-    m_kecamatan                  m_kecamatan?       @relation(fields: [kode_wilayah_induk_kecamatan], references: [kode_wilayah])
-    m_kelurahan                  m_kelurahan?       @relation(fields: [kode_wilayah_induk_kelurahan], references: [kode_wilayah])
-    m_sekolah_detail             m_sekolah_detail[]
+  id                           BigInt             @id @default(autoincrement())
+  kode_wilayah_induk_provinsi  String?
+  kode_wilayah_induk_kota      String?
+  kode_wilayah_induk_kecamatan String?
+  kode_wilayah_induk_kelurahan String?
+  kode_sekolah                 String?            @unique
+  m_jenjang_id                 BigInt?
+  jenis_sekolah                String?            @default("Negeri")
+  nama                         String
+  alamat                       String?
+  npsn                         String?
+  email                        String?
+  website                      String?
+  phone                        String?
+  kode_pos                     String?
+  rt                           String?
+  rw                           String?
+  bujur                        String?
+  lintang                      String?
+  akreditasi                   String?
+  dibuat_pada                  DateTime           @default(now())
+  diperbarui_pada              DateTime           @updatedAt
+  m_jenjang                    m_jenjang?         @relation(fields: [m_jenjang_id], references: [id])
+  m_provinsi                   m_provinsi?        @relation(fields: [kode_wilayah_induk_provinsi], references: [kode_wilayah])
+  m_kota                       m_kota?            @relation(fields: [kode_wilayah_induk_kota], references: [kode_wilayah])
+  m_kecamatan                  m_kecamatan?       @relation(fields: [kode_wilayah_induk_kecamatan], references: [kode_wilayah])
+  m_kelurahan                  m_kelurahan?       @relation(fields: [kode_wilayah_induk_kelurahan], references: [kode_wilayah])
+  m_sekolah_detail             m_sekolah_detail[]
 
-    @@index([kode_wilayah_induk_provinsi, kode_wilayah_induk_kecamatan, m_jenjang_id])
-    @@map("m_sekolah")
+  @@index([kode_wilayah_induk_provinsi, kode_wilayah_induk_kecamatan, m_jenjang_id])
+  @@map("m_sekolah")
 }
 
 model m_sekolah_detail {
-    id           BigInt @id @default(autoincrement())
-    m_sekolah_id BigInt @unique
+  id           BigInt @id @default(autoincrement())
+  m_sekolah_id BigInt @unique
 
-    // Tanah & Infrastruktur
-    luas_tanah_milik       Int? // m²
-    luas_tanah_bukan_milik Int? // m²
-    daya_listrik           Int? // watt
-    sumber_listrik         String? @db.VarChar(50)
-    akses_internet         String? @db.VarChar(50)
-    akses_internet_2       String? @db.VarChar(50)
+  // Tanah & Infrastruktur
+  luas_tanah_milik       Int? // m²
+  luas_tanah_bukan_milik Int? // m²
+  daya_listrik           Int? // watt
+  sumber_listrik         String? @db.VarChar(50)
+  akses_internet         String? @db.VarChar(50)
+  akses_internet_2       String? @db.VarChar(50)
 
-    // Kepala m_sekolah & Operator
-    nama_kepala_sekolah   String? @db.VarChar(150)
-    nama_operator_sekolah String? @db.VarChar(150)
+  // Kepala m_sekolah & Operator
+  nama_kepala_sekolah   String? @db.VarChar(150)
+  nama_operator_sekolah String? @db.VarChar(150)
 
-    // Data PTK (Pendidik & Tenaga Kependidikan)
-    jumlah_guru_laki      Int? @default(0)
-    jumlah_guru_perempuan Int? @default(0)
+  // Data PTK (Pendidik & Tenaga Kependidikan)
+  jumlah_guru_laki      Int? @default(0)
+  jumlah_guru_perempuan Int? @default(0)
 
-    // Data Siswa
-    total_siswa           Int? @default(0)
-    total_siswa_laki      Int? @default(0)
-    total_siswa_perempuan Int? @default(0)
+  // Data Siswa
+  total_siswa           Int? @default(0)
+  total_siswa_laki      Int? @default(0)
+  total_siswa_perempuan Int? @default(0)
 
-    // Persentase Guru
-    persentase_guru_klasifikasi Decimal? @db.Decimal(5, 2) // %
-    persentase_guru_sertifikasi Decimal? @db.Decimal(5, 2) // %
-    persentase_guru_asn         Decimal? @db.Decimal(5, 2) // %
+  // Persentase Guru
+  persentase_guru_klasifikasi Decimal? @db.Decimal(5, 2) // %
+  persentase_guru_sertifikasi Decimal? @db.Decimal(5, 2) // %
+  persentase_guru_asn         Decimal? @db.Decimal(5, 2) // %
 
-    // Kondisi Ruang Kelas
-    persentase_ruang_kelas_layak Decimal? @db.Decimal(5, 2) // %
+  // Kondisi Ruang Kelas
+  persentase_ruang_kelas_layak Decimal? @db.Decimal(5, 2) // %
 
-    dibuat_pada     DateTime @default(now())
-    diperbarui_pada DateTime @updatedAt
+  dibuat_pada     DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
 
-    m_sekolah m_sekolah @relation(fields: [m_sekolah_id], references: [id], onDelete: Cascade)
+  m_sekolah m_sekolah @relation(fields: [m_sekolah_id], references: [id], onDelete: Cascade)
 
-    // Relasi ke tabel pendukung
-    m_sekolah_foto m_sekolah_foto[]
+  // Relasi ke tabel pendukung
+  m_sekolah_foto m_sekolah_foto[]
 
-    @@index([m_sekolah_id])
-    @@map("m_sekolah_detail")
+  @@index([m_sekolah_id])
+  @@map("m_sekolah_detail")
 }
 
 model m_sekolah_foto {
-    id                  BigInt   @id @default(autoincrement())
-    m_sekolah_detail_id BigInt
-    path_file           String
-    urutan              Int?     @default(0)
-    dibuat_pada         DateTime @default(now())
+  id                  BigInt   @id @default(autoincrement())
+  m_sekolah_detail_id BigInt
+  path_file           String
+  urutan              Int?     @default(0)
+  dibuat_pada         DateTime @default(now())
 
-    m_sekolah_detail m_sekolah_detail @relation(fields: [m_sekolah_detail_id], references: [id], onDelete: Cascade)
+  m_sekolah_detail m_sekolah_detail @relation(fields: [m_sekolah_detail_id], references: [id], onDelete: Cascade)
 
-    @@index([m_sekolah_detail_id])
-    @@map("m_sekolah_foto")
+  @@index([m_sekolah_detail_id])
+  @@map("m_sekolah_foto")
 }

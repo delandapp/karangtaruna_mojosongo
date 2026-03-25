@@ -1,17 +1,17 @@
 model m_kelurahan {
-    id              BigInt         @id @default(autoincrement())
-    m_kecamatan_id  BigInt?
-    kode_wilayah    String         @unique
-    nama            String
-    createdAt       DateTime       @default(now())
-    updatedAt       DateTime       @updatedAt
-    m_kecamatan     m_kecamatan?   @relation(fields: [m_kecamatan_id], references: [id])
-    m_sekolah       m_sekolah[]
-    m_perusahaan    m_perusahaan[]
-    m_organisasi    m_organisasi[]
-    dibuat_pada     DateTime       @default(now())
-    diperbarui_pada DateTime       @updatedAt
+  id              BigInt         @id @default(autoincrement())
+  m_kecamatan_id  BigInt?
+  kode_wilayah    String         @unique
+  nama            String
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  m_kecamatan     m_kecamatan?   @relation(fields: [m_kecamatan_id], references: [id])
+  m_sekolah       m_sekolah[]
+  m_perusahaan    m_perusahaan[]
+  m_organisasi    m_organisasi[]
+  dibuat_pada     DateTime       @default(now())
+  diperbarui_pada DateTime       @updatedAt
 
-    @@index([m_kecamatan_id])
-    @@map("m_kelurahan")
+  @@index([m_kecamatan_id])
+  @@map("m_kelurahan")
 }

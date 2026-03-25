@@ -7,26 +7,26 @@
 // Bisa berupa survei peserta, panitia internal, atau sponsor
 // -----------------------------------------------------------------------------
 model survei_kepuasan {
-  id            Int  @id @default(autoincrement())
-  event_id      Int
+  id             Int @id @default(autoincrement())
+  event_id       Int
   dibuat_oleh_id Int
 
-  jenis_survei    String  // "peserta" | "panitia_internal" | "sponsor"
+  jenis_survei    String // "peserta" | "panitia_internal" | "sponsor"
   judul           String
-  pertanyaan      Json    // array { id, teks, tipe: "skala"|"pilihan"|"teks", pilihan? }
+  pertanyaan      Json // array { id, teks, tipe: "skala"|"pilihan"|"teks", pilihan? }
   buka_pada       DateTime
   tutup_pada      DateTime
-  total_respons   Int     @default(0)
+  total_respons   Int      @default(0)
   rata_rata_nilai Decimal? @db.Decimal(4, 2) // rata-rata dari semua jawaban skala
-  skor_nps        Decimal? @db.Decimal(5, 2)  // Net Promoter Score
+  skor_nps        Decimal? @db.Decimal(5, 2) // Net Promoter Score
   is_aktif        Boolean  @default(true)
 
   // Relasi
-  event       event            @relation(fields: [event_id],       references: [id], onDelete: Cascade)
-  dibuat_oleh m_user           @relation(fields: [dibuat_oleh_id], references: [id])
+  event       event           @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  dibuat_oleh m_user          @relation(fields: [dibuat_oleh_id], references: [id])
   respon      respon_survei[]
 
-  dibuat_pada    DateTime @default(now())
+  dibuat_pada     DateTime @default(now())
   diperbarui_pada DateTime @updatedAt
 
   @@index([event_id])
@@ -39,22 +39,22 @@ model survei_kepuasan {
 // Satu baris = satu pengisian survei oleh satu responden
 // -----------------------------------------------------------------------------
 model respon_survei {
-  id         Int  @id @default(autoincrement())
-  survei_id  Int
-  user_id    Int?
+  id        Int  @id @default(autoincrement())
+  survei_id Int
+  user_id   Int?
 
-  nama_responden   String?
-  usia_responden   Int?
-  tipe_responden   String? // "pengunjung" | "peserta_lomba" | "pedagang" | "panitia"
-  jawaban          Json    // { [question_id]: nilai/teks }
+  nama_responden    String?
+  usia_responden    Int?
+  tipe_responden    String? // "pengunjung" | "peserta_lomba" | "pedagang" | "panitia"
+  jawaban           Json // { [question_id]: nilai/teks }
   nilai_keseluruhan Decimal? @db.Decimal(4, 2)
-  nilai_nps        Int?     // 0-10
-  is_anonim        Boolean  @default(false)
-  dikirim_pada     DateTime @default(now())
+  nilai_nps         Int? // 0-10
+  is_anonim         Boolean  @default(false)
+  dikirim_pada      DateTime @default(now())
 
   // Relasi
   survei survei_kepuasan @relation(fields: [survei_id], references: [id], onDelete: Cascade)
-  user   m_user?         @relation("respon_user",       fields: [user_id], references: [id], onDelete: SetNull)
+  user   m_user?         @relation("respon_user", fields: [user_id], references: [id], onDelete: SetNull)
 
   @@index([survei_id])
   @@index([user_id])
@@ -65,28 +65,28 @@ model respon_survei {
 // Aspirasi warga, ide event, kritik, pertanyaan
 // -----------------------------------------------------------------------------
 model saran_masukan {
-  id             Int  @id @default(autoincrement())
-  event_id       Int?
-  user_id        Int?
+  id                Int  @id @default(autoincrement())
+  event_id          Int?
+  user_id           Int?
   ditangani_oleh_id Int?
 
-  kategori         String  // "ide_acara" | "kritik" | "saran_perbaikan" | "pertanyaan" | "laporan_masalah"
-  subjek           String
-  isi              String  @db.Text
-  url_lampiran     String?
-  nama_pengirim    String?
-  is_anonim        Boolean @default(false)
-  status           String  @default("diterima")
+  kategori      String // "ide_acara" | "kritik" | "saran_perbaikan" | "pertanyaan" | "laporan_masalah"
+  subjek        String
+  isi           String    @db.Text
+  url_lampiran  String?
+  nama_pengirim String?
+  is_anonim     Boolean   @default(false)
+  status        String    @default("diterima")
   // "diterima" | "ditinjau" | "diproses" | "selesai" | "ditolak"
-  balasan_admin    String? @db.Text
-  dibalas_pada     DateTime?
+  balasan_admin String?   @db.Text
+  dibalas_pada  DateTime?
 
   // Relasi
-  event         event?  @relation(fields: [event_id],          references: [id], onDelete: SetNull)
-  user          m_user? @relation("saran_dari_user",           fields: [user_id],             references: [id], onDelete: SetNull)
-  ditangani_oleh m_user? @relation("saran_ditangani_oleh",      fields: [ditangani_oleh_id],   references: [id], onDelete: SetNull)
+  event          event?  @relation(fields: [event_id], references: [id], onDelete: SetNull)
+  user           m_user? @relation("saran_dari_user", fields: [user_id], references: [id], onDelete: SetNull)
+  ditangani_oleh m_user? @relation("saran_ditangani_oleh", fields: [ditangani_oleh_id], references: [id], onDelete: SetNull)
 
-  dikirim_pada   DateTime @default(now())
+  dikirim_pada    DateTime @default(now())
   diperbarui_pada DateTime @updatedAt
 
   @@index([event_id])

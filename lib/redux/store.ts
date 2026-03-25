@@ -10,6 +10,8 @@ import { tugasApi } from "@/features/api/tugasApi";
 import { rapatApi } from "@/features/api/rapatApi";
 import { anggaranApi } from "@/features/api/anggaranApi";
 import { keuanganApi } from "@/features/api/keuanganApi";
+import { eproposalApi } from "@/features/api/eproposalApi";
+import { storageApi } from "@/features/api/storageApi";
 
 import { wilayahApi } from "@/features/api/wilayahApi";
 import { perusahaanApi } from "@/features/api/perusahaanApi";
@@ -31,6 +33,8 @@ export const store = configureStore({
         [perusahaanApi.reducerPath]: perusahaanApi.reducer,
         [sektorIndustriApi.reducerPath]: sektorIndustriApi.reducer,
         [skalaPerusahaanApi.reducerPath]: skalaPerusahaanApi.reducer,
+        [eproposalApi.reducerPath]: eproposalApi.reducer,
+        [storageApi.reducerPath]: storageApi.reducer,
         auth: authReducer,
     },
     middleware: (getDefaultMiddleware) =>
@@ -47,7 +51,9 @@ export const store = configureStore({
             wilayahApi.middleware,
             perusahaanApi.middleware,
             sektorIndustriApi.middleware,
-            skalaPerusahaanApi.middleware
+            skalaPerusahaanApi.middleware,
+            eproposalApi.middleware,
+            storageApi.middleware
         ),
 });
 

@@ -10,9 +10,18 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="flex h-screen overflow-hidden bg-background">
+      <style>{`
+        body {
+          overflow: hidden;
+        }
+      `}</style>
+      <div className="flex h-[100dvh] w-full overflow-hidden bg-background">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="flex-1 overflow-hidden">
+          <div className="h-full w-full overflow-y-auto">
+            {children}
+          </div>
+        </main>
       </div>
     </TooltipProvider>
   );

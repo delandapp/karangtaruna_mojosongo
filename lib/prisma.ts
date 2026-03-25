@@ -4,13 +4,15 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
+  pool: Pool | undefined;
 };
 
-// Pastikan DATABASE_URL tersedia di environment atau process.env
-// Connection string dari ENV. Pastikan sudah ada di .env.development
-const connectionString = process.env.DATABASE_URL;
+// Gunakan DIRECT_URL di local development untuk menghindari error "PgBouncer timeout" di port 6432
+const connectionString = process.env.NODE_ENV !== "production" && process.env.DIRECT_URL 
+  ? process.env.DIRECT_URL 
+  : process.env.DATABASE_URL;
 
-const pool = new Pool({ connectionString });
+const pool = globalForPrisma.pool ?? new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 
 export const prisma =
@@ -20,4 +22,7 @@ export const prisma =
     log: ["query"],
   });
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+  globalForPrisma.pool = pool;
+}

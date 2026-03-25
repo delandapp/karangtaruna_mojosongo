@@ -10,18 +10,18 @@ model kategori_pendaftaran {
   id       Int @id @default(autoincrement())
   event_id Int
 
-  nama_kategori    String
-  jenjang          String? // "SD" | "SMP" | "SMA" | "Umum"
-  kuota            Int?
-  biaya_daftar     Decimal  @db.Decimal(12, 2) @default(0)
-  field_formulir   Json?    // definisi field dinamis: [{ nama, tipe, wajib }]
-  daftar_buka      DateTime
-  daftar_tutup     DateTime
+  nama_kategori  String
+  jenjang        String? // "SD" | "SMP" | "SMA" | "Umum"
+  kuota          Int?
+  biaya_daftar   Decimal  @default(0) @db.Decimal(12, 2)
+  field_formulir Json? // definisi field dinamis: [{ nama, tipe, wajib }]
+  daftar_buka    DateTime
+  daftar_tutup   DateTime
 
   // Relasi
-  event        event          @relation(fields: [event_id], references: [id], onDelete: Cascade)
-  pendaftaran  pendaftaran[]
-  hasil_lomba  hasil_lomba[]
+  event       event         @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  pendaftaran pendaftaran[]
+  hasil_lomba hasil_lomba[]
 
   @@index([event_id])
 }
@@ -30,24 +30,24 @@ model kategori_pendaftaran {
 // PENDAFTARAN PESERTA
 // -----------------------------------------------------------------------------
 model pendaftaran {
-  id                     Int  @id @default(autoincrement())
+  id                      Int  @id @default(autoincrement())
   kategori_pendaftaran_id Int
-  user_id                Int?
+  user_id                 Int?
 
-  nomor_daftar        String   @unique // "REG-2025-SD-001"
-  nama_peserta        String
-  hp_peserta          String?
+  nomor_daftar          String  @unique // "REG-2025-SD-001"
+  nama_peserta          String
+  hp_peserta            String?
   asal_sekolah_instansi String?
-  data_formulir       Json?    // data isian field dinamis dari kategori
-  status              String   @default("mendaftar")
+  data_formulir         Json? // data isian field dinamis dari kategori
+  status                String  @default("mendaftar")
   // "mendaftar" | "terverifikasi" | "dikonfirmasi" | "hadir" | "tidak_hadir" | "didiskualifikasi"
-  status_kehadiran    String?
-  catatan_admin       String?
+  status_kehadiran      String?
+  catatan_admin         String?
 
   // Relasi
-  kategori      kategori_pendaftaran @relation(fields: [kategori_pendaftaran_id], references: [id])
-  user          m_user?              @relation(fields: [user_id],                 references: [id], onDelete: SetNull)
-  hasil_lomba   hasil_lomba[]
+  kategori    kategori_pendaftaran @relation(fields: [kategori_pendaftaran_id], references: [id])
+  user        m_user?              @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  hasil_lomba hasil_lomba[]
 
   didaftarkan_pada DateTime @default(now())
   diperbarui_pada  DateTime @updatedAt
@@ -61,21 +61,21 @@ model pendaftaran {
 // HASIL LOMBA / KOMPETISI
 // -----------------------------------------------------------------------------
 model hasil_lomba {
-  id                     Int  @id @default(autoincrement())
-  pendaftaran_id         Int
+  id                      Int  @id @default(autoincrement())
+  pendaftaran_id          Int
   kategori_pendaftaran_id Int
-  juri_id                Int?
+  juri_id                 Int?
 
-  peringkat    Int?
-  nilai        Decimal? @db.Decimal(8, 2)
+  peringkat      Int?
+  nilai          Decimal? @db.Decimal(8, 2)
   judul_prestasi String? // "Juara 1", "Juara Harapan 2", "Peserta Terbaik"
   nilai_hadiah   Decimal? @db.Decimal(12, 2)
   catatan_juri   String?  @db.Text
 
   // Relasi
-  pendaftaran  pendaftaran         @relation(fields: [pendaftaran_id],          references: [id], onDelete: Cascade)
-  kategori     kategori_pendaftaran @relation(fields: [kategori_pendaftaran_id], references: [id])
-  juri         m_user?             @relation(fields: [juri_id],                 references: [id], onDelete: SetNull)
+  pendaftaran pendaftaran          @relation(fields: [pendaftaran_id], references: [id], onDelete: Cascade)
+  kategori    kategori_pendaftaran @relation(fields: [kategori_pendaftaran_id], references: [id])
+  juri        m_user?              @relation(fields: [juri_id], references: [id], onDelete: SetNull)
 
   @@index([pendaftaran_id])
   @@index([kategori_pendaftaran_id])

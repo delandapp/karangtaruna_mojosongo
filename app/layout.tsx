@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Oswald, Source_Serif_4, Manrope } from "next/font/google";
+import { Oswald, Source_Serif_4, Manrope, Poppins } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { Toaster } from "@/components/ui/sonner";
@@ -20,6 +20,13 @@ const fontUi = Manrope({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-ui",
+});
+
+const fontPoppins = Poppins({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-poppins",
 });
 
 export const metadata: Metadata = {
@@ -46,7 +53,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id" suppressHydrationWarning>
-      <body className={`${fontTitle.variable} ${fontBody.variable} ${fontUi.variable} font-sans antialiased`}>
+      <body className={`${fontTitle.variable} ${fontBody.variable} ${fontUi.variable} ${fontPoppins.variable} font-sans antialiased`}>
         <Providers>
           {children}
           <Toaster position="top-right" richColors closeButton />

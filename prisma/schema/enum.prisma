@@ -3,50 +3,50 @@
 // =============================================================================
 
 enum TierSponsor {
-    platinum
-    gold
-    silver
-    bronze
-    inkind
+  platinum
+  gold
+  silver
+  bronze
+  inkind
 
-    @@map("tier_sponsor")
+  @@map("tier_sponsor")
 }
 
 enum JenisKontribusi {
-    uang
-    barang
-    jasa
-    campuran
+  uang
+  barang
+  jasa
+  campuran
 
-    @@map("jenis_kontribusi")
+  @@map("jenis_kontribusi")
 }
 
 enum StatusPipeline {
-    prospek
-    dihubungi
-    negosiasi
-    dikonfirmasi
-    lunas
-    selesai
-    batal
+  prospek
+  dihubungi
+  negosiasi
+  dikonfirmasi
+  lunas
+  selesai
+  batal
 
-    @@map("status_pipeline")
+  @@map("status_pipeline")
 }
 
 enum ResponsProposal {
-    diterima
-    ditolak
-    negosiasi
-    menunggu
+  diterima
+  ditolak
+  negosiasi
+  menunggu
 
-    @@map("respons_proposal")
+  @@map("respons_proposal")
 }
 
 enum TierProposal {
-    platinum
-    gold
-    silver
-    bronze
+  platinum
+  gold
+  silver
+  bronze
 
-    @@map("tier_proposal")
+  @@map("tier_proposal")
 }

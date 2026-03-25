@@ -11,17 +11,17 @@ model notifikasi {
   user_id  Int
   event_id Int?
 
-  jenis_notif   String  // "deadline_tugas" | "tiket_terjual" | "surat_baru" | "sponsor_konfirmasi" | dst
+  jenis_notif   String // "deadline_tugas" | "tiket_terjual" | "surat_baru" | "sponsor_konfirmasi" | dst
   judul         String
-  isi           String  @db.Text
-  channel       String  // "inapp" | "email" | "whatsapp"
+  isi           String    @db.Text
+  channel       String // "inapp" | "email" | "whatsapp"
   tabel_rujukan String? // nama tabel terkait, contoh: "tugas_event"
-  id_rujukan    Int?    // id record terkait
-  sudah_dibaca  Boolean @default(false)
+  id_rujukan    Int? // id record terkait
+  sudah_dibaca  Boolean   @default(false)
   dibaca_pada   DateTime?
 
   // Relasi
-  user  m_user @relation(fields: [user_id],  references: [id], onDelete: Cascade)
+  user  m_user @relation(fields: [user_id], references: [id], onDelete: Cascade)
   event event? @relation(fields: [event_id], references: [id], onDelete: SetNull)
 
   dibuat_pada DateTime @default(now())
@@ -40,14 +40,14 @@ model log_audit {
   id      Int  @id @default(autoincrement())
   user_id Int?
 
-  aksi         String  // "create" | "update" | "delete" | "login" | "logout"
-  nama_tabel   String
-  id_record    Int?
-  data_lama    Json?   // snapshot sebelum perubahan
-  data_baru    Json?   // snapshot setelah perubahan
-  ip_address   String?
-  user_agent   String? @db.Text
-  keterangan   String?
+  aksi       String // "create" | "update" | "delete" | "login" | "logout"
+  nama_tabel String
+  id_record  Int?
+  data_lama  Json? // snapshot sebelum perubahan
+  data_baru  Json? // snapshot setelah perubahan
+  ip_address String?
+  user_agent String? @db.Text
+  keterangan String?
 
   // Relasi
   user m_user? @relation(fields: [user_id], references: [id], onDelete: SetNull)

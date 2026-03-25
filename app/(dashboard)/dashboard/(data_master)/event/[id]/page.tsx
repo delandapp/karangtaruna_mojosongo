@@ -15,9 +15,10 @@ import { TabRundown } from "@/components/organisms/event/detail/tab-rundown";
 import { TabSponsorship } from "@/components/organisms/event/detail/tab-sponsorship";
 import { TabSponsorshipManajemen } from "@/components/organisms/event/detail/tab-sponsorship-manajemen";
 import { TabSponsorshipGenerator } from "@/components/organisms/event/detail/tab-sponsorship-generator";
+import { TabEProposal } from "@/components/organisms/event/detail/tab-eproposal";
 
 // ── Valid tabs ───────────────────────────────────────────────────────────────
-const VALID_TABS = ["informasi", "anggaran", "panitia", "rundown", "sponsorship", "sponsorship-manajemen", "sponsorship-generator"] as const;
+const VALID_TABS = ["informasi", "anggaran", "panitia", "rundown", "sponsorship", "sponsorship-manajemen", "sponsorship-generator", "eproposal"] as const;
 type TabValue = (typeof VALID_TABS)[number];
 
 function isValidTab(tab: string | null): tab is TabValue {
@@ -75,6 +76,7 @@ export default function EventDetailPage(props: PageProps) {
     sponsorship: { label: "", handler: null },
     "sponsorship-manajemen": { label: "", handler: null },
     "sponsorship-generator": { label: "", handler: null },
+    eproposal: { label: "Kelola E-Proposal", handler: null },
   };
 
   // ── Tab refresh config (only tabs that expose a refresh fn) ───────────────
@@ -140,6 +142,7 @@ export default function EventDetailPage(props: PageProps) {
                   <TabsTrigger value="sponsorship" className="text-xs sm:text-sm">Sponsorship</TabsTrigger>
                   <TabsTrigger value="sponsorship-manajemen" className="text-xs sm:text-sm">Pipeline Sponsor</TabsTrigger>
                   <TabsTrigger value="sponsorship-generator" className="text-xs sm:text-sm">Proposal</TabsTrigger>
+                  <TabsTrigger value="eproposal" className="text-xs sm:text-sm">E-Proposal</TabsTrigger>
                 </TabsList>
 
                 {/* Right-side: Refresh (if tab supports it) + Add button */}
@@ -211,6 +214,10 @@ export default function EventDetailPage(props: PageProps) {
 
               <TabsContent value="sponsorship-generator">
                 <TabSponsorshipGenerator eventId={eventId} />
+              </TabsContent>
+
+              <TabsContent value="eproposal">
+                <TabEProposal eventId={eventId} />
               </TabsContent>
             </Tabs>
           )}

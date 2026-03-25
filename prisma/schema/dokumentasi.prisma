@@ -7,21 +7,21 @@
 // Foto dan video dokumentasi per event
 // -----------------------------------------------------------------------------
 model media_galeri {
-  id             Int  @id @default(autoincrement())
-  event_id       Int?
+  id               Int  @id @default(autoincrement())
+  event_id         Int?
   diunggah_oleh_id Int
 
-  jenis_media   String  // "foto" | "video"
+  jenis_media   String // "foto" | "video"
   judul         String?
   url_file      String
   url_thumbnail String?
   is_publik     Boolean @default(true)
   is_unggulan   Boolean @default(false) // tampil di beranda
-  tag           Json?   // array string tag
+  tag           Json? // array string tag
 
   // Relasi
-  event         event?  @relation(fields: [event_id],          references: [id], onDelete: SetNull)
-  diunggah_oleh m_user  @relation(fields: [diunggah_oleh_id],  references: [id])
+  event         event? @relation(fields: [event_id], references: [id], onDelete: SetNull)
+  diunggah_oleh m_user @relation(fields: [diunggah_oleh_id], references: [id])
 
   diunggah_pada DateTime @default(now())
 

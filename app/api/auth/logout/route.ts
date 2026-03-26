@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
@@ -8,6 +9,9 @@ const JWT_SECRET = process.env.JWT_SECRET || "super_secret_fallback_key_123!";
 
 export async function POST(req: NextRequest) {
     try {
+        const cookieStore = await cookies();
+        cookieStore.delete("token");
+
         // 1. Ambil token dari header Authorization
         const authHeader = req.headers.get("Authorization");
 

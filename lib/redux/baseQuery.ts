@@ -39,7 +39,13 @@ export const baseQueryWithCustomHandler: BaseQueryFn<
 
   if (result.error) {
     console.error("RTK Query Error:", result.error.data as ApiErrorResponse);
-  } // Kembalikan objek 'result' asli.
+    if (result.error.status === 401) {
+      if (typeof window !== "undefined") {
+        document.cookie = "token=; path=/; max-age=0";
+        window.location.href = "/login";
+      }
+    }
+  }
 
   return result;
 };

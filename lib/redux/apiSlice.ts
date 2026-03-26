@@ -20,6 +20,10 @@ export const apiSlice = createApi({
     "Sponsor",
     "SponsorPipeline",
     "SponsorProposal",
+    "Provinsi",
+    "Kota",
+    "Kecamatan",
+    "Kelurahan",
   ],
   endpoints: () => ({}), // Endpoints awal sengaja dikosongkan
 });

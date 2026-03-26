@@ -127,22 +127,37 @@ async function main() {
         );
 
         try {
-          const searchRes = await fetch(API_SEARCH, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              page: page.toString(),
-              size: PAGE_SIZE.toString(),
-              keyword: "",
-              kabupaten_kota: kota.nama, // misal "Kota Surakarta"
-              bentuk_pendidikan: "",
-              status_sekolah: "",
-            }),
-          });
+          const fs = require("fs");
+          const { execSync } = require("child_process");
+          const path = require("path");
 
-          if (!searchRes.ok)
-            throw new Error(`Search API HTTP Error: ${searchRes.status}`);
-          const searchData = await searchRes.json();
+          const payloadObj = {
+            page: page.toString(),
+            size: PAGE_SIZE.toString(),
+            keyword: "",
+            kabupaten_kota: kota.nama,
+            bentuk_pendidikan: "",
+            status_sekolah: "",
+          };
+
+          const tempPayloadPath = path.join(process.cwd(), ".temp_payload.json");
+          fs.writeFileSync(tempPayloadPath, JSON.stringify(payloadObj));
+          
+          const curlSearch = `curl -s -L -X POST -H "Content-Type: application/json" -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" -H "Referer: https://sekolah.data.kemendikdasmen.go.id/" -d @"${tempPayloadPath}" "${API_SEARCH}"`;
+          const resultSearch = execSync(curlSearch, { encoding: "utf-8", maxBuffer: 50 * 1024 * 1024, timeout: 30000 });
+          
+          // Cleanup temp file
+          try { fs.unlinkSync(tempPayloadPath); } catch (e) {}
+          
+          let searchData;
+          try {
+            searchData = JSON.parse(resultSearch);
+            if (page === 0) {
+              log("INFO", `[DEBUG] Raw response: ${resultSearch.substring(0, 200)}`);
+            }
+          } catch (e: any) {
+            throw new Error(`Search API Invalid JSON: ${resultSearch.substring(0, 100)}...`);
+          }
 
           if (searchData.status_code !== 200) {
             throw new Error(`Search API Error: ${searchData.message}`);
@@ -179,10 +194,16 @@ async function main() {
             await delay(DELAY_MS);
             let detailData = null;
             try {
-              const detailRes = await fetch(`${API_DETAIL}/${sekolahId}`);
-              if (!detailRes.ok)
-                throw new Error(`Detail API HTTP ${detailRes.status}`);
-              const detailJson = await detailRes.json();
+              const { execSync } = require("child_process");
+              const curlDetail = `curl -s -L -H "Accept: application/json" -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" -H "Referer: https://sekolah.data.kemendikdasmen.go.id/" "${API_DETAIL}/${sekolahId}"`;
+              const resultDetail = execSync(curlDetail, { encoding: "utf-8", maxBuffer: 50 * 1024 * 1024, timeout: 30000 });
+              
+              let detailJson;
+              try {
+                detailJson = JSON.parse(resultDetail);
+              } catch (e: any) {
+                throw new Error(`Detail API Invalid JSON: ${resultDetail.substring(0, 100)}...`);
+              }
               detailData = detailJson?.data;
             } catch (err) {
               log(

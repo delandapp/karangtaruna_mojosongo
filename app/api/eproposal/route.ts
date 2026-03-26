@@ -42,6 +42,39 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
       cover_url = cover_url.file?.urlPublik || cover_url.url || '';
     }
 
+    // Safety check for bg_music_url
+    let bg_music_url = pengaturan?.bg_music_url || '';
+    if (typeof bg_music_url === 'object' && bg_music_url !== null) {
+      bg_music_url = (bg_music_url as any).file?.urlPublik || (bg_music_url as any).url || '';
+    }
+
+    // Validate cover_url format: only JPEG/PNG allowed
+    if (cover_url && typeof cover_url === 'string') {
+      const coverExt = cover_url.split('?')[0].split('.').pop()?.toLowerCase();
+      if (!['jpg', 'jpeg', 'png'].includes(coverExt || '')) {
+        return NextResponse.json(
+          { success: false, message: 'Format cover tidak valid. Hanya file JPEG dan PNG yang diizinkan.' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate bg_music_url format: only MP3 allowed
+    if (bg_music_url && typeof bg_music_url === 'string') {
+      const musicExt = bg_music_url.split('?')[0].split('.').pop()?.toLowerCase();
+      if (musicExt !== 'mp3') {
+        return NextResponse.json(
+          { success: false, message: 'Format musik tidak valid. Hanya file MP3 yang diizinkan.' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Update bg_music_url in pengaturan
+    if (pengaturan) {
+      pengaturan.bg_music_url = bg_music_url || null;
+    }
+
     // Use actual authenticated user id
     const dibuat_oleh_id = userId;
 

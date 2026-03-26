@@ -112,6 +112,47 @@ export async function seedHakAkses(prisma: PrismaClient) {
     jabatanId?: number;
   }[];
 
+  // ── API: Wilayah ────────────────────────────────────────────────────────────
+  const apiWilayahProvinsi = [
+    { nama: "Read Provinsi", tipe: "read", method: "GET" },
+    { nama: "Create Provinsi", tipe: "create", method: "POST" },
+    { nama: "Update Provinsi", tipe: "update", method: "PUT" },
+    { nama: "Delete Provinsi", tipe: "delete", method: "DELETE" },
+  ];
+  for (const item of apiWilayahProvinsi) {
+    await buatHakAkses(item.nama, item.tipe, "/api/wilayah/provinsi", item.method, crudLevelIds);
+  }
+
+  const apiWilayahKota = [
+    { nama: "Read Kota", tipe: "read", method: "GET" },
+    { nama: "Create Kota", tipe: "create", method: "POST" },
+    { nama: "Update Kota", tipe: "update", method: "PUT" },
+    { nama: "Delete Kota", tipe: "delete", method: "DELETE" },
+  ];
+  for (const item of apiWilayahKota) {
+    await buatHakAkses(item.nama, item.tipe, "/api/wilayah/kota", item.method, crudLevelIds);
+  }
+
+  const apiWilayahKecamatan = [
+    { nama: "Read Kecamatan", tipe: "read", method: "GET" },
+    { nama: "Create Kecamatan", tipe: "create", method: "POST" },
+    { nama: "Update Kecamatan", tipe: "update", method: "PUT" },
+    { nama: "Delete Kecamatan", tipe: "delete", method: "DELETE" },
+  ];
+  for (const item of apiWilayahKecamatan) {
+    await buatHakAkses(item.nama, item.tipe, "/api/wilayah/kecamatan", item.method, crudLevelIds);
+  }
+
+  const apiWilayahKelurahan = [
+    { nama: "Read Kelurahan", tipe: "read", method: "GET" },
+    { nama: "Create Kelurahan", tipe: "create", method: "POST" },
+    { nama: "Update Kelurahan", tipe: "update", method: "PUT" },
+    { nama: "Delete Kelurahan", tipe: "delete", method: "DELETE" },
+  ];
+  for (const item of apiWilayahKelurahan) {
+    await buatHakAkses(item.nama, item.tipe, "/api/wilayah/kelurahan", item.method, crudLevelIds);
+  }
+
   // ── API: Users ──────────────────────────────────────────────────────────────
   const apiUsers = [
     { nama: "Read Users", tipe: "read", method: "GET" },

@@ -61,7 +61,7 @@ FlipCover.displayName = 'FlipCover';
 export default function ClientFlipbook({ proposal, onReady }: { proposal: EProposal; onReady?: () => void }) {
   const [numPages, setNumPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(!!proposal.pengaturan?.bg_music_url);
   const [isDocLoaded, setIsDocLoaded] = useState(false);
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
@@ -152,6 +152,12 @@ export default function ClientFlipbook({ proposal, onReady }: { proposal: EPropo
       a.loop = true;
       a.volume = 0.3;
       audioRef.current = a;
+      
+      // Attempt autoplay
+      a.play().catch(() => {
+        // Browser autoplay policy might block this without user interaction
+        setIsPlaying(false);
+      });
     }
     return () => { audioRef.current?.pause(); audioRef.current = null; };
   }, [bgMusic]);
@@ -530,6 +536,35 @@ export default function ClientFlipbook({ proposal, onReady }: { proposal: EPropo
             </div>
           </SheetContent>
         </Sheet>
+      )}
+
+      {/* ── Mobile Navigation Buttons ── */}
+      {isMobile && isDocLoaded && (
+        <>
+          <button
+            onClick={goPrev}
+            style={{ pointerEvents: currentPage <= 0 ? 'none' : 'auto' }}
+            className={`absolute left-2 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center w-12 h-12 rounded-full backdrop-blur-md border border-white/20 shadow-lg text-white/90 transition-all duration-300 ${
+              currentPage <= 0
+                ? 'opacity-0 -translate-x-2'
+                : 'opacity-100 translate-x-0 hover:bg-white/20 active:scale-95 bg-black/40'
+            }`}
+          >
+            <ChevronLeft className="w-8 h-8" />
+          </button>
+          
+          <button
+            onClick={goNext}
+            style={{ pointerEvents: isAtEnd ? 'none' : 'auto' }}
+            className={`absolute right-2 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center w-12 h-12 rounded-full backdrop-blur-md border border-white/20 shadow-lg text-white/90 transition-all duration-300 ${
+              isAtEnd
+                ? 'opacity-0 translate-x-2'
+                : 'opacity-100 translate-x-0 hover:bg-white/20 active:scale-95 bg-black/40'
+            }`}
+          >
+            <ChevronRight className="w-8 h-8" />
+          </button>
+        </>
       )}
 
       {/* ── Bottom Toolbar ── */}

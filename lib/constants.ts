@@ -76,10 +76,32 @@ export const REDIS_KEYS = {
     SINGLE: (eventId: number, id: number) => `event:${eventId}:eproposal:${id}`,
     SINGLE_BY_SLUG: (slug: string) => `eproposal:slug:${slug}`,
   },
+  PROVINSI: {
+    ALL: "master:wilayah:provinsi:all",
+    ALL_PREFIX: "master:wilayah:provinsi:all:*",
+    SINGLE: (id: number) => `master:wilayah:provinsi:${id}`,
+  },
+  KOTA: {
+    ALL: "master:wilayah:kota:all",
+    ALL_PREFIX: "master:wilayah:kota:all:*",
+    SINGLE: (id: number) => `master:wilayah:kota:${id}`,
+  },
+  KECAMATAN: {
+    ALL: "master:wilayah:kecamatan:all",
+    ALL_PREFIX: "master:wilayah:kecamatan:all:*",
+    SINGLE: (id: number) => `master:wilayah:kecamatan:${id}`,
+  },
+  KELURAHAN: {
+    ALL: "master:wilayah:kelurahan:all",
+    ALL_PREFIX: "master:wilayah:kelurahan:all:*",
+    SINGLE: (id: number) => `master:wilayah:kelurahan:${id}`,
+  },
 };
 
 export const S3_BUCKETS = {
   E_PROPOSAL: "assets-proposal-sponsorship-karang-taruna",
+  COVER_E_PROPOSAL: "assets-cover-sponsorship-karang-taruna",
+  SOUND_E_PROPOSAL: "assets-music-sponsorship-karang-taruna",
 };
 
 // Global cache TTL in seconds (1 Hour by default)

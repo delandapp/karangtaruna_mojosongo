@@ -41,6 +41,33 @@ export const PUT = withAuth(async (
       dataToUpdate.cover_url = dataToUpdate.cover_url.file?.urlPublik || dataToUpdate.cover_url.url || '';
     }
 
+    // Safety check for bg_music_url in pengaturan
+    if (pengaturan?.bg_music_url && typeof pengaturan.bg_music_url === 'object') {
+      pengaturan.bg_music_url = (pengaturan.bg_music_url as any).file?.urlPublik || (pengaturan.bg_music_url as any).url || '';
+    }
+
+    // Validate cover_url format: only JPEG/PNG allowed
+    if (dataToUpdate.cover_url && typeof dataToUpdate.cover_url === 'string') {
+      const coverExt = dataToUpdate.cover_url.split('?')[0].split('.').pop()?.toLowerCase();
+      if (!['jpg', 'jpeg', 'png'].includes(coverExt || '')) {
+        return NextResponse.json(
+          { success: false, message: 'Format cover tidak valid. Hanya file JPEG dan PNG yang diizinkan.' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate bg_music_url format: only MP3 allowed
+    if (pengaturan?.bg_music_url && typeof pengaturan.bg_music_url === 'string') {
+      const musicExt = pengaturan.bg_music_url.split('?')[0].split('.').pop()?.toLowerCase();
+      if (musicExt !== 'mp3') {
+        return NextResponse.json(
+          { success: false, message: 'Format musik tidak valid. Hanya file MP3 yang diizinkan.' },
+          { status: 400 }
+        );
+      }
+    }
+
     if (pengaturan) {
       dataToUpdate.pengaturan = {
         upsert: {

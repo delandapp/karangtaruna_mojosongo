@@ -108,13 +108,17 @@ async function main() {
     );
     log("INFO", `Fetching: ${API_URL}`);
 
-    // 1. Fetch dari API
-    const response = await fetch(API_URL);
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    // 1. Fetch dari API dengan curl (bypass TLS fingerprint WAF)
+    const { execSync } = require("child_process");
+    const curlCmd = `curl -s -L -H "Accept: application/json" -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" -H "Referer: https://sekolah.data.kemendikdasmen.go.id/" "${API_URL}"`;
+    const result = execSync(curlCmd, { encoding: "utf-8", maxBuffer: 10 * 1024 * 1024, timeout: 30000 });
+    
+    let json: ApiResponse;
+    try {
+      json = JSON.parse(result);
+    } catch (e: any) {
+      throw new Error(`Invalid JSON response: ${result.substring(0, 100).replace(/\n/g, "")}...`);
     }
-
-    const json: ApiResponse = await response.json();
 
     if (json.status_code !== 200) {
       throw new Error(`API error: ${json.message}`);

@@ -91,8 +91,8 @@ export function withAuth<T extends unknown[]>(
         });
 
         if (hakAkses) {
-          // Jika is_all_level dan is_all_jabatan true, semua user boleh akses
-          if (!hakAkses.is_all_level || !hakAkses.is_all_jabatan) {
+          // Jika is_all_level DAN is_all_jabatan true, semua user boleh akses
+          if (!(hakAkses.is_all_level && hakAkses.is_all_jabatan)) {
             // Cek apakah user memenuhi minimal satu rule
             // Rule semantics (sesuai schema):
             //   - level_id ada & jabatan_id null  → cukup punya level tersebut

@@ -21,22 +21,16 @@ import dotenv from "dotenv";
 
 dotenv.config({ path: ".env.development" });
 
-// ─── Konfigurasi ──────────────────────────────────────────────────────────────
-
-const BASE_URL = "https://dapo.kemendikdasmen.go.id/rekap/dataSekolah";
-const SEMESTER_ID = "20252";
-
-// id_level_wilayah: 1 = Provinsi → menghasilkan data kota dalam provinsi tsb
-const ID_LEVEL_KOTA = "1";
-// Delay antar request ke API agar tidak kena rate-limit (ms)
-const DELAY_MS = 300;
+import fs from "fs";
+import path from "path";
 
 // ─── Tipe data ─────────────────────────────────────────────────────────────────
 
 interface KemendikbudKotaItem {
   nama: string;
   kode_wilayah: string;
-  id_level_wilayah: number;
+  id_level_wilayah?: number; // Optional, as it's not in CSV
+  mst_kode_wilayah?: string; // Added for CSV parsing
   [key: string]: unknown;
 }
 
@@ -76,31 +70,6 @@ function log(level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string) {
   const reset = "\x1b[0m";
   const ts = new Date().toISOString();
   console.log(`${warna[level]}[${level}]${reset} ${ts} — ${msg}`);
-}
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function fetchWithRetry(url: string, retries = 3, delayMs = 3000): Promise<any> {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const response = await fetch(url, { headers: { Accept: "application/json" } });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      const text = await response.text();
-      try {
-        return JSON.parse(text);
-      } catch (e: any) {
-        throw new Error(`Invalid JSON response: ${text.substring(0, 100).replace(/\n/g, "")}...`);
-      }
-    } catch (err: any) {
-      if (i === retries - 1) throw err;
-      log("WARN", `Fetch gagal (percobaan ${i + 1}/${retries}): ${err.message}. Retrying in ${delayMs / 1000}s...`);
-      await delay(delayMs);
-    }
-  }
 }
 
 function cetakLaporan(report: SyncReport) {
@@ -177,7 +146,7 @@ async function main() {
       return;
     }
 
-    log("INFO", `Ditemukan ${provinsiList.length} provinsi di DB. Mulai fetch kota per provinsi…`);
+    log("INFO", `Ditemukan ${provinsiList.length} provinsi di DB. Mulai proses kota per provinsi…`);
 
     // 2. Iterasi per provinsi
     for (const prov of provinsiList) {
@@ -187,7 +156,7 @@ async function main() {
         continue;
       }
 
-      log("INFO", `\nFetch kota untuk provinsi [${kodeProvinsi}] ${prov.nama}…`);
+      log("INFO", `\nMemproses Provinsi: ${prov.nama} (${prov.id})`);
 
       const detail: DetailProvinsi = {
         nama_provinsi: prov.nama,
@@ -200,21 +169,42 @@ async function main() {
       };
 
       try {
-        const params = new URLSearchParams({
-          semester_id: SEMESTER_ID,
-          id_level_wilayah: ID_LEVEL_KOTA,
-          kode_wilayah: kodeProvinsi,
-        });
-        const url = `${BASE_URL}?${params.toString()}`;
+        // 1. Ambil data kota/kab dari CSV lokal
+        const csvPath = path.join(process.cwd(), "scripts", "dataset", "kabupaten.csv");
+        const csvData = fs.readFileSync(csvPath, "utf-8");
+        const lines = csvData.split("\n").filter(line => line.trim() !== "");
+        // Hapus header
+        if (lines[0].startsWith("code")) lines.shift();
 
-        const data: KemendikbudKotaItem[] = await fetchWithRetry(url);
-        detail.total = data.length;
-        report.total_kota += data.length;
-        log("INFO", `  → ${data.length} kota diterima.`);
+        // Kode provinsi dari DB biasanya sudah komplit misal "050000", di CSV parent_code adalah "05" atau "11"
+        // Kita perlu mencocokkan kode di CSV.
+        
+        const paramKode = (prov.kode_wilayah ?? "").substring(0, 2);
+
+        const dataKota: KemendikbudKotaItem[] = lines
+          .map(line => {
+            const [code, parent_code, name] = line.split(",");
+            return {
+              kode_wilayah: code.trim() + "00", // pad to match 6 digit format "110100"
+              nama: name.trim().toUpperCase(),
+              mst_kode_wilayah: parent_code.trim(),
+            };
+          })
+          .filter(item => item.mst_kode_wilayah === paramKode);
+
+        if (!dataKota || dataKota.length === 0) {
+          log("WARN", `Data Kota kosong untuk provinsi ${prov.nama}. Skip.`);
+          continue;
+        }
+        log("INFO", `Ditemukan ${dataKota.length} data kota dari dataset untuk provinsi ${prov.nama}.`);
+
+        detail.total = dataKota.length;
+        report.total_kota += dataKota.length;
+        log("INFO", `  → ${dataKota.length} kota diterima.`);
         report.provinsi_sukses++;
 
         // 3. Proses setiap kota dalam provinsi ini
-        for (const item of data) {
+        for (const item of dataKota) {
           const kode = item.kode_wilayah?.trim() ?? "";
           const nama = item.nama?.trim() ?? "";
 
@@ -271,9 +261,6 @@ async function main() {
       }
 
       report.per_provinsi.push(detail);
-
-      // Delay agar tidak membanjiri API
-      await delay(DELAY_MS);
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

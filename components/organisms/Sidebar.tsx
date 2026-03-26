@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useLogoutUserMutation } from "@/features/api/authApi";
 import { NavItem } from "@/components/molecules/NavItem";
 import { UserProfile } from "@/components/molecules/UserProfile";
 import { Separator } from "@/components/ui/separator";
@@ -23,6 +24,7 @@ import {
   ShieldCheck,
   Calendar,
   Building2,
+  MapPin,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -40,6 +42,17 @@ const MASTER_NAV = [
   { href: "/dashboard/level", icon: Shield, label: "Level" },
   { href: "/dashboard/user", icon: Users, label: "User" },
   { href: "/dashboard/hak-akses", icon: ShieldCheck, label: "Akses & Role" },
+  {
+    href: "/dashboard/wilayah",
+    icon: MapPin,
+    label: "Wilayah",
+    subItems: [
+      { href: "/dashboard/provinsi", label: "Provinsi" },
+      { href: "/dashboard/kota", label: "Kota / Kabupaten" },
+      { href: "/dashboard/kecamatan", label: "Kecamatan" },
+      { href: "/dashboard/kelurahan", label: "Kelurahan / Desa" },
+    ],
+  },
 ];
 
 const TOOLS_NAV = [
@@ -64,11 +77,20 @@ const PROFILE_NAV = [
 export function Sidebar({ className }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const router = useRouter();
+  const [logoutApi] = useLogoutUserMutation();
 
-  const handleLogout = () => {
-    document.cookie = "token=; path=/; max-age=0";
-    router.push("/login");
-    router.refresh();
+  const handleLogout = async () => {
+    try {
+      // Panggil API logout untuk membersihkan HttpOnly cookie di server & state Redux
+      await logoutApi().unwrap();
+    } catch (e) {
+      console.error("Logout API failed", e);
+    } finally {
+      // Fallback pastikan cookie client juga dihapus (kalau ada)
+      document.cookie = "token=; path=/; max-age=0";
+      router.push("/login");
+      router.refresh();
+    }
   };
 
   return (

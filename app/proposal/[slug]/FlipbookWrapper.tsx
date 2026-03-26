@@ -10,11 +10,11 @@ import type { EProposal } from '@/features/api/eproposalApi';
 
 const ClientFlipbook = dynamic(() => import('./ClientFlipbook'), { ssr: false });
 
-const MIN_LOADING_MS = 7000;
+const MIN_LOADING_MS = 5000;
 
 /* ── Auto-dispatch synthetic mouse events for SplashCursor ──
-   Two paths: top-left → bottom-right  &  top-right → bottom-left
-   Throttled to ~30fps to prevent lag */
+   Single horizontal sweep from left to center-right 
+   Throttled to ~60fps to prevent lag */
 function useAutoSplash(active: boolean) {
   useEffect(() => {
     if (!active) return;
@@ -22,15 +22,15 @@ function useAutoSplash(active: boolean) {
     let frame: number;
     let startTime = 0;
     let lastDispatch = 0;
-    const DISPATCH_INTERVAL = 16; // ~60fps for smoother trail
-    const DURATION = 4000; // 4 seconds for a slower, more deliberate swipe
+    const DISPATCH_INTERVAL = 16; 
+    const DURATION = 2000; // 2 seconds for a single sweep
 
     const tick = (now: number) => {
       if (!startTime) startTime = now;
       const elapsed = now - startTime;
 
       if (elapsed > DURATION) {
-        return; // stop after 2 seconds
+        return; // stop after sweeping once
       }
 
       if (now - lastDispatch < DISPATCH_INTERVAL) {
@@ -46,24 +46,12 @@ function useAutoSplash(active: boolean) {
       const w = window.innerWidth;
       const h = window.innerHeight;
 
-      // Alternate between left and right path each frame
-      const isLeft = Math.floor(now / DISPATCH_INTERVAL) % 2 === 0;
+      // Center left to center right sweep
+      const sx = w * 0.1;
+      const ex = w * 0.9;
+      const y = h * 0.5;
 
-      const cx = w * 0.5;
-      const cy = h * 0.5;
-      let x: number, y: number;
-
-      if (isLeft) {
-        const sx = w * 0.1;
-        const sy = h * 0.1;
-        x = sx + (cx - sx) * t;
-        y = sy + (cy - sy) * t;
-      } else {
-        const sx = w * 0.9;
-        const sy = h * 0.1;
-        x = sx + (cx - sx) * t;
-        y = sy + (cy - sy) * t;
-      }
+      const x = sx + (ex - sx) * t;
 
       document.body.dispatchEvent(
         new MouseEvent('mousemove', { clientX: x, clientY: y, bubbles: true }),
@@ -77,14 +65,7 @@ function useAutoSplash(active: boolean) {
       document.body.dispatchEvent(
         new MouseEvent('mousedown', {
           clientX: window.innerWidth * 0.1,
-          clientY: window.innerHeight * 0.1,
-          bubbles: true,
-        }),
-      );
-      document.body.dispatchEvent(
-        new MouseEvent('mousedown', {
-          clientX: window.innerWidth * 0.9,
-          clientY: window.innerHeight * 0.1,
+          clientY: window.innerHeight * 0.5,
           bubbles: true,
         }),
       );

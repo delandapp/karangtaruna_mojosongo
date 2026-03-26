@@ -5,16 +5,16 @@ export async function seedOrganisasi(prisma: PrismaClient) {
 
   // 1. Cari Referensi Wilayah
   const provinsi = await prisma.m_provinsi.findFirst({
-    where: { nama: { equals: "Prov. Jawa Tengah", mode: "insensitive" } },
+    where: { nama: { equals: "JAWA TENGAH", mode: "insensitive" } },
   });
   const kota = await prisma.m_kota.findFirst({
-    where: { nama: { equals: "Kota Surakarta", mode: "insensitive" } },
+    where: { nama: { equals: "KOTA SURAKARTA", mode: "insensitive" } },
   });
   const kecamatan = await prisma.m_kecamatan.findFirst({
-    where: { nama: { equals: "Kec. Jebres", mode: "insensitive" } },
+    where: { nama: { equals: "JEBRES", mode: "insensitive" } },
   });
   const kelurahan = await prisma.m_kelurahan.findFirst({
-    where: { nama: { equals: "Mojosongo", mode: "insensitive" } },
+    where: { nama: { equals: "MOJOSONGO", mode: "insensitive" } },
   });
 
   if (!provinsi || !kota || !kecamatan || !kelurahan) {

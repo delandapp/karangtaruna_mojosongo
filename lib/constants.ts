@@ -1,34 +1,34 @@
 export const REDIS_KEYS = {
   // Master Data Cache Keys
   LEVELS: {
-    ALL: "master:levels:all", // Used for pagination cache like "master:levels:all:page:1:limit:10"
-    ALL_PREFIX: "master:levels:all:*", // To invalidate all paginated keys
-    SINGLE: (id: number) => `master:levels:${id}`,
+    ALL: "karangtaruna_master:levels:all", // Used for pagination cache like "karangtaruna_master:levels:all:page:1:limit:10"
+    ALL_PREFIX: "karangtaruna_master:levels:all:*", // To invalidate all paginated keys
+    SINGLE: (id: number) => `karangtaruna_master:levels:${id}`,
   },
   JABATANS: {
-    ALL: "master:jabatans:all", // Used for pagination cache like "master:jabatans:all:page:1:limit:10"
-    ALL_PREFIX: "master:jabatans:all:*", // To invalidate all paginated keys
-    SINGLE: (id: number) => `master:jabatans:${id}`,
+    ALL: "karangtaruna_master:jabatans:all", // Used for pagination cache like "karangtaruna_master:jabatans:all:page:1:limit:10"
+    ALL_PREFIX: "karangtaruna_master:jabatans:all:*", // To invalidate all paginated keys
+    SINGLE: (id: number) => `karangtaruna_master:jabatans:${id}`,
   },
   USERS: {
-    ALL: "master:users:all",
-    ALL_PREFIX: "master:users:all:*",
-    SINGLE: (id: number) => `master:users:${id}`,
+    ALL: "karangtaruna_master:users:all",
+    ALL_PREFIX: "karangtaruna_master:users:all:*",
+    SINGLE: (id: number) => `karangtaruna_master:users:${id}`,
   },
   HAK_AKSES: {
-    ALL: "master:hak_akses:all",
-    ALL_PREFIX: "master:hak_akses:all:*",
-    SINGLE: (id: number) => `master:hak_akses:${id}`,
+    ALL: "karangtaruna_master:hak_akses:all",
+    ALL_PREFIX: "karangtaruna_master:hak_akses:all:*",
+    SINGLE: (id: number) => `karangtaruna_master:hak_akses:${id}`,
   },
   ORGANISASI: {
-    ALL: "master:organisasi:all",
-    ALL_PREFIX: "master:organisasi:all:*",
-    SINGLE: (id: number) => `master:organisasi:${id}`,
+    ALL: "karangtaruna_master:organisasi:all",
+    ALL_PREFIX: "karangtaruna_master:organisasi:all:*",
+    SINGLE: (id: number) => `karangtaruna_master:organisasi:${id}`,
   },
   EVENTS: {
-    ALL: "master:events:all",
-    ALL_PREFIX: "master:events:all:*",
-    SINGLE: (id: number) => `master:events:${id}`,
+    ALL: "karangtaruna_master:events:all",
+    ALL_PREFIX: "karangtaruna_master:events:all:*",
+    SINGLE: (id: number) => `karangtaruna_master:events:${id}`,
   },
   PANITIA: {
     ALL: (eventId: number) => `event:${eventId}:panitia:all`,
@@ -51,24 +51,24 @@ export const REDIS_KEYS = {
     SINGLE: (eventId: number, id: number) => `event:${eventId}:anggaran:${id}`,
   },
   RAPAT: {
-    ALL: "master:rapat:all",
-    ALL_PREFIX: "master:rapat:all:*",
-    SINGLE: (id: number) => `master:rapat:${id}`,
+    ALL: "karangtaruna_master:rapat:all",
+    ALL_PREFIX: "karangtaruna_master:rapat:all:*",
+    SINGLE: (id: number) => `karangtaruna_master:rapat:${id}`,
   },
   SEKTOR_INDUSTRI: {
-    ALL: "master:sektor_industri:all",
-    ALL_PREFIX: "master:sektor_industri:all:*",
-    SINGLE: (id: number) => `master:sektor_industri:${id}`,
+    ALL: "karangtaruna_master:sektor_industri:all",
+    ALL_PREFIX: "karangtaruna_master:sektor_industri:all:*",
+    SINGLE: (id: number) => `karangtaruna_master:sektor_industri:${id}`,
   },
   SKALA_PERUSAHAAN: {
-    ALL: "master:skala_perusahaan:all",
-    ALL_PREFIX: "master:skala_perusahaan:all:*",
-    SINGLE: (id: number) => `master:skala_perusahaan:${id}`,
+    ALL: "karangtaruna_master:skala_perusahaan:all",
+    ALL_PREFIX: "karangtaruna_master:skala_perusahaan:all:*",
+    SINGLE: (id: number) => `karangtaruna_master:skala_perusahaan:${id}`,
   },
   PERUSAHAAN: {
-    ALL: "master:perusahaan:all",
-    ALL_PREFIX: "master:perusahaan:all:*",
-    SINGLE: (id: number) => `master:perusahaan:${id}`,
+    ALL: "karangtaruna_master:perusahaan:all",
+    ALL_PREFIX: "karangtaruna_master:perusahaan:all:*",
+    SINGLE: (id: number) => `karangtaruna_master:perusahaan:${id}`,
   },
   E_PROPOSAL: {
     ALL: (eventId: number) => `event:${eventId}:eproposal:all`,
@@ -77,24 +77,24 @@ export const REDIS_KEYS = {
     SINGLE_BY_SLUG: (slug: string) => `eproposal:slug:${slug}`,
   },
   PROVINSI: {
-    ALL: "master:wilayah:provinsi:all",
-    ALL_PREFIX: "master:wilayah:provinsi:all:*",
-    SINGLE: (id: number) => `master:wilayah:provinsi:${id}`,
+    ALL: "karangtaruna_master:wilayah:provinsi:all",
+    ALL_PREFIX: "karangtaruna_master:wilayah:provinsi:all:*",
+    SINGLE: (id: number) => `karangtaruna_master:wilayah:provinsi:${id}`,
   },
   KOTA: {
-    ALL: "master:wilayah:kota:all",
-    ALL_PREFIX: "master:wilayah:kota:all:*",
-    SINGLE: (id: number) => `master:wilayah:kota:${id}`,
+    ALL: "karangtaruna_master:wilayah:kota:all",
+    ALL_PREFIX: "karangtaruna_master:wilayah:kota:all:*",
+    SINGLE: (id: number) => `karangtaruna_master:wilayah:kota:${id}`,
   },
   KECAMATAN: {
-    ALL: "master:wilayah:kecamatan:all",
-    ALL_PREFIX: "master:wilayah:kecamatan:all:*",
-    SINGLE: (id: number) => `master:wilayah:kecamatan:${id}`,
+    ALL: "karangtaruna_master:wilayah:kecamatan:all",
+    ALL_PREFIX: "karangtaruna_master:wilayah:kecamatan:all:*",
+    SINGLE: (id: number) => `karangtaruna_master:wilayah:kecamatan:${id}`,
   },
   KELURAHAN: {
-    ALL: "master:wilayah:kelurahan:all",
-    ALL_PREFIX: "master:wilayah:kelurahan:all:*",
-    SINGLE: (id: number) => `master:wilayah:kelurahan:${id}`,
+    ALL: "karangtaruna_master:wilayah:kelurahan:all",
+    ALL_PREFIX: "karangtaruna_master:wilayah:kelurahan:all:*",
+    SINGLE: (id: number) => `karangtaruna_master:wilayah:kelurahan:${id}`,
   },
 };
 

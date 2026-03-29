@@ -6,8 +6,9 @@ import {
 } from "@/lib/validations/level.schema";
 import { successResponse, errorResponse, paginatedResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { redis, getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
+import { getCache } from "@/lib/redis";
+import { REDIS_KEYS, ELASTIC_INDICES } from "@/lib/constants";
+import { searchDocuments, getDocument } from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { checkUserAccess } from "@/lib/rbac";
 
@@ -30,13 +31,13 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
         return successResponse(cachedDropdown.data, 200);
       }
 
-      const levelsResult = await prisma.m_level.findMany({
-        select: { id: true, nama_level: true },
-        orderBy: { nama_level: "asc" },
-      });
-
-      await setCache(dropdownCacheKey, { data: levelsResult }, DEFAULT_CACHE_TTL);
-      return successResponse(levelsResult, 200);
+      // Fallback to Elasticsearch
+      const { hits } = await searchDocuments(
+        ELASTIC_INDICES.LEVELS,
+        { match_all: {} },
+        { size: 1000, sort: [{ id: { order: "asc" } }] },
+      );
+      return successResponse(hits, 200);
     }
 
     const pageStr = searchParams.get("page") || "1";
@@ -57,7 +58,6 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
     const skip = (page - 1) * limit;
 
     // 2. Cek Cache Redis (Hanya berlaku untuk non-search)
-    // Jika ada pencarian, lebih baik tidak di cache untuk membatasi ukuran memory redis key
     const cacheKey = `${REDIS_KEYS.LEVELS.ALL}:page:${page}:limit:${limit}`;
     if (!searchQuery) {
       const cachedData = await getCache<{ data: any[]; meta: any }>(cacheKey);
@@ -66,40 +66,21 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
       }
     }
 
-    // 3. Bangun Query Prisma
-    const whereCondition = searchQuery
-      ? {
-        nama_level: {
-          contains: searchQuery,
-          mode: "insensitive" as const,
-        },
-      }
-      : {};
+    // 3. Query Elasticsearch
+    const query = searchQuery
+      ? { multi_match: { query: searchQuery, fields: ["nama_level"] } }
+      : { match_all: {} };
 
-    const [levels, total] = await Promise.all([
-      prisma.m_level.findMany({
-        where: whereCondition,
-        skip,
-        take: limit,
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.m_level.count({ where: whereCondition }),
-    ]);
+    const { hits, total } = await searchDocuments(
+      ELASTIC_INDICES.LEVELS,
+      query,
+      { from: skip, size: limit, sort: [{ createdAt: { order: "desc" } }] },
+    );
 
     const totalPages = Math.ceil(total / limit);
-    const meta = {
-      page,
-      limit,
-      total,
-      totalPages,
-    };
+    const meta = { page, limit, total, totalPages };
 
-    // 4. Set ke Cache jika bukan query pencarian
-    if (!searchQuery) {
-      await setCache(cacheKey, { data: levels, meta }, DEFAULT_CACHE_TTL);
-    }
-
-    return paginatedResponse(levels, meta, 200);
+    return paginatedResponse(hits, meta, 200);
   } catch (error) {
     return handleApiError(error);
   }
@@ -119,21 +100,12 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     // 1. Zod Validation
     const validatedData = createLevelSchema.parse(body);
 
-    // 2. Simpan ke Database
+    // 2. Simpan ke Database (CDC → Kafka → ES + Redis)
     const newLevel = await prisma.m_level.create({
       data: {
         nama_level: validatedData.nama_level,
       },
     });
-
-    // 3. Optimasi Cache Beban Server (Invalidation)
-    // Ketika ada penambahan data baru, invalidate semua cache pagination "master:levels:all:*"
-    await invalidateCachePrefix(REDIS_KEYS.LEVELS.ALL_PREFIX);
-    await invalidateCachePrefix(`${REDIS_KEYS.LEVELS.ALL}:dropdown`);
-
-    // 4. Kita juga bisa set directly cache untuk master:levels:{id} ini
-    const singleCacheKey = REDIS_KEYS.LEVELS.SINGLE(newLevel.id);
-    await setCache(singleCacheKey, newLevel, DEFAULT_CACHE_TTL);
 
     return successResponse(newLevel, 201);
   } catch (error) {

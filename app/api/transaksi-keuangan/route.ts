@@ -2,23 +2,23 @@ import { prisma } from "@/lib/prisma";
 import { createTransaksiKeuanganSchema } from "@/lib/validations/keuangan.schema";
 import { successResponse, errorResponse, paginatedResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
+import { getCache } from "@/lib/redis";
+import { ELASTIC_INDICES } from "@/lib/constants";
+import { searchDocuments } from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { checkUserAccess } from "@/lib/rbac";
 import { paginationSchema } from "@/lib/validations/level.schema";
 
 function generateNomorTransaksi(jenis: string) {
   const prefix = jenis === "pemasukan" ? "TRXI" : "TRXO";
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, ""); // YYYYMMDD
-  const randomStr = Math.floor(1000 + Math.random() * 9000); // 4 digits
+  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const randomStr = Math.floor(1000 + Math.random() * 9000);
   return `${prefix}-${dateStr}-${randomStr}`;
 }
 
 export const GET = withAuth(async (req: AuthenticatedRequest) => {
   try {
     const { m_level_id: levelId, m_jabatan_id: jabatanId } = req.user;
-    // Assuming role access is handled under the /api/events/anggaran group for finances
     const hasAccess = await checkUserAccess(levelId, jabatanId, "/api/events/anggaran", "GET");
     if (!hasAccess) return errorResponse(403, "Akses ditolak.", "FORBIDDEN");
 
@@ -34,40 +34,32 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
     });
     const skip = (page - 1) * limit;
 
-    const where: any = {};
-    if (anggaranId) where.anggaran_id = parseInt(anggaranId, 10);
-    if (itemAnggaranId) where.item_anggaran_id = parseInt(itemAnggaranId, 10);
-    if (jenisFilter) where.jenis_transaksi = jenisFilter;
-    if (statusFilter) where.status = statusFilter;
-
     const isFiltered = !!(anggaranId || itemAnggaranId || jenisFilter || statusFilter);
 
-    const cacheKey = `transaksi_keuangan:all:page:${page}:limit:${limit}:anggaran:${anggaranId || "all"}:item:${itemAnggaranId || "all"}:jenis:${jenisFilter || "all"}:status:${statusFilter || "all"}`;
+    // 1. Cek Cache Redis (hanya untuk non-filtered)
+    const cacheKey = `transaksi_keuangan:all:page:${page}:limit:${limit}`;
     if (!isFiltered) {
       const cached = await getCache<{ data: any[]; meta: any }>(cacheKey);
       if (cached) return paginatedResponse(cached.data, cached.meta, 200);
     }
 
-    const [transaksi_list, total] = await Promise.all([
-      prisma.transaksi_keuangan.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: [{ tanggal_transaksi: "desc" }, { id: "desc" }],
-        include: {
-          dicatat_oleh: { select: { id: true, nama_lengkap: true } },
-          disetujui_oleh: { select: { id: true, nama_lengkap: true } },
-          anggaran: { select: { id: true, skenario: true, versi: true, event: { select: { nama_event: true } } } },
-          item_anggaran: { select: { id: true, deskripsi: true, kategori: true } },
-        },
-      }),
-      prisma.transaksi_keuangan.count({ where }),
-    ]);
+    // 2. Query Elasticsearch
+    const must: any[] = [];
+    if (anggaranId) must.push({ term: { anggaran_id: parseInt(anggaranId, 10) } });
+    if (itemAnggaranId) must.push({ term: { item_anggaran_id: parseInt(itemAnggaranId, 10) } });
+    if (jenisFilter) must.push({ term: { jenis_transaksi: jenisFilter } });
+    if (statusFilter) must.push({ term: { status: statusFilter } });
+
+    const query = must.length > 0 ? { bool: { must } } : { match_all: {} };
+
+    const { hits, total } = await searchDocuments(
+      ELASTIC_INDICES.TRANSAKSI_KEUANGAN,
+      query,
+      { from: skip, size: limit, sort: [{ tanggal_transaksi: { order: "desc" } }, { id: { order: "desc" } }] },
+    );
 
     const meta = { page, limit, total, totalPages: Math.ceil(total / limit) };
-    if (!isFiltered) await setCache(cacheKey, { data: transaksi_list, meta }, DEFAULT_CACHE_TTL);
-    
-    return paginatedResponse(transaksi_list, meta, 200);
+    return paginatedResponse(hits, meta, 200);
   } catch (error) {
     return handleApiError(error);
   }
@@ -110,10 +102,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
         dicatat_oleh: { select: { id: true, nama_lengkap: true } },
       },
     });
-
-    await invalidateCachePrefix("transaksi_keuangan");
-    await invalidateCachePrefix(`event:${anggaranExists.event_id}:anggaran`);
-    
     return successResponse(transaksi, 201);
   } catch (error) {
     return handleApiError(error);

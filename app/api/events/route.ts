@@ -1,4 +1,3 @@
-import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createEventSchema } from "@/lib/validations/event.schema";
 import { paginationSchema } from "@/lib/validations/level.schema";
@@ -8,8 +7,9 @@ import {
   paginatedResponse,
 } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
+import { getCache } from "@/lib/redis";
+import { REDIS_KEYS, ELASTIC_INDICES } from "@/lib/constants";
+import { searchDocuments } from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { checkUserAccess } from "@/lib/rbac";
 import { generateKodeEvent } from "@/lib/generator/event-code-generator";
@@ -39,9 +39,6 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
     const pageStr = searchParams.get("page") || "1";
     const limitStr = searchParams.get("limit") || "10";
     const search = searchParams.get("search") || undefined;
-    const status = searchParams.get("status_event") || undefined;
-    const jenis = searchParams.get("jenis_event") || undefined;
-    const orgId = searchParams.get("m_organisasi_id") || undefined;
 
     // 1. Validasi Query Param
     const {
@@ -55,54 +52,29 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
     });
 
     const skip = (page - 1) * limit;
-    const isFiltered = !!(searchQuery || status || jenis || orgId);
 
-    // 2. Cek Cache Redis (hanya untuk request tanpa filter)
+    // 2. Cek Cache Redis (hanya untuk non-search)
     const cacheKey = `${REDIS_KEYS.EVENTS.ALL}:page:${page}:limit:${limit}`;
-    if (!isFiltered) {
+    if (!searchQuery) {
       const cachedData = await getCache<{ data: any[]; meta: any }>(cacheKey);
       if (cachedData) {
         return paginatedResponse(cachedData.data, cachedData.meta, 200);
       }
     }
 
-    // 3. Bangun query Prisma
-    const whereCondition: any = {};
+    // 3. Query Elasticsearch
+    const esQuery: Record<string, unknown> = searchQuery
+      ? { multi_match: { query: searchQuery, fields: ["nama_event", "kode_event", "lokasi"], fuzziness: "AUTO" } }
+      : { match_all: {} };
 
-    if (searchQuery) {
-      whereCondition.OR = [
-        { nama_event: { contains: searchQuery, mode: "insensitive" } },
-        { kode_event: { contains: searchQuery, mode: "insensitive" } },
-        { lokasi: { contains: searchQuery, mode: "insensitive" } },
-      ];
-    }
-    if (status) whereCondition.status_event = status;
-    if (jenis) whereCondition.jenis_event = jenis;
-    if (orgId) whereCondition.m_organisasi_id = parseInt(orgId, 10);
-
-    const [events, total] = await Promise.all([
-      prisma.event.findMany({
-        where: whereCondition,
-        skip,
-        take: limit,
-        orderBy: { dibuat_pada: "desc" },
-        include: {
-          organisasi: { select: { id: true, nama_org: true } },
-          dibuat_oleh: {
-            select: { id: true, nama_lengkap: true, username: true },
-          },
-        },
-      }),
-      prisma.event.count({ where: whereCondition }),
-    ]);
+    const { hits: events, total } = await searchDocuments(
+      ELASTIC_INDICES.EVENTS,
+      esQuery,
+      { from: skip, size: limit, sort: [{ dibuat_pada: "desc" }] },
+    );
 
     const totalPages = Math.ceil(total / limit);
     const meta = { page, limit, total, totalPages };
-
-    // 4. Simpan ke cache jika tidak ada filter
-    if (!isFiltered) {
-      await setCache(cacheKey, { data: events, meta }, DEFAULT_CACHE_TTL);
-    }
 
     return paginatedResponse(events, meta, 200);
   } catch (error) {
@@ -180,14 +152,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
         dibuat_oleh: { select: { id: true, nama_lengkap: true } },
       },
     });
-
-    // 5. Invalidasi cache list & simpan cache per id
-    await invalidateCachePrefix(REDIS_KEYS.EVENTS.ALL_PREFIX);
-    await setCache(
-      REDIS_KEYS.EVENTS.SINGLE(newEvent.id),
-      newEvent,
-      DEFAULT_CACHE_TTL,
-    );
 
     return successResponse(newEvent, 201);
   } catch (error) {

@@ -1,10 +1,10 @@
-import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { updateJabatanSchema } from "@/lib/validations/jabatan.schema";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache, invalidateCachePrefix, redis } from "@/lib/redis";
-import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
+import { getCache } from "@/lib/redis";
+import { ELASTIC_INDICES } from "@/lib/constants";
+import { getDocument } from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
 interface RouteProps {
@@ -20,7 +20,7 @@ export const GET = withAuth(async (req: AuthenticatedRequest, props: RouteProps)
       return errorResponse(400, "ID Jabatan tidak valid", "BAD_REQUEST");
     }
 
-    const cacheKey = REDIS_KEYS.JABATANS.SINGLE(jabatanId);
+    const cacheKey = `jabatan:${jabatanId}`;
 
     // 1. Cek Cache Redis
     const cachedJabatan = await getCache<any>(cacheKey);
@@ -28,17 +28,12 @@ export const GET = withAuth(async (req: AuthenticatedRequest, props: RouteProps)
       return successResponse(cachedJabatan, 200);
     }
 
-    // 2. Ambil dari Database
-    const jabatan = await prisma.m_jabatan.findUnique({
-      where: { id: jabatanId },
-    });
+    // 2. Ambil dari Elasticsearch
+    const jabatan = await getDocument(ELASTIC_INDICES.JABATANS, id);
 
     if (!jabatan) {
       return errorResponse(404, "Jabatan tidak ditemukan", "NOT_FOUND");
     }
-
-    // 3. Simpan ke Cache
-    await setCache(cacheKey, jabatan, DEFAULT_CACHE_TTL);
 
     return successResponse(jabatan, 200);
   } catch (error) {
@@ -66,15 +61,6 @@ export const PUT = withAuth(async (req: AuthenticatedRequest, props: RouteProps)
       },
     });
 
-    // Validasi Sinkronisasi & Optimasi
-    const cacheKey = REDIS_KEYS.JABATANS.SINGLE(jabatanId);
-
-    // Update local single id di Redis
-    await setCache(cacheKey, updatedJabatan, DEFAULT_CACHE_TTL);
-
-    // Invalidate rekap table master cache
-    await invalidateCachePrefix(REDIS_KEYS.JABATANS.ALL_PREFIX);
-
     return successResponse(updatedJabatan, 200);
   } catch (error) {
     return handleApiError(error);
@@ -93,11 +79,6 @@ export const DELETE = withAuth(async (req: AuthenticatedRequest, props: RoutePro
     await prisma.m_jabatan.delete({
       where: { id: jabatanId },
     });
-
-    const cacheKey = REDIS_KEYS.JABATANS.SINGLE(jabatanId);
-
-    await redis.del(cacheKey);
-    await invalidateCachePrefix(REDIS_KEYS.JABATANS.ALL_PREFIX);
 
     return successResponse(null, 200);
   } catch (error) {

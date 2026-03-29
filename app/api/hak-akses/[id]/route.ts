@@ -68,10 +68,6 @@ export const PUT = withAuth(
                     include: { rules: true },
                 });
             });
-
-            await invalidateCachePrefix(REDIS_KEYS.HAK_AKSES.ALL_PREFIX);
-            await setCache(REDIS_KEYS.HAK_AKSES.SINGLE(id), updatedHakAkses, DEFAULT_CACHE_TTL);
-
             return successResponse(updatedHakAkses, 200);
         } catch (error) {
             return handleApiError(error);
@@ -107,10 +103,6 @@ export const DELETE = withAuth(
             await prisma.m_hak_akses.delete({
                 where: { id },
             });
-
-            await invalidateCachePrefix(REDIS_KEYS.HAK_AKSES.ALL_PREFIX);
-            await invalidateCachePrefix(`${REDIS_KEYS.HAK_AKSES.ALL}:dropdown`);
-
             return successResponse({ deleted: true }, 200);
         } catch (error) {
             return handleApiError(error);

@@ -79,9 +79,6 @@ export const PUT = withAuth(async (req: AuthenticatedRequest, props: RouteProps)
         catatan: data.catatan,
       },
     });
-
-    await invalidateCachePrefix(`event:${eventId}:anggaran`);
-    await invalidateCachePrefix(`item_anggaran:${itemId}`);
     return successResponse(item, 200);
   } catch (error) {
     return handleApiError(error);
@@ -105,10 +102,6 @@ export const DELETE = withAuth(async (req: AuthenticatedRequest, props: RoutePro
     if (!itemExists) return errorResponse(404, "Item Anggaran tidak ditemukan", "NOT_FOUND");
 
     await prisma.item_anggaran.delete({ where: { id: itemId } });
-
-    await invalidateCachePrefix(`event:${eventId}:anggaran`);
-    await invalidateCachePrefix(`item_anggaran:${itemId}`);
-
     return successResponse(null, 200);
   } catch (error) {
     return handleApiError(error);

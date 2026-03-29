@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { successResponse, errorResponse, paginatedResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache } from "@/lib/redis";
-import { DEFAULT_CACHE_TTL } from "@/lib/constants";
+import { getCache } from "@/lib/redis";
+import { ELASTIC_INDICES } from "@/lib/constants";
+import { searchDocuments } from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { checkUserAccess } from "@/lib/rbac";
 import { paginationSchema } from "@/lib/validations/level.schema";
@@ -24,41 +25,31 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
     });
     const skip = (page - 1) * limit;
 
-    const where: any = {};
-    if (statusFilter) where.status = statusFilter;
-    if (skenarioFilter) where.skenario = skenarioFilter;
-    if (eventSearch) {
-      where.event = { nama_event: { contains: eventSearch, mode: "insensitive" } };
-    }
-
     const isFiltered = !!(statusFilter || skenarioFilter || eventSearch);
-    const cacheKey = `anggaran:all:page:${page}:limit:${limit}:status:${statusFilter || "all"}:skenario:${skenarioFilter || "all"}:search:${eventSearch || ""}`;
 
+    // 1. Cek Cache Redis (hanya untuk non-filtered)
+    const cacheKey = `anggaran:all:page:${page}:limit:${limit}`;
     if (!isFiltered) {
       const cached = await getCache<{ data: any[]; meta: any }>(cacheKey);
       if (cached) return paginatedResponse(cached.data, cached.meta, 200);
     }
 
-    const [records, total] = await Promise.all([
-      prisma.anggaran.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: [{ id: "desc" }],
-        include: {
-          event: { select: { id: true, nama_event: true, status_event: true } },
-          dibuat_oleh: { select: { id: true, nama_lengkap: true } },
-          disetujui_oleh: { select: { id: true, nama_lengkap: true } },
-          _count: { select: { item_anggaran: true, transaksi: true } },
-        },
-      }),
-      prisma.anggaran.count({ where }),
-    ]);
+    // 2. Query Elasticsearch
+    const must: any[] = [];
+    if (statusFilter) must.push({ term: { status: statusFilter } });
+    if (skenarioFilter) must.push({ term: { skenario: skenarioFilter } });
+    if (eventSearch) must.push({ multi_match: { query: eventSearch, fields: ["skenario", "deskripsi"] } });
+
+    const query = must.length > 0 ? { bool: { must } } : { match_all: {} };
+
+    const { hits, total } = await searchDocuments(
+      ELASTIC_INDICES.ANGGARAN,
+      query,
+      { from: skip, size: limit, sort: [{ id: { order: "desc" } }] },
+    );
 
     const meta = { page, limit, total, totalPages: Math.ceil(total / limit) };
-    if (!isFiltered) await setCache(cacheKey, { data: records, meta }, DEFAULT_CACHE_TTL);
-
-    return paginatedResponse(records, meta, 200);
+    return paginatedResponse(hits, meta, 200);
   } catch (error) {
     return handleApiError(error);
   }

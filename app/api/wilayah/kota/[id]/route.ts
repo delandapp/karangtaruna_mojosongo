@@ -3,8 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { kotaSchema } from "@/lib/validations/wilayah.schema";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache, invalidateCachePrefix, redis } from "@/lib/redis";
-import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
+import { getCache } from "@/lib/redis";
+import { REDIS_KEYS, ELASTIC_INDICES } from "@/lib/constants";
+import { getDocument } from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { checkUserAccess } from "@/lib/rbac";
 
@@ -23,16 +24,9 @@ export const GET = withAuth(async (req: AuthenticatedRequest, { params }: { para
     const cachedData = await getCache(cacheKey);
     if (cachedData) return successResponse(cachedData, 200);
 
-    const data = await prisma.m_kota.findUnique({
-      where: { id },
-      include: {
-        m_provinsi: { select: { nama: true } }
-      }
-    });
-
+    const data = await getDocument(ELASTIC_INDICES.KOTA, id);
     if (!data) return errorResponse(404, "Kota tidak ditemukan", "NOT_FOUND");
 
-    await setCache(cacheKey, data, DEFAULT_CACHE_TTL);
     return successResponse(data, 200);
   } catch (error) {
     return handleApiError(error);
@@ -77,16 +71,6 @@ export const PUT = withAuth(async (req: AuthenticatedRequest, { params }: { para
         m_provinsi: { select: { nama: true } }
       }
     });
-
-    await invalidateCachePrefix(REDIS_KEYS.KOTA.ALL_PREFIX);
-    await invalidateCachePrefix(`${REDIS_KEYS.KOTA.ALL}:dropdown`);
-    
-    await invalidateCachePrefix(`${REDIS_KEYS.KECAMATAN.ALL_PREFIX}`);
-    await invalidateCachePrefix(`${REDIS_KEYS.KECAMATAN.ALL}:dropdown`);
-
-    const cacheKey = REDIS_KEYS.KOTA.SINGLE(id);
-    await setCache(cacheKey, updatedData, DEFAULT_CACHE_TTL);
-
     return successResponse(updatedData, 200);
   } catch (error) {
     return handleApiError(error);
@@ -114,11 +98,6 @@ export const DELETE = withAuth(async (req: AuthenticatedRequest, { params }: { p
     }
 
     await prisma.m_kota.delete({ where: { id } });
-
-    await invalidateCachePrefix(REDIS_KEYS.KOTA.ALL_PREFIX);
-    await invalidateCachePrefix(`${REDIS_KEYS.KOTA.ALL}:dropdown`);
-    await redis.del(REDIS_KEYS.KOTA.SINGLE(id));
-
     return successResponse(null, 200);
   } catch (error) {
     return handleApiError(error);

@@ -1,11 +1,11 @@
-import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createPerusahaanSchema } from "@/lib/validations/perusahaan.schema";
 import { paginationSchema } from "@/lib/validations/level.schema";
 import { successResponse, errorResponse, paginatedResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
+import { getCache } from "@/lib/redis";
+import { REDIS_KEYS, ELASTIC_INDICES } from "@/lib/constants";
+import { searchDocuments } from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { checkUserAccess } from "@/lib/rbac";
 
@@ -29,11 +29,11 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
       const cached = await getCache<{ data: any[] }>(cacheKey);
       if (cached) return successResponse(cached.data, 200);
 
-      const items = await prisma.m_perusahaan.findMany({
-        select: { id: true, nama: true },
-        orderBy: { nama: "asc" },
-      });
-      await setCache(cacheKey, { data: items }, DEFAULT_CACHE_TTL);
+      const result = await searchDocuments(ELASTIC_INDICES.PERUSAHAAN,
+        { match_all: {} },
+        { sort: [{ nama: { order: "asc" } }], _source: ["id", "nama"], size: 10000 },
+      );
+      const items = result.hits;
       return successResponse(items, 200);
     }
 
@@ -66,47 +66,41 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
       }
     }
 
-    // 3. Bangun query Prisma
-    const whereCondition: any = {};
+    // 3. Bangun query Elasticsearch
+    const must: any[] = [];
+    const filter: any[] = [];
+
     if (searchQuery) {
-        whereCondition.OR = [
-            { nama: { contains: searchQuery, mode: "insensitive" as const } },
-            { nama_kontak: { contains: searchQuery, mode: "insensitive" as const } },
-        ];
+      must.push({
+        multi_match: {
+          query: searchQuery,
+          fields: ["nama", "nama_kontak"],
+          type: "best_fields",
+          fuzziness: "AUTO",
+        },
+      });
     }
     if (m_sektor_industri_id) {
-        whereCondition.m_sektor_industri_id = parseInt(m_sektor_industri_id, 10);
+      filter.push({ term: { m_sektor_industri_id: parseInt(m_sektor_industri_id, 10) } });
     }
     if (m_skala_perusahaan_id) {
-        whereCondition.m_skala_perusahaan_id = parseInt(m_skala_perusahaan_id, 10);
+      filter.push({ term: { m_skala_perusahaan_id: parseInt(m_skala_perusahaan_id, 10) } });
     }
 
-    // 4. Eksekusi query
-    const [items, total] = await Promise.all([
-      prisma.m_perusahaan.findMany({
-        where: whereCondition,
-        include: {
-            sektor: true,
-            skala: true,
-            m_provinsi: true,
-            m_kota: true,
-            m_kecamatan: true,
-            m_kelurahan: true,
-        },
-        skip,
-        take: limit,
-        orderBy: { dibuat_pada: "desc" },
-      }),
-      prisma.m_perusahaan.count({ where: whereCondition }),
-    ]);
+    const esQuery = must.length > 0 || filter.length > 0
+      ? { bool: { must: must.length > 0 ? must : [{ match_all: {} }], filter } }
+      : { match_all: {} };
 
+    const result = await searchDocuments(ELASTIC_INDICES.PERUSAHAAN, esQuery, {
+      from: skip,
+      size: limit,
+      sort: [{ dibuat_pada: { order: "desc" } }],
+    });
+
+    const total = result.total;
+    const items = result.hits;
     const totalPages = Math.ceil(total / limit);
     const meta = { page, limit, total, totalPages };
-
-    // 5. Set ke cache (cache dengan key dinamis termasuk filter jika diinginkan, tapi default skip caching query kompleks kecuali basic)
-    if (isBasicQuery) {
-      await setCache(cacheKey, { data: items, meta }, DEFAULT_CACHE_TTL);
-    }
 
     return paginatedResponse(items, meta, 200);
   } catch (error) {
@@ -135,13 +129,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     const newItem = await prisma.m_perusahaan.create({
       data: validatedData,
     });
-
-    // 3. Invalidasi cache list
-    await invalidateCachePrefix(REDIS_KEYS.PERUSAHAAN.ALL_PREFIX);
-
-    // 4. Simpan cache per id
-    const singleCacheKey = REDIS_KEYS.PERUSAHAAN.SINGLE(newItem.id);
-    await setCache(singleCacheKey, newItem, DEFAULT_CACHE_TTL);
 
     return successResponse(newItem, 201);
   } catch (error) {

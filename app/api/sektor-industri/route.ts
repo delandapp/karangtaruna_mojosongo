@@ -1,11 +1,11 @@
-import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createSektorIndustriSchema } from "@/lib/validations/perusahaan.schema";
 import { paginationSchema } from "@/lib/validations/level.schema";
 import { successResponse, errorResponse, paginatedResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
+import { getCache } from "@/lib/redis";
+import { REDIS_KEYS, ELASTIC_INDICES } from "@/lib/constants";
+import { searchDocuments } from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { checkUserAccess } from "@/lib/rbac";
 
@@ -29,11 +29,11 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
       const cached = await getCache<{ data: any[] }>(cacheKey);
       if (cached) return successResponse(cached.data, 200);
 
-      const items = await prisma.m_sektor_industri.findMany({
-        select: { id: true, nama_sektor: true },
-        orderBy: { nama_sektor: "asc" },
-      });
-      await setCache(cacheKey, { data: items }, DEFAULT_CACHE_TTL);
+      const result = await searchDocuments(ELASTIC_INDICES.SEKTOR_INDUSTRI,
+        { match_all: {} },
+        { sort: [{ nama_sektor: { order: "asc" } }], _source: ["id", "nama_sektor"], size: 10000 },
+      );
+      const items = result.hits;
       return successResponse(items, 200);
     }
 
@@ -59,33 +59,28 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
       }
     }
 
-    // 3. Bangun query Prisma
-    const whereCondition = searchQuery
+    // 3. Bangun query Elasticsearch
+    const esQuery = searchQuery
       ? {
-          OR: [
-            { nama_sektor: { contains: searchQuery, mode: "insensitive" as const } },
-            { deskripsi_sektor: { contains: searchQuery, mode: "insensitive" as const } },
-          ],
+          multi_match: {
+            query: searchQuery,
+            fields: ["nama_sektor", "deskripsi_sektor"],
+            type: "best_fields" as const,
+            fuzziness: "AUTO",
+          },
         }
-      : {};
+      : { match_all: {} };
 
-    const [items, total] = await Promise.all([
-      prisma.m_sektor_industri.findMany({
-        where: whereCondition,
-        skip,
-        take: limit,
-        orderBy: { dibuat_pada: "desc" },
-      }),
-      prisma.m_sektor_industri.count({ where: whereCondition }),
-    ]);
+    const result = await searchDocuments(ELASTIC_INDICES.SEKTOR_INDUSTRI, esQuery, {
+      from: skip,
+      size: limit,
+      sort: [{ dibuat_pada: { order: "desc" } }],
+    });
 
+    const total = result.total;
+    const items = result.hits;
     const totalPages = Math.ceil(total / limit);
     const meta = { page, limit, total, totalPages };
-
-    // 4. Set ke cache jika bukan pencarian
-    if (!searchQuery) {
-      await setCache(cacheKey, { data: items, meta }, DEFAULT_CACHE_TTL);
-    }
 
     return paginatedResponse(items, meta, 200);
   } catch (error) {
@@ -120,13 +115,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     const newItem = await prisma.m_sektor_industri.create({
       data: validatedData,
     });
-
-    // 4. Invalidasi cache list
-    await invalidateCachePrefix(REDIS_KEYS.SEKTOR_INDUSTRI.ALL_PREFIX);
-
-    // 5. Simpan cache per id
-    const singleCacheKey = REDIS_KEYS.SEKTOR_INDUSTRI.SINGLE(newItem.id);
-    await setCache(singleCacheKey, newItem, DEFAULT_CACHE_TTL);
 
     return successResponse(newItem, 201);
   } catch (error) {

@@ -99,7 +99,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest, props: RouteProps
     });
 
     // Invalidate anggaran cache
-    await invalidateCachePrefix(`event:${eventId}:anggaran`);
     // NOTE: Ideally, also recalculate total_pemasukan/pengeluaran on Anggaran record, but skipping for simplicity or can map via Prisma hook
     
     return successResponse(item, 201);

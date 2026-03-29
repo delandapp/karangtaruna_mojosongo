@@ -10,7 +10,8 @@ import { handleApiError } from "@/lib/error-handler";
 import bcrypt from "bcrypt";
 import { z } from "zod";
 import { redis, getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
+import { REDIS_KEYS, DEFAULT_CACHE_TTL, ELASTIC_INDICES } from "@/lib/constants";
+import { searchDocuments } from "@/lib/elasticsearch";
 
 // Schema validation for query params filtering
 const querySchema = z.object({
@@ -93,10 +94,23 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
       where.m_level_id = buildInFilter(m_level_id);
     }
     if (search) {
-      where.OR = [
-        { nama_lengkap: { contains: search, mode: "insensitive" } },
-        { username: { contains: search, mode: "insensitive" } },
-      ];
+      const { hits } = await searchDocuments(
+        ELASTIC_INDICES.USERS,
+        {
+          multi_match: {
+            query: search,
+            fields: ["nama_lengkap", "username"],
+          },
+        },
+        { size: 5000 } // Ambil cukup banyak id untuk difilter oleh Prisma Security
+      );
+      
+      const ids = hits.map((h: any) => parseInt(h.id, 10)).filter((id: number) => !isNaN(id));
+      
+      if (ids.length === 0) {
+        return paginatedResponse([], { total: 0, page, limit, totalPages: 0 });
+      }
+      where.id = { in: ids };
     }
 
     // Generate deterministric Cache Key parameter mapping based on query combinations
@@ -105,7 +119,7 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
     const cacheKey = `${REDIS_KEYS.USERS.ALL}:page:${page}:limit:${limit}:jab:${jabKey}:lvl:${lvlKey}:search:${search || "none"}`;
 
     // Try hitting cache first
-    const cachedData = await getCache<{ data: any[]; meta: any }>(cacheKey);
+    const cachedData = !search ? await getCache<{ data: any[]; meta: any }>(cacheKey) : null;
     if (cachedData) {
       // Perhatikan Koordinator strict isolation di filter cache
       // The Koordinator logic below should still work if isolated correctly by params,
@@ -171,7 +185,7 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
     const meta = { total, page, limit, totalPages };
 
     // Set to Cache
-    await setCache(cacheKey, { data: users, meta }, DEFAULT_CACHE_TTL);
+    if (!search) { await setCache(cacheKey, { data: users, meta }, DEFAULT_CACHE_TTL); }
 
     return paginatedResponse(users, meta);
   } catch (error) {
@@ -257,14 +271,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     });
 
     // Invalidate All Users Cache Prefix on successful creation
-    await invalidateCachePrefix(REDIS_KEYS.USERS.ALL_PREFIX);
-    await invalidateCachePrefix(`${REDIS_KEYS.USERS.ALL}:dropdown`);
-    await setCache(
-      REDIS_KEYS.USERS.SINGLE(newUser.id),
-      newUser,
-      DEFAULT_CACHE_TTL,
-    );
-
     return successResponse(newUser, 201);
   } catch (error) {
     return handleApiError(error);

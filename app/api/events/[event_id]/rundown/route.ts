@@ -85,9 +85,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest, props: RouteProps
       data: { event_id: eventId, ...data },
       include: { pic: { select: { id: true, nama_lengkap: true } } },
     });
-
-    await invalidateCachePrefix(REDIS_KEYS.RUNDOWN.ALL_PREFIX(eventId));
-    await setCache(REDIS_KEYS.RUNDOWN.SINGLE(eventId, rundown.id), rundown, DEFAULT_CACHE_TTL);
     return successResponse(rundown, 201);
   } catch (error) {
     return handleApiError(error);

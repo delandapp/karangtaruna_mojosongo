@@ -5,8 +5,6 @@ import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import bcrypt from "bcrypt";
 import { z } from "zod";
-import { redis, getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { checkUserAccess } from "@/lib/rbac";
 
 const updateUserSchema = z.object({
@@ -142,14 +140,6 @@ export const PUT = withAuth(
         },
       });
 
-      // Update Single Cache & Invalidate All Users Prefix
-      await setCache(
-        REDIS_KEYS.USERS.SINGLE(updatedUser.id),
-        updatedUser,
-        DEFAULT_CACHE_TTL,
-      );
-      await invalidateCachePrefix(REDIS_KEYS.USERS.ALL_PREFIX);
-
       return successResponse(updatedUser);
     } catch (error) {
       return handleApiError(error);
@@ -214,10 +204,6 @@ export const DELETE = withAuth(
       }
 
       await prisma.m_user.delete({ where: { id: userId } });
-
-      // Remove Single Cache & Invalidate All Users Prefix
-      await redis.del(REDIS_KEYS.USERS.SINGLE(userId));
-      await invalidateCachePrefix(REDIS_KEYS.USERS.ALL_PREFIX);
 
       return successResponse(null);
     } catch (error) {

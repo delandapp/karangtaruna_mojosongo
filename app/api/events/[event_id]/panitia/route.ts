@@ -106,10 +106,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest, props: RouteProps
         jabatan: { select: { id: true, nama_jabatan: true } },
       },
     });
-
-    await invalidateCachePrefix(REDIS_KEYS.PANITIA.ALL_PREFIX(eventId));
-    await setCache(REDIS_KEYS.PANITIA.SINGLE(eventId, panitia.id), panitia, DEFAULT_CACHE_TTL);
-
     return successResponse(panitia, 201);
   } catch (error) {
     return handleApiError(error);

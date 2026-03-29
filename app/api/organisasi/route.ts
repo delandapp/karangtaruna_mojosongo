@@ -1,11 +1,11 @@
-import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createOrganisasiSchema } from "@/lib/validations/organisasi.schema";
 import { paginationSchema } from "@/lib/validations/level.schema";
 import { successResponse, errorResponse, paginatedResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
+import { getCache } from "@/lib/redis";
+import { REDIS_KEYS, ELASTIC_INDICES } from "@/lib/constants";
+import { searchDocuments } from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { checkUserAccess } from "@/lib/rbac";
 
@@ -44,41 +44,19 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
       }
     }
 
-    // 3. Bangun query Prisma
-    const whereCondition = searchQuery
-      ? {
-          OR: [
-            { nama_org: { contains: searchQuery, mode: "insensitive" as const } },
-            { m_kelurahan: { nama: { contains: searchQuery, mode: "insensitive" as const } } },
-            { m_kecamatan: { nama: { contains: searchQuery, mode: "insensitive" as const } } },
-            { m_kota: { nama: { contains: searchQuery, mode: "insensitive" as const } } },
-          ],
-        }
-      : {};
+    // 3. Query Elasticsearch
+    const esQuery: Record<string, unknown> = searchQuery
+      ? { multi_match: { query: searchQuery, fields: ["nama_org", "alamat", "email"], fuzziness: "AUTO" } }
+      : { match_all: {} };
 
-    const [organisasiList, total] = await Promise.all([
-      prisma.m_organisasi.findMany({
-        where: whereCondition,
-        include: {
-          m_provinsi: true,
-          m_kota: true,
-          m_kecamatan: true,
-          m_kelurahan: true,
-        },
-        skip,
-        take: limit,
-        orderBy: { dibuat_pada: "desc" },
-      }),
-      prisma.m_organisasi.count({ where: whereCondition }),
-    ]);
+    const { hits: organisasiList, total } = await searchDocuments(
+      ELASTIC_INDICES.ORGANISASI,
+      esQuery,
+      { from: skip, size: limit, sort: [{ dibuat_pada: "desc" }] },
+    );
 
     const totalPages = Math.ceil(total / limit);
     const meta = { page, limit, total, totalPages };
-
-    // 4. Set ke cache jika bukan pencarian
-    if (!searchQuery) {
-      await setCache(cacheKey, { data: organisasiList, meta }, DEFAULT_CACHE_TTL);
-    }
 
     return paginatedResponse(organisasiList, meta, 200);
   } catch (error) {
@@ -120,13 +98,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
         media_sosial: validatedData.media_sosial ?? undefined,
       },
     });
-
-    // 3. Invalidasi cache list
-    await invalidateCachePrefix(REDIS_KEYS.ORGANISASI.ALL_PREFIX);
-
-    // 4. Simpan cache per id
-    const singleCacheKey = REDIS_KEYS.ORGANISASI.SINGLE(newOrganisasi.id);
-    await setCache(singleCacheKey, newOrganisasi, DEFAULT_CACHE_TTL);
 
     return successResponse(newOrganisasi, 201);
   } catch (error) {

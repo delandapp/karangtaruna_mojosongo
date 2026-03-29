@@ -1,10 +1,9 @@
-import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { updateOrganisasiSchema } from "@/lib/validations/organisasi.schema";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache, invalidateCachePrefix, redis } from "@/lib/redis";
-import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
+import { ELASTIC_INDICES } from "@/lib/constants";
+import { getDocument } from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { checkUserAccess } from "@/lib/rbac";
 
@@ -31,30 +30,12 @@ export const GET = withAuth(async (req: AuthenticatedRequest, props: RouteProps)
       return errorResponse(400, "ID Organisasi tidak valid", "BAD_REQUEST");
     }
 
-    // 1. Cek Cache Redis
-    const cacheKey = REDIS_KEYS.ORGANISASI.SINGLE(organisasiId);
-    const cachedOrganisasi = await getCache<any>(cacheKey);
-    if (cachedOrganisasi) {
-      return successResponse(cachedOrganisasi, 200);
-    }
-
-    // 2. Ambil dari database
-    const organisasi = await prisma.m_organisasi.findUnique({
-      where: { id: organisasiId },
-      include: {
-        m_provinsi: true,
-        m_kota: true,
-        m_kecamatan: true,
-        m_kelurahan: true,
-      },
-    });
+    // 1. Ambil dari Elasticsearch
+    const organisasi = await getDocument(ELASTIC_INDICES.ORGANISASI, String(organisasiId));
 
     if (!organisasi) {
       return errorResponse(404, "Data organisasi tidak ditemukan", "NOT_FOUND");
     }
-
-    // 3. Simpan ke cache
-    await setCache(cacheKey, organisasi, DEFAULT_CACHE_TTL);
 
     return successResponse(organisasi, 200);
   } catch (error) {
@@ -111,11 +92,6 @@ export const PUT = withAuth(async (req: AuthenticatedRequest, props: RouteProps)
       },
     });
 
-    // 4. Sinkronisasi Cache
-    const cacheKey = REDIS_KEYS.ORGANISASI.SINGLE(organisasiId);
-    await setCache(cacheKey, updatedOrganisasi, DEFAULT_CACHE_TTL);
-    await invalidateCachePrefix(REDIS_KEYS.ORGANISASI.ALL_PREFIX);
-
     return successResponse(updatedOrganisasi, 200);
   } catch (error) {
     return handleApiError(error);
@@ -149,11 +125,6 @@ export const DELETE = withAuth(async (req: AuthenticatedRequest, props: RoutePro
 
     // 2. Hapus dari database
     await prisma.m_organisasi.delete({ where: { id: organisasiId } });
-
-    // 3. Bersihkan cache
-    const cacheKey = REDIS_KEYS.ORGANISASI.SINGLE(organisasiId);
-    await redis.del(cacheKey);
-    await invalidateCachePrefix(REDIS_KEYS.ORGANISASI.ALL_PREFIX);
 
     return successResponse(null, 200);
   } catch (error) {

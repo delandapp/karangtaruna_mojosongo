@@ -2,8 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { createRapatSchema } from "@/lib/validations/rapat.schema";
 import { successResponse, errorResponse, paginatedResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
+import { getCache } from "@/lib/redis";
+import { REDIS_KEYS, ELASTIC_INDICES } from "@/lib/constants";
+import { searchDocuments } from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { checkUserAccess } from "@/lib/rbac";
 import { paginationSchema } from "@/lib/validations/level.schema";
@@ -32,27 +33,18 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
       if (cached) return paginatedResponse(cached.data, cached.meta, 200);
     }
 
-    const where: any = {};
-    if (eventIdParam) where.event_id = eventIdParam;
-    if (statusFilter) where.status = statusFilter;
-    if (search) where.judul = { contains: search, mode: "insensitive" };
+    // Query Elasticsearch
+    const esQuery: Record<string, unknown> = search
+      ? { multi_match: { query: search, fields: ["judul", "lokasi", "notulensi"], fuzziness: "AUTO" } }
+      : { match_all: {} };
 
-    const [rapat, total] = await Promise.all([
-      prisma.rapat.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { tanggal_rapat: "desc" },
-        include: {
-          event:       { select: { id: true, nama_event: true, kode_event: true } },
-          dibuat_oleh: { select: { id: true, nama_lengkap: true } },
-        },
-      }),
-      prisma.rapat.count({ where }),
-    ]);
+    const { hits: rapat, total } = await searchDocuments(
+      ELASTIC_INDICES.RAPAT,
+      esQuery,
+      { from: skip, size: limit, sort: [{ tanggal_rapat: "desc" }] },
+    );
 
     const meta = { page, limit, total, totalPages: Math.ceil(total / limit) };
-    if (!isFiltered) await setCache(cacheKey, { data: rapat, meta }, DEFAULT_CACHE_TTL);
     return paginatedResponse(rapat, meta, 200);
   } catch (error) {
     return handleApiError(error);
@@ -91,9 +83,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
         dibuat_oleh: { select: { id: true, nama_lengkap: true } },
       },
     });
-
-    await invalidateCachePrefix(REDIS_KEYS.RAPAT.ALL_PREFIX);
-    await setCache(REDIS_KEYS.RAPAT.SINGLE(rapat.id), rapat, DEFAULT_CACHE_TTL);
     return successResponse(rapat, 201);
   } catch (error) {
     return handleApiError(error);

@@ -3,11 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { kecamatanSchema, wilayahQuerySchema } from "@/lib/validations/wilayah.schema";
 import { successResponse, errorResponse, paginatedResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
+import { getCache } from "@/lib/redis";
+import { REDIS_KEYS, ELASTIC_INDICES } from "@/lib/constants";
+import { searchDocuments } from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { checkUserAccess } from "@/lib/rbac";
-import { Prisma } from "@prisma/client";
 
 export const GET = withAuth(async (req: AuthenticatedRequest) => {
   try {
@@ -24,14 +24,6 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
     const m_kota_id = searchParams.get("m_kota_id");
     const m_provinsi_id = searchParams.get("m_provinsi_id");
 
-    let whereCondition: Prisma.m_kecamatanWhereInput = {};
-    
-    if (m_kota_id) {
-       whereCondition.m_kota_id = parseInt(m_kota_id, 10);
-    } else if (m_provinsi_id) {
-       whereCondition.m_kota = { m_provinsi_id: parseInt(m_provinsi_id, 10) };
-    }
-
     if (dropdown) {
       const dropdownCacheKey = `${REDIS_KEYS.KECAMATAN.ALL}:dropdown:kota:${m_kota_id || 'all'}:prov:${m_provinsi_id || 'all'}`;
       const cachedDropdown = await getCache<{ data: any[] }>(dropdownCacheKey);
@@ -39,14 +31,24 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
         return successResponse(cachedDropdown.data, 200);
       }
 
-      const list = await prisma.m_kecamatan.findMany({
-        where: whereCondition,
-        select: { id: true, kode_wilayah: true, nama: true, m_kota_id: true },
-        orderBy: { nama: "asc" },
+      const mustClauses: any[] = [];
+      if (m_kota_id) {
+        mustClauses.push({ term: { m_kota_id: parseInt(m_kota_id, 10) } });
+      } else if (m_provinsi_id) {
+        mustClauses.push({ term: { "m_kota.m_provinsi_id": parseInt(m_provinsi_id, 10) } });
+      }
+
+      const esQuery = mustClauses.length > 0
+        ? { bool: { must: mustClauses } }
+        : { match_all: {} };
+
+      const { hits } = await searchDocuments(ELASTIC_INDICES.KECAMATAN, esQuery, {
+        size: 10000,
+        _source: ["id", "kode_wilayah", "nama", "m_kota_id"],
+        sort: [{ nama: "asc" }],
       });
 
-      await setCache(dropdownCacheKey, { data: list }, DEFAULT_CACHE_TTL);
-      return successResponse(list, 200);
+      return successResponse(hits, 200);
     }
 
     const pageStr = searchParams.get("page") || "1";
@@ -69,34 +71,36 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
       }
     }
 
+    const mustClauses: any[] = [];
+    if (m_kota_id) {
+      mustClauses.push({ term: { m_kota_id: parseInt(m_kota_id, 10) } });
+    } else if (m_provinsi_id) {
+      mustClauses.push({ term: { "m_kota.m_provinsi_id": parseInt(m_provinsi_id, 10) } });
+    }
     if (searchQuery) {
-      whereCondition.OR = [
-        { nama: { contains: searchQuery, mode: "insensitive" } },
-        { kode_wilayah: { contains: searchQuery, mode: "insensitive" } },
-      ];
+      mustClauses.push({
+        multi_match: {
+          query: searchQuery,
+          fields: ["nama", "kode_wilayah"],
+          type: "phrase_prefix" as const,
+        },
+      });
     }
 
-    const [dataList, total] = await Promise.all([
-      prisma.m_kecamatan.findMany({
-        where: whereCondition,
-        include: {
-          m_kota: { select: { nama: true, m_provinsi_id: true } }
-        },
-        skip,
-        take: limit,
-        orderBy: { nama: "asc" },
-      }),
-      prisma.m_kecamatan.count({ where: whereCondition }),
-    ]);
+    const esQuery = mustClauses.length > 0
+      ? { bool: { must: mustClauses } }
+      : { match_all: {} };
+
+    const { hits, total } = await searchDocuments(ELASTIC_INDICES.KECAMATAN, esQuery, {
+      from: skip,
+      size: limit,
+      sort: [{ nama: "asc" }],
+    });
 
     const totalPages = Math.ceil(total / limit);
     const meta = { page, limit, total, totalPages };
 
-    if (!searchQuery) {
-      await setCache(cacheKey, { data: dataList, meta }, DEFAULT_CACHE_TTL);
-    }
-
-    return paginatedResponse(dataList, meta, 200);
+    return paginatedResponse(hits, meta, 200);
   } catch (error) {
     return handleApiError(error);
   }
@@ -129,13 +133,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
         m_kota_id: validatedData.m_kota_id,
       },
     });
-
-    await invalidateCachePrefix(REDIS_KEYS.KECAMATAN.ALL_PREFIX);
-    await invalidateCachePrefix(`${REDIS_KEYS.KECAMATAN.ALL}:dropdown`);
-
-    const singleCacheKey = REDIS_KEYS.KECAMATAN.SINGLE(Number(newData.id));
-    await setCache(singleCacheKey, newData, DEFAULT_CACHE_TTL);
-
     return successResponse(newData, 201);
   } catch (error) {
     return handleApiError(error);

@@ -71,9 +71,6 @@ export const PUT = withAuth(async (req: AuthenticatedRequest, props: RouteProps)
         jabatan: { select: { id: true, nama_jabatan: true } },
       },
     });
-
-    await setCache(REDIS_KEYS.PANITIA.SINGLE(eventId, panitiaId), updated, DEFAULT_CACHE_TTL);
-    await invalidateCachePrefix(REDIS_KEYS.PANITIA.ALL_PREFIX(eventId));
     return successResponse(updated, 200);
   } catch (error) {
     return handleApiError(error);
@@ -99,8 +96,6 @@ export const DELETE = withAuth(async (req: AuthenticatedRequest, props: RoutePro
     if (!existing) return errorResponse(404, "Data panitia tidak ditemukan", "NOT_FOUND");
 
     await prisma.anggota_panitia.delete({ where: { id: panitiaId } });
-    await redis.del(REDIS_KEYS.PANITIA.SINGLE(eventId, panitiaId));
-    await invalidateCachePrefix(REDIS_KEYS.PANITIA.ALL_PREFIX(eventId));
     return successResponse(null, 200);
   } catch (error) {
     return handleApiError(error);

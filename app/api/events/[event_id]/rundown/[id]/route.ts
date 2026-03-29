@@ -66,9 +66,6 @@ export const PUT = withAuth(async (req: AuthenticatedRequest, props: RouteProps)
       data,
       include: { pic: { select: { id: true, nama_lengkap: true } } },
     });
-
-    await setCache(REDIS_KEYS.RUNDOWN.SINGLE(eventId, rundownId), updated, DEFAULT_CACHE_TTL);
-    await invalidateCachePrefix(REDIS_KEYS.RUNDOWN.ALL_PREFIX(eventId));
     return successResponse(updated, 200);
   } catch (error) {
     return handleApiError(error);
@@ -90,8 +87,6 @@ export const DELETE = withAuth(async (req: AuthenticatedRequest, props: RoutePro
     if (!existing) return errorResponse(404, "Data rundown tidak ditemukan", "NOT_FOUND");
 
     await prisma.rundown_acara.delete({ where: { id: rundownId } });
-    await redis.del(REDIS_KEYS.RUNDOWN.SINGLE(eventId, rundownId));
-    await invalidateCachePrefix(REDIS_KEYS.RUNDOWN.ALL_PREFIX(eventId));
     return successResponse(null, 200);
   } catch (error) {
     return handleApiError(error);

@@ -1,11 +1,11 @@
-import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createJabatanSchema } from "@/lib/validations/jabatan.schema";
-import { paginationSchema } from "@/lib/validations/level.schema"; // Resusing pagination validation
+import { paginationSchema } from "@/lib/validations/level.schema";
 import { successResponse, errorResponse, paginatedResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { redis, getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
+import { getCache } from "@/lib/redis";
+import { ELASTIC_INDICES } from "@/lib/constants";
+import { searchDocuments } from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { checkUserAccess } from "@/lib/rbac";
 
@@ -22,18 +22,18 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
     const dropdown = searchParams.get("dropdown") === "true";
 
     if (dropdown) {
-      const dropdownCacheKey = `${REDIS_KEYS.JABATANS.ALL}:dropdown`;
+      const dropdownCacheKey = "jabatan:all:dropdown";
       const cachedDropdown = await getCache<{ data: any[] }>(dropdownCacheKey);
       if (cachedDropdown) {
         return successResponse(cachedDropdown.data, 200);
       }
 
-      const jabatansResult = await prisma.m_jabatan.findMany({
-        select: { id: true, nama_jabatan: true },
-        orderBy: { nama_jabatan: "asc" },
-      });
+      const { hits: jabatansResult } = await searchDocuments<{ id: string; nama_jabatan: string }>(
+        ELASTIC_INDICES.JABATANS,
+        { match_all: {} },
+        { size: 10000, sort: [{ nama_jabatan: "asc" }], _source: ["id", "nama_jabatan"] },
+      );
 
-      await setCache(dropdownCacheKey, { data: jabatansResult }, DEFAULT_CACHE_TTL);
       return successResponse(jabatansResult, 200);
     }
 
@@ -55,7 +55,7 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
     const skip = (page - 1) * limit;
 
     // 2. Cek Cache Redis (Hanya berlaku untuk non-search)
-    const cacheKey = `${REDIS_KEYS.JABATANS.ALL}:page:${page}:limit:${limit}`;
+    const cacheKey = `jabatan:all:page:${page}:limit:${limit}`;
     if (!searchQuery) {
       const cachedData = await getCache<{ data: any[]; meta: any }>(cacheKey);
       if (cachedData) {
@@ -63,25 +63,23 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
       }
     }
 
-    // 3. Bangun Query Prisma
-    const whereCondition = searchQuery
+    // 3. Query Elasticsearch
+    const esQuery = searchQuery
       ? {
-        nama_jabatan: {
-          contains: searchQuery,
-          mode: "insensitive" as const,
+        multi_match: {
+          query: searchQuery,
+          fields: ["nama_jabatan", "deskripsi_jabatan"],
+          type: "best_fields" as const,
+          fuzziness: "AUTO" as const,
         },
       }
-      : {};
+      : { match_all: {} };
 
-    const [jabatans, total] = await Promise.all([
-      prisma.m_jabatan.findMany({
-        where: whereCondition,
-        skip,
-        take: limit,
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.m_jabatan.count({ where: whereCondition }),
-    ]);
+    const { hits: jabatans, total } = await searchDocuments(
+      ELASTIC_INDICES.JABATANS,
+      esQuery,
+      { from: skip, size: limit, sort: [{ createdAt: "desc" }] },
+    );
 
     const totalPages = Math.ceil(total / limit);
     const meta = {
@@ -90,11 +88,6 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
       total,
       totalPages,
     };
-
-    // 4. Set ke Cache jika bukan query pencarian
-    if (!searchQuery) {
-      await setCache(cacheKey, { data: jabatans, meta }, DEFAULT_CACHE_TTL);
-    }
 
     return paginatedResponse(jabatans, meta, 200);
   } catch (error) {
@@ -123,14 +116,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
         deskripsi_jabatan: validatedData.deskripsi_jabatan,
       },
     });
-
-    // 3. Optimasi Cache Beban Server (Invalidation)
-    await invalidateCachePrefix(REDIS_KEYS.JABATANS.ALL_PREFIX);
-    await invalidateCachePrefix(`${REDIS_KEYS.JABATANS.ALL}:dropdown`);
-
-    // 4. Set individually
-    const singleCacheKey = REDIS_KEYS.JABATANS.SINGLE(newJabatan.id);
-    await setCache(singleCacheKey, newJabatan, DEFAULT_CACHE_TTL);
 
     return successResponse(newJabatan, 201);
   } catch (error) {

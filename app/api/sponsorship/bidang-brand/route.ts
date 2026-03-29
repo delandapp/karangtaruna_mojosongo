@@ -105,10 +105,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
         const newItem = await prisma.m_bidang_brand.create({
             data: validatedData,
         });
-
-        await invalidateCachePrefix("bidang_brand:all");
-        await invalidateCachePrefix("bidang_brand:dropdown");
-
         return successResponse(newItem, 201);
     } catch (error) {
         return handleApiError(error);

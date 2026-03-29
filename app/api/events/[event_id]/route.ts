@@ -1,10 +1,9 @@
-import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { updateEventSchema } from "@/lib/validations/event.schema";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache, invalidateCachePrefix, redis } from "@/lib/redis";
-import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
+import { ELASTIC_INDICES } from "@/lib/constants";
+import { getDocument } from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { checkUserAccess } from "@/lib/rbac";
 
@@ -31,26 +30,12 @@ export const GET = withAuth(async (req: AuthenticatedRequest, props: RouteProps)
       return errorResponse(400, "ID Event tidak valid", "BAD_REQUEST");
     }
 
-    // 1. Cek Cache Redis
-    const cacheKey = REDIS_KEYS.EVENTS.SINGLE(eventId);
-    const cached = await getCache<any>(cacheKey);
-    if (cached) return successResponse(cached, 200);
-
-    // 2. Ambil dari database dengan relasi lengkap
-    const event = await prisma.event.findUnique({
-      where: { id: eventId },
-      include: {
-        organisasi:  { select: { id: true, nama_org: true, kode_wilayah_induk_kelurahan: true } },
-        dibuat_oleh: { select: { id: true, nama_lengkap: true, username: true } },
-      },
-    });
+    // 1. Ambil dari Elasticsearch
+    const event = await getDocument(ELASTIC_INDICES.EVENTS, String(eventId));
 
     if (!event) {
       return errorResponse(404, "Event tidak ditemukan", "NOT_FOUND");
     }
-
-    // 3. Simpan ke cache
-    await setCache(cacheKey, event, DEFAULT_CACHE_TTL);
 
     return successResponse(event, 200);
   } catch (error) {
@@ -137,10 +122,6 @@ export const PUT = withAuth(async (req: AuthenticatedRequest, props: RouteProps)
       },
     });
 
-    // 6. Sinkronisasi cache
-    await setCache(REDIS_KEYS.EVENTS.SINGLE(eventId), updatedEvent, DEFAULT_CACHE_TTL);
-    await invalidateCachePrefix(REDIS_KEYS.EVENTS.ALL_PREFIX);
-
     return successResponse(updatedEvent, 200);
   } catch (error) {
     return handleApiError(error);
@@ -186,10 +167,6 @@ export const DELETE = withAuth(async (req: AuthenticatedRequest, props: RoutePro
 
     // 3. Hapus dari database (cascade akan menghapus data anak-anaknya)
     await prisma.event.delete({ where: { id: eventId } });
-
-    // 4. Bersihkan cache
-    await redis.del(REDIS_KEYS.EVENTS.SINGLE(eventId));
-    await invalidateCachePrefix(REDIS_KEYS.EVENTS.ALL_PREFIX);
 
     return successResponse(null, 200);
   } catch (error) {

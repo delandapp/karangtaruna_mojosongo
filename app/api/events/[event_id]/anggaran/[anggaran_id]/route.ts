@@ -86,9 +86,6 @@ export const PUT = withAuth(async (req: AuthenticatedRequest, props: RouteProps)
         disetujui_oleh: { select: { id: true, nama_lengkap: true } },
       },
     });
-
-    await setCache(REDIS_KEYS.ANGGARAN.SINGLE(eventId, anggaranId), updated, DEFAULT_CACHE_TTL);
-    await invalidateCachePrefix(REDIS_KEYS.ANGGARAN.ALL_PREFIX(eventId));
     return successResponse(updated, 200);
   } catch (error) {
     return handleApiError(error);
@@ -113,8 +110,6 @@ export const DELETE = withAuth(async (req: AuthenticatedRequest, props: RoutePro
     if (!existing) return errorResponse(404, "Data anggaran tidak ditemukan", "NOT_FOUND");
 
     await prisma.anggaran.delete({ where: { id: anggaranId } });
-    await redis.del(REDIS_KEYS.ANGGARAN.SINGLE(eventId, anggaranId));
-    await invalidateCachePrefix(REDIS_KEYS.ANGGARAN.ALL_PREFIX(eventId));
     return successResponse(null, 200);
   } catch (error) {
     return handleApiError(error);

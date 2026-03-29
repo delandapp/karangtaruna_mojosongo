@@ -104,9 +104,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest, props: RouteProps
         dibuat_oleh: { select: { id: true, nama_lengkap: true } },
       },
     });
-
-    await invalidateCachePrefix(REDIS_KEYS.ANGGARAN.ALL_PREFIX(eventId));
-    await setCache(REDIS_KEYS.ANGGARAN.SINGLE(eventId, anggaran.id), anggaran, DEFAULT_CACHE_TTL);
     return successResponse(anggaran, 201);
   } catch (error) {
     return handleApiError(error);

@@ -2,8 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { updateRapatSchema } from "@/lib/validations/rapat.schema";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache, invalidateCachePrefix, redis } from "@/lib/redis";
-import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
+import { getCache } from "@/lib/redis";
+import { ELASTIC_INDICES } from "@/lib/constants";
+import { getDocument } from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { checkUserAccess } from "@/lib/rbac";
 
@@ -21,20 +22,14 @@ export const GET = withAuth(async (req: AuthenticatedRequest, props: RouteProps)
     const rapatId = parseInt(id, 10);
     if (isNaN(rapatId)) return errorResponse(400, "ID Rapat tidak valid", "BAD_REQUEST");
 
-    const cacheKey = REDIS_KEYS.RAPAT.SINGLE(rapatId);
+    const cacheKey = `rapat:${rapatId}`;
     const cached = await getCache<any>(cacheKey);
     if (cached) return successResponse(cached, 200);
 
-    const rapat = await prisma.rapat.findUnique({
-      where: { id: rapatId },
-      include: {
-        event:       { select: { id: true, nama_event: true, kode_event: true } },
-        dibuat_oleh: { select: { id: true, nama_lengkap: true } },
-      },
-    });
+    // 2. Ambil dari Elasticsearch
+    const rapat = await getDocument(ELASTIC_INDICES.RAPAT, id);
     if (!rapat) return errorResponse(404, "Rapat tidak ditemukan", "NOT_FOUND");
 
-    await setCache(cacheKey, rapat, DEFAULT_CACHE_TTL);
     return successResponse(rapat, 200);
   } catch (error) {
     return handleApiError(error);
@@ -82,9 +77,6 @@ export const PUT = withAuth(async (req: AuthenticatedRequest, props: RouteProps)
         dibuat_oleh: { select: { id: true, nama_lengkap: true } },
       },
     });
-
-    await setCache(REDIS_KEYS.RAPAT.SINGLE(rapatId), updated, DEFAULT_CACHE_TTL);
-    await invalidateCachePrefix(REDIS_KEYS.RAPAT.ALL_PREFIX);
     return successResponse(updated, 200);
   } catch (error) {
     return handleApiError(error);
@@ -109,8 +101,6 @@ export const DELETE = withAuth(async (req: AuthenticatedRequest, props: RoutePro
     }
 
     await prisma.rapat.delete({ where: { id: rapatId } });
-    await redis.del(REDIS_KEYS.RAPAT.SINGLE(rapatId));
-    await invalidateCachePrefix(REDIS_KEYS.RAPAT.ALL_PREFIX);
     return successResponse(null, 200);
   } catch (error) {
     return handleApiError(error);

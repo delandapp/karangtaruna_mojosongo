@@ -69,9 +69,6 @@ export const PUT = withAuth(async (req: AuthenticatedRequest, props: RouteProps)
         dibuat_oleh:   { select: { id: true, nama_lengkap: true } },
       },
     });
-
-    await setCache(REDIS_KEYS.TUGAS.SINGLE(eventId, tugasId), updated, DEFAULT_CACHE_TTL);
-    await invalidateCachePrefix(REDIS_KEYS.TUGAS.ALL_PREFIX(eventId));
     return successResponse(updated, 200);
   } catch (error) {
     return handleApiError(error);
@@ -94,8 +91,6 @@ export const DELETE = withAuth(async (req: AuthenticatedRequest, props: RoutePro
 
     // Hapus cascade (sub-tasks ikut terhapus via Prisma onDelete: Cascade)
     await prisma.tugas_event.delete({ where: { id: tugasId } });
-    await redis.del(REDIS_KEYS.TUGAS.SINGLE(eventId, tugasId));
-    await invalidateCachePrefix(REDIS_KEYS.TUGAS.ALL_PREFIX(eventId));
     return successResponse(null, 200);
   } catch (error) {
     return handleApiError(error);

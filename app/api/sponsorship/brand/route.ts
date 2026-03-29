@@ -117,10 +117,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
         const newItem = await prisma.m_brand.create({
             data: validatedData,
         });
-
-        await invalidateCachePrefix("brand:all");
-        await invalidateCachePrefix("brand:dropdown");
-
         return successResponse(newItem, 201);
     } catch (error) {
         return handleApiError(error);

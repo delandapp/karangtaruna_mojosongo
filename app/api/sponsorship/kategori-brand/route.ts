@@ -107,9 +107,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
         });
 
         // Invalidate prefix for lists
-        await invalidateCachePrefix("kategori_brand:all");
-        await invalidateCachePrefix("kategori_brand:dropdown");
-
         return successResponse(newItem, 201);
     } catch (error) {
         return handleApiError(error);

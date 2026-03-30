@@ -1,85 +1,146 @@
 import { prisma } from "@/lib/prisma";
 import { createTransaksiKeuanganSchema } from "@/lib/validations/keuangan.schema";
-import { successResponse, errorResponse, paginatedResponse } from "@/lib/api-response";
+import {
+  successResponse,
+  errorResponse,
+  paginatedResponse,
+} from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache } from "@/lib/redis";
-import { ELASTIC_INDICES } from "@/lib/constants";
+import { getCache, setCache } from "@/lib/redis";
+import { ELASTIC_INDICES, DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { searchDocuments } from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-import { checkUserAccess } from "@/lib/rbac";
-import { paginationSchema } from "@/lib/validations/level.schema";
+import { produceCacheInvalidate } from "@/lib/kafka";
+import { z } from "zod";
 
-function generateNomorTransaksi(jenis: string) {
+// ─── Cache Keys ───────────────────────────────────────────────────────────────
+
+const cacheKeyList = (page: number, limit: number) =>
+  `transaksi_keuangan:all:page:${page}:limit:${limit}`;
+const CACHE_INVALIDATE_PREFIX = "transaksi_keuangan:all:*";
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function generateNomorTransaksi(jenis: string): string {
   const prefix = jenis === "pemasukan" ? "TRXI" : "TRXO";
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   const randomStr = Math.floor(1000 + Math.random() * 9000);
   return `${prefix}-${dateStr}-${randomStr}`;
 }
 
+// ─── Query Schema ─────────────────────────────────────────────────────────────
+
+const listQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(200).default(100),
+  anggaran_id: z.coerce.number().int().positive().optional(),
+  item_anggaran_id: z.coerce.number().int().positive().optional(),
+  jenis_transaksi: z.string().optional(),
+  status: z.string().optional(),
+});
+
+// ──────────────────────────────────────────────────────────
+// GET /api/transaksi-keuangan — List dengan Pagination & Filter
+// ──────────────────────────────────────────────────────────
 export const GET = withAuth(async (req: AuthenticatedRequest) => {
   try {
-    const { m_level_id: levelId, m_jabatan_id: jabatanId } = req.user;
-    const hasAccess = await checkUserAccess(levelId, jabatanId, "/api/events/anggaran", "GET");
-    if (!hasAccess) return errorResponse(403, "Akses ditolak.", "FORBIDDEN");
-
     const { searchParams } = new URL(req.url);
-    const anggaranId = searchParams.get("anggaran_id");
-    const itemAnggaranId = searchParams.get("item_anggaran_id");
-    const jenisFilter = searchParams.get("jenis_transaksi") || undefined;
-    const statusFilter = searchParams.get("status") || undefined;
+    const {
+      page,
+      limit,
+      anggaran_id,
+      item_anggaran_id,
+      jenis_transaksi,
+      status,
+    } = listQuerySchema.parse(Object.fromEntries(searchParams));
 
-    const { page, limit } = paginationSchema.parse({
-      page: searchParams.get("page") || "1",
-      limit: searchParams.get("limit") || "100",
-    });
     const skip = (page - 1) * limit;
+    const isFiltered = !!(
+      anggaran_id ||
+      item_anggaran_id ||
+      jenis_transaksi ||
+      status
+    );
 
-    const isFiltered = !!(anggaranId || itemAnggaranId || jenisFilter || statusFilter);
-
-    // 1. Cek Cache Redis (hanya untuk non-filtered)
-    const cacheKey = `transaksi_keuangan:all:page:${page}:limit:${limit}`;
+    // Cek cache hanya untuk query tanpa filter
+    const cacheKey = cacheKeyList(page, limit);
     if (!isFiltered) {
-      const cached = await getCache<{ data: any[]; meta: any }>(cacheKey);
-      if (cached) return paginatedResponse(cached.data, cached.meta, 200);
+      const cached = await getCache<{ data: unknown[]; meta: unknown }>(
+        cacheKey,
+      );
+      if (cached)
+        return paginatedResponse(cached.data as any[], cached.meta as any, 200);
     }
 
-    // 2. Query Elasticsearch
-    const must: any[] = [];
-    if (anggaranId) must.push({ term: { anggaran_id: parseInt(anggaranId, 10) } });
-    if (itemAnggaranId) must.push({ term: { item_anggaran_id: parseInt(itemAnggaranId, 10) } });
-    if (jenisFilter) must.push({ term: { jenis_transaksi: jenisFilter } });
-    if (statusFilter) must.push({ term: { status: statusFilter } });
+    // Build Elasticsearch query
+    const must: Record<string, unknown>[] = [];
+    if (anggaran_id) must.push({ term: { anggaran_id } });
+    if (item_anggaran_id) must.push({ term: { item_anggaran_id } });
+    if (jenis_transaksi) must.push({ term: { jenis_transaksi } });
+    if (status) must.push({ term: { status } });
 
-    const query = must.length > 0 ? { bool: { must } } : { match_all: {} };
+    const esQuery = must.length > 0 ? { bool: { must } } : { match_all: {} };
 
     const { hits, total } = await searchDocuments(
       ELASTIC_INDICES.TRANSAKSI_KEUANGAN,
-      query,
-      { from: skip, size: limit, sort: [{ tanggal_transaksi: { order: "desc" } }, { id: { order: "desc" } }] },
+      esQuery,
+      {
+        from: skip,
+        size: limit,
+        sort: [
+          { tanggal_transaksi: { order: "desc" } },
+          { id: { order: "desc" } },
+        ],
+      },
     );
 
-    const meta = { page, limit, total, totalPages: Math.ceil(total / limit) };
+    const totalPages = Math.ceil(total / limit);
+    const meta = { page, limit, total, totalPages };
+
+    // Simpan ke cache hanya untuk query tanpa filter
+    if (!isFiltered) {
+      await setCache(cacheKey, { data: hits, meta }, DEFAULT_CACHE_TTL);
+    }
+
     return paginatedResponse(hits, meta, 200);
   } catch (error) {
     return handleApiError(error);
   }
 });
 
+// ──────────────────────────────────────────────────────────
+// POST /api/transaksi-keuangan — Catat Transaksi Baru
+// ──────────────────────────────────────────────────────────
 export const POST = withAuth(async (req: AuthenticatedRequest) => {
   try {
-    const { userId, m_level_id: levelId, m_jabatan_id: jabatanId } = req.user;
-    const hasAccess = await checkUserAccess(levelId, jabatanId, "/api/events/anggaran", "POST");
-    if (!hasAccess) return errorResponse(403, "Akses ditolak.", "FORBIDDEN");
+    const { userId } = req.user;
 
     const body = await req.json();
     const data = createTransaksiKeuanganSchema.parse(body);
 
-    const anggaranExists = await prisma.anggaran.findUnique({ where: { id: data.anggaran_id }, select: { id: true, event_id: true } });
-    if (!anggaranExists) return errorResponse(404, "Anggaran tidak ditemukan", "NOT_FOUND");
+    // Validasi anggaran_id
+    const anggaranExists = await prisma.anggaran.findUnique({
+      where: { id: data.anggaran_id },
+      select: { id: true, event_id: true },
+    });
+    if (!anggaranExists)
+      return errorResponse(404, "Anggaran tidak ditemukan", "NOT_FOUND");
 
+    // Validasi item_anggaran_id jika diberikan
     if (data.item_anggaran_id) {
-      const itemExists = await prisma.item_anggaran.findUnique({ where: { id: data.item_anggaran_id, anggaran_id: data.anggaran_id }, select: { id: true } });
-      if (!itemExists) return errorResponse(404, "Item Anggaran tidak valid untuk anggaran ini", "NOT_FOUND");
+      const itemExists = await prisma.item_anggaran.findUnique({
+        where: {
+          id: data.item_anggaran_id,
+          anggaran_id: data.anggaran_id,
+        },
+        select: { id: true },
+      });
+      if (!itemExists)
+        return errorResponse(
+          404,
+          "Item Anggaran tidak valid untuk anggaran ini",
+          "NOT_FOUND",
+        );
     }
 
     const nomor_transaksi = generateNomorTransaksi(data.jenis_transaksi);
@@ -102,6 +163,10 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
         dicatat_oleh: { select: { id: true, nama_lengkap: true } },
       },
     });
+
+    // Invalidate list cache — CDC akan sync ke ES secara otomatis
+    await produceCacheInvalidate(CACHE_INVALIDATE_PREFIX);
+
     return successResponse(transaksi, 201);
   } catch (error) {
     return handleApiError(error);

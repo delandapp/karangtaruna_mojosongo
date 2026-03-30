@@ -16,10 +16,11 @@ import { seedBidangBrand } from "./seeds/08-bidang-brand";
 import { seedKategoriBrand } from "./seeds/09-kategori-brand";
 import { seedPerusahaan } from "./seeds/10-perusahaan";
 import { seedOrganisasi } from "./seeds/11-organisasi";
+import { seedNews } from "./seeds/12-news";
 
 import { elasticClient, deleteAllDocuments } from "../lib/elasticsearch";
 import { produceCacheInvalidate } from "../lib/kafka";
-import { ALL_ELASTIC_INDICES, REDIS_KEYS } from "../lib/constants";
+import { ALL_ELASTIC_INDICES, REDIS_KEYS } from "../lib/constants/key";
 
 // Gunakan DIRECT_URL (koneksi langsung ke PostgreSQL) untuk seeding,
 // bukan DATABASE_URL yang mengarah ke PgBouncer.
@@ -32,6 +33,7 @@ async function main() {
   await seedLevels(prisma);
   await seedJabatans(prisma);
   await seedUsers(prisma);
+  await seedNews(prisma);
   await seedHakAkses(prisma);
   await seedKategoriSponsor(prisma);
   await seedSkalaPerusahaan(prisma);
@@ -69,8 +71,12 @@ async function main() {
   for (const prefix of allPrefixes) {
     await produceCacheInvalidate(prefix);
   }
-  console.log(`Cache revalidation published for ${allPrefixes.length} prefixes.`);
-  console.log("\nNote: CDC consumer must be running to re-index data into Elasticsearch.");
+  console.log(
+    `Cache revalidation published for ${allPrefixes.length} prefixes.`,
+  );
+  console.log(
+    "\nNote: CDC consumer must be running to re-index data into Elasticsearch.",
+  );
 }
 
 main()

@@ -2,21 +2,40 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
+import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
+import { produceCacheInvalidate } from "@/lib/kafka";
 import { eventSponsorSchema } from "@/lib/validations/sponsorship.schema";
+import { z } from "zod";
 
-/**
- * GET: Ambil pipeline sponsor untuk event tertentu
- */
-export async function GET(request: NextRequest) {
+// ─── Cache Keys ───────────────────────────────────────────────────────────────
+
+const cacheKeyList = (eventId: number) =>
+  `sponsorship:pipelines:event:${eventId}:*`;
+
+// ─── Query Schema ─────────────────────────────────────────────────────────────
+
+const listQuerySchema = z.object({
+  event_id: z.coerce.number().int().positive(),
+});
+
+// ──────────────────────────────────────────────────────────
+// GET /api/sponsorship/pipelines?event_id=1
+// Ambil semua pipeline sponsor untuk event tertentu.
+// ──────────────────────────────────────────────────────────
+export const GET = withAuth(async (req: AuthenticatedRequest) => {
   try {
-    const { searchParams } = new URL(request.url);
-    const event_idStr = searchParams.get("event_id");
+    const { searchParams } = new URL(req.url);
+    const result = listQuerySchema.safeParse(Object.fromEntries(searchParams));
 
-    if (!event_idStr) {
-      return errorResponse(400, "Event ID wajib disertakan", "BAD_REQUEST");
+    if (!result.success) {
+      return errorResponse(
+        400,
+        "Event ID wajib disertakan dan harus berupa angka",
+        "VALIDATION_ERROR",
+      );
     }
 
-    const event_id = parseInt(event_idStr);
+    const { event_id } = result.data;
 
     const data = await prisma.event_sponsor.findMany({
       where: { event_id },
@@ -31,45 +50,55 @@ export async function GET(request: NextRequest) {
       orderBy: { diperbarui_pada: "desc" },
     });
 
-    return successResponse(data);
+    return successResponse(data, 200);
   } catch (error) {
     return handleApiError(error);
   }
-}
+});
 
-/**
- * POST: Tambah sponsor ke event (Pipeline Prospect)
- */
-export async function POST(request: NextRequest) {
+// ──────────────────────────────────────────────────────────
+// POST /api/sponsorship/pipelines
+// Tambah sponsor ke event (Pipeline Prospect).
+// Jika m_sponsor_id tidak diberikan, cari atau buat sponsor baru
+// berdasarkan m_perusahaan_id atau m_brand_id.
+// ──────────────────────────────────────────────────────────
+export const POST = withAuth(async (req: AuthenticatedRequest) => {
   try {
-    const json = await request.json();
-    const validatedData = eventSponsorSchema.parse(json);
+    const body = await req.json();
+    const validatedData = eventSponsorSchema.parse(body);
 
     let sponsorId = validatedData.m_sponsor_id;
 
     if (!sponsorId) {
       if (!validatedData.m_perusahaan_id && !validatedData.m_brand_id) {
-        return errorResponse(400, "Harus menyertakan m_perusahaan_id atau m_brand_id jika m_sponsor_id kosong", "BAD_REQUEST");
+        return errorResponse(
+          400,
+          "Harus menyertakan m_perusahaan_id atau m_brand_id jika m_sponsor_id kosong",
+          "VALIDATION_ERROR",
+        );
       }
 
-      // Check if sponsor already exists for this brand or perusahaan
-      const whereCondition: any = validatedData.m_brand_id 
-        ? { m_brand_id: validatedData.m_brand_id as number } 
+      // Cari atau buat sponsor berdasarkan perusahaan/brand
+      const whereCondition = validatedData.m_brand_id
+        ? { m_brand_id: validatedData.m_brand_id as number }
         : { m_perusahaan_id: validatedData.m_perusahaan_id as number };
 
       let sponsor = await prisma.m_sponsor.findFirst({
-        where: whereCondition
+        where: whereCondition,
+        select: { id: true },
       });
 
       if (!sponsor) {
         sponsor = await prisma.m_sponsor.create({
           data: {
-            m_brand_id: validatedData.m_brand_id || undefined,
-            m_perusahaan_id: validatedData.m_perusahaan_id || undefined,
-            total_disponsori: 0
-          }
+            m_brand_id: validatedData.m_brand_id ?? undefined,
+            m_perusahaan_id: validatedData.m_perusahaan_id ?? undefined,
+            total_disponsori: 0,
+          },
+          select: { id: true },
         });
       }
+
       sponsorId = sponsor.id;
     }
 
@@ -81,17 +110,22 @@ export async function POST(request: NextRequest) {
           m_sponsor_id: sponsorId,
         },
       },
+      select: { id: true },
     });
 
     if (existingPipeline) {
-      return errorResponse(400, "Sponsor ini sudah dimasukkan ke pipeline event tersebut.", "DUPLICATE_PIPELINE");
+      return errorResponse(
+        409,
+        "Sponsor ini sudah dimasukkan ke pipeline event tersebut.",
+        "CONFLICT",
+      );
     }
 
     const newPipeline = await prisma.event_sponsor.create({
       data: {
         event_id: validatedData.event_id,
         m_sponsor_id: sponsorId,
-        ditangani_oleh_id: validatedData.ditangani_oleh_id || null,
+        ditangani_oleh_id: validatedData.ditangani_oleh_id ?? null,
         tier: validatedData.tier,
         jenis_kontribusi: validatedData.jenis_kontribusi,
         status_pipeline: validatedData.status_pipeline,
@@ -107,8 +141,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Invalidate list cache untuk event ini
+    await produceCacheInvalidate(cacheKeyList(validatedData.event_id));
+
     return successResponse(newPipeline, 201);
   } catch (error) {
     return handleApiError(error);
   }
-}
+});

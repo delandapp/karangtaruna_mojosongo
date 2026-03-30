@@ -96,6 +96,32 @@ export const REDIS_KEYS = {
     ALL_PREFIX: "karangtaruna_master:wilayah:kelurahan:all:*",
     SINGLE: (id: number) => `karangtaruna_master:wilayah:kelurahan:${id}`,
   },
+
+  // ── Berita (News Portal) ──────────────────────────────────────────────
+  BERITA: {
+    ALL: "karangtaruna_news:berita:all",
+    ALL_PREFIX: "karangtaruna_news:berita:all:*",
+    SINGLE: (id: number) => `karangtaruna_news:berita:${id}`,
+    SINGLE_BY_SLUG: (slug: string) => `karangtaruna_news:berita:slug:${slug}`,
+    TRENDING: "karangtaruna_news:berita:trending",
+    TOP: "karangtaruna_news:berita:top",
+    LATEST: (page: number) => `karangtaruna_news:berita:latest:page:${page}`,
+    BY_KATEGORI: (slug: string, page: number) =>
+      `karangtaruna_news:berita:kategori:${slug}:page:${page}`,
+    VIEW_CERT: (jti: string, beritaId: number) =>
+      `karangtaruna_news:view:${jti}:${beritaId}`,
+  },
+  KATEGORI_BERITA: {
+    ALL: "karangtaruna_news:kategori:all",
+    ALL_PREFIX: "karangtaruna_news:kategori:all:*",
+    SINGLE: (id: number) => `karangtaruna_news:kategori:${id}`,
+    SINGLE_BY_SLUG: (slug: string) => `karangtaruna_news:kategori:slug:${slug}`,
+  },
+  TAG_BERITA: {
+    ALL: "karangtaruna_news:tag:all",
+    ALL_PREFIX: "karangtaruna_news:tag:all:*",
+    SINGLE: (id: number) => `karangtaruna_news:tag:${id}`,
+  },
 };
 
 export const S3_BUCKETS = {
@@ -176,7 +202,7 @@ export const KAFKA_TOPICS = {
 
   // ── Promosi ───────────────────────────────────────────────────────────
   KATEGORI_BERITA_CDC: "localserver.public.m_kategori_berita",
-  BERITA_CDC: "localserver.public.berita",
+  BERITA_CDC: "localserver.public.c_berita",
   KALENDER_KONTEN_CDC: "localserver.public.kalender_konten",
 
   // ── Sistem ────────────────────────────────────────────────────────────
@@ -218,6 +244,10 @@ export const KAFKA_TOPICS = {
   // ── Cache Operations (non-CDC) ────────────────────────────────────────
   CACHE_SET: "karangtaruna.cache.set",
   CACHE_INVALIDATE: "karangtaruna.cache.invalidate",
+
+  // ── Berita — Custom Domain Events (non-CDC) ───────────────────────────
+  NEWS_PUBLISHED: "karangtaruna.news.published",
+  NEWS_VIEWED: "karangtaruna.news.viewed",
 };
 
 // ============================================================================

@@ -2,102 +2,136 @@ import { prisma } from "@/lib/prisma";
 import { updatePanitiaSchema } from "@/lib/validations/panitia.schema";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache, invalidateCachePrefix, redis } from "@/lib/redis";
+import { getCache, setCache } from "@/lib/redis";
 import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-import { checkUserAccess } from "@/lib/rbac";
+import { produceCacheInvalidate } from "@/lib/kafka";
 
-interface RouteProps {
-  params: Promise<{ event_id: string; id: string }>;
-}
+type RouteProps = { params: Promise<{ event_id: string; id: string }> };
 
-// GET /api/events/:event_id/panitia/:id
-export const GET = withAuth(async (req: AuthenticatedRequest, props: RouteProps) => {
-  try {
-    const { m_level_id: levelId, m_jabatan_id: jabatanId } = req.user;
-    const hasAccess = await checkUserAccess(levelId, jabatanId, "/api/events/panitia", "GET");
-    if (!hasAccess) return errorResponse(403, "Akses ditolak.", "FORBIDDEN");
+const parseIds = (
+  event_id: string,
+  id: string,
+): { eventId: number; panitiaId: number } | null => {
+  const eventId = parseInt(event_id, 10);
+  const panitiaId = parseInt(id, 10);
+  if (isNaN(eventId) || eventId <= 0 || isNaN(panitiaId) || panitiaId <= 0)
+    return null;
+  return { eventId, panitiaId };
+};
 
-    const { event_id, id } = await props.params;
-    const eventId = parseInt(event_id, 10);
-    const panitiaId = parseInt(id, 10);
-    if (isNaN(eventId) || isNaN(panitiaId)) return errorResponse(400, "ID tidak valid", "BAD_REQUEST");
+// ──────────────────────────────────────────────────────────
+// GET /api/events/:event_id/panitia/:id — Detail Anggota Panitia
+// ──────────────────────────────────────────────────────────
+export const GET = withAuth(
+  async (_req: AuthenticatedRequest, { params }: RouteProps) => {
+    try {
+      const { event_id, id } = await params;
+      const ids = parseIds(event_id, id);
+      if (!ids) return errorResponse(400, "ID tidak valid", "VALIDATION_ERROR");
 
-    const cacheKey = REDIS_KEYS.PANITIA.SINGLE(eventId, panitiaId);
-    const cached = await getCache<any>(cacheKey);
-    if (cached) return successResponse(cached, 200);
+      const { eventId, panitiaId } = ids;
 
-    const panitia = await prisma.anggota_panitia.findFirst({
-      where: { id: panitiaId, event_id: eventId },
-      include: {
-        user: { select: { id: true, nama_lengkap: true, username: true } },
-        jabatan: { select: { id: true, nama_jabatan: true } },
-      },
-    });
+      // 1. Cek Redis cache
+      const cacheKey = REDIS_KEYS.PANITIA.SINGLE(eventId, panitiaId);
+      const cached = await getCache<unknown>(cacheKey);
+      if (cached) return successResponse(cached, 200);
 
-    if (!panitia) return errorResponse(404, "Data panitia tidak ditemukan", "NOT_FOUND");
-    await setCache(cacheKey, panitia, DEFAULT_CACHE_TTL);
-    return successResponse(panitia, 200);
-  } catch (error) {
-    return handleApiError(error);
-  }
-});
+      // 2. Ambil dari database
+      const panitia = await prisma.anggota_panitia.findFirst({
+        where: { id: panitiaId, event_id: eventId },
+        include: {
+          user: { select: { id: true, nama_lengkap: true, username: true } },
+          jabatan: { select: { id: true, nama_jabatan: true } },
+        },
+      });
 
-// PUT /api/events/:event_id/panitia/:id
-export const PUT = withAuth(async (req: AuthenticatedRequest, props: RouteProps) => {
-  try {
-    const { m_level_id: levelId, m_jabatan_id: jabatanId } = req.user;
-    const hasAccess = await checkUserAccess(levelId, jabatanId, "/api/events/panitia", "PUT");
-    if (!hasAccess) return errorResponse(403, "Akses ditolak.", "FORBIDDEN");
+      if (!panitia)
+        return errorResponse(404, "Data panitia tidak ditemukan", "NOT_FOUND");
 
-    const { event_id, id } = await props.params;
-    const eventId = parseInt(event_id, 10);
-    const panitiaId = parseInt(id, 10);
-    if (isNaN(eventId) || isNaN(panitiaId)) return errorResponse(400, "ID tidak valid", "BAD_REQUEST");
+      // 3. Simpan ke cache
+      await setCache(cacheKey, panitia, DEFAULT_CACHE_TTL);
 
-    const existing = await prisma.anggota_panitia.findFirst({
-      where: { id: panitiaId, event_id: eventId },
-      select: { id: true },
-    });
-    if (!existing) return errorResponse(404, "Data panitia tidak ditemukan", "NOT_FOUND");
+      return successResponse(panitia, 200);
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+);
 
-    const data = updatePanitiaSchema.parse(await req.json());
+// ──────────────────────────────────────────────────────────
+// PUT /api/events/:event_id/panitia/:id — Update Anggota Panitia
+// ──────────────────────────────────────────────────────────
+export const PUT = withAuth(
+  async (req: AuthenticatedRequest, { params }: RouteProps) => {
+    try {
+      const { event_id, id } = await params;
+      const ids = parseIds(event_id, id);
+      if (!ids) return errorResponse(400, "ID tidak valid", "VALIDATION_ERROR");
 
-    const updated = await prisma.anggota_panitia.update({
-      where: { id: panitiaId },
-      data,
-      include: {
-        user: { select: { id: true, nama_lengkap: true, username: true } },
-        jabatan: { select: { id: true, nama_jabatan: true } },
-      },
-    });
-    return successResponse(updated, 200);
-  } catch (error) {
-    return handleApiError(error);
-  }
-});
+      const { eventId, panitiaId } = ids;
 
-// DELETE /api/events/:event_id/panitia/:id
-export const DELETE = withAuth(async (req: AuthenticatedRequest, props: RouteProps) => {
-  try {
-    const { m_level_id: levelId, m_jabatan_id: jabatanId } = req.user;
-    const hasAccess = await checkUserAccess(levelId, jabatanId, "/api/events/panitia", "DELETE");
-    if (!hasAccess) return errorResponse(403, "Akses ditolak.", "FORBIDDEN");
+      const existing = await prisma.anggota_panitia.findFirst({
+        where: { id: panitiaId, event_id: eventId },
+        select: { id: true },
+      });
+      if (!existing)
+        return errorResponse(404, "Data panitia tidak ditemukan", "NOT_FOUND");
 
-    const { event_id, id } = await props.params;
-    const eventId = parseInt(event_id, 10);
-    const panitiaId = parseInt(id, 10);
-    if (isNaN(eventId) || isNaN(panitiaId)) return errorResponse(400, "ID tidak valid", "BAD_REQUEST");
+      const data = updatePanitiaSchema.parse(await req.json());
 
-    const existing = await prisma.anggota_panitia.findFirst({
-      where: { id: panitiaId, event_id: eventId },
-      select: { id: true },
-    });
-    if (!existing) return errorResponse(404, "Data panitia tidak ditemukan", "NOT_FOUND");
+      const updated = await prisma.anggota_panitia.update({
+        where: { id: panitiaId },
+        data,
+        include: {
+          user: { select: { id: true, nama_lengkap: true, username: true } },
+          jabatan: { select: { id: true, nama_jabatan: true } },
+        },
+      });
 
-    await prisma.anggota_panitia.delete({ where: { id: panitiaId } });
-    return successResponse(null, 200);
-  } catch (error) {
-    return handleApiError(error);
-  }
-});
+      // Invalidate cache via Kafka — CDC akan sync ke ES secara otomatis
+      await produceCacheInvalidate(
+        REDIS_KEYS.PANITIA.SINGLE(eventId, panitiaId),
+      );
+      await produceCacheInvalidate(REDIS_KEYS.PANITIA.ALL_PREFIX(eventId));
+
+      return successResponse(updated, 200);
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+);
+
+// ──────────────────────────────────────────────────────────
+// DELETE /api/events/:event_id/panitia/:id — Hapus Anggota Panitia
+// ──────────────────────────────────────────────────────────
+export const DELETE = withAuth(
+  async (_req: AuthenticatedRequest, { params }: RouteProps) => {
+    try {
+      const { event_id, id } = await params;
+      const ids = parseIds(event_id, id);
+      if (!ids) return errorResponse(400, "ID tidak valid", "VALIDATION_ERROR");
+
+      const { eventId, panitiaId } = ids;
+
+      const existing = await prisma.anggota_panitia.findFirst({
+        where: { id: panitiaId, event_id: eventId },
+        select: { id: true },
+      });
+      if (!existing)
+        return errorResponse(404, "Data panitia tidak ditemukan", "NOT_FOUND");
+
+      await prisma.anggota_panitia.delete({ where: { id: panitiaId } });
+
+      // Invalidate cache via Kafka
+      await produceCacheInvalidate(
+        REDIS_KEYS.PANITIA.SINGLE(eventId, panitiaId),
+      );
+      await produceCacheInvalidate(REDIS_KEYS.PANITIA.ALL_PREFIX(eventId));
+
+      return successResponse(null, 200);
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+);

@@ -2,127 +2,153 @@ import { prisma } from "@/lib/prisma";
 import { updatePerusahaanSchema } from "@/lib/validations/perusahaan.schema";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { ELASTIC_INDICES } from "@/lib/constants";
+import { getCache, setCache } from "@/lib/redis";
+import {
+  REDIS_KEYS,
+  ELASTIC_INDICES,
+  DEFAULT_CACHE_TTL,
+} from "@/lib/constants";
 import { getDocument } from "@/lib/elasticsearch";
+import { produceCacheInvalidate } from "@/lib/kafka";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-import { checkUserAccess } from "@/lib/rbac";
 
-interface RouteProps {
-  params: Promise<{ id: string }>;
-}
+type RouteProps = { params: Promise<{ id: string }> };
+
+const parseId = (id: string): number | null => {
+  const n = parseInt(id, 10);
+  return isNaN(n) || n <= 0 ? null : n;
+};
 
 // ──────────────────────────────────────────────────────────
 // GET /api/perusahaan/:id — Detail Perusahaan
 // ──────────────────────────────────────────────────────────
-export const GET = withAuth(async (req: AuthenticatedRequest, props: RouteProps) => {
-  try {
-    const { m_level_id: userLevelId, m_jabatan_id: userJabatanId } = req.user;
+export const GET = withAuth(
+  async (_req: AuthenticatedRequest, { params }: RouteProps) => {
+    try {
+      const { id } = await params;
+      const itemId = parseId(id);
+      if (!itemId)
+        return errorResponse(
+          400,
+          "ID Perusahaan tidak valid",
+          "VALIDATION_ERROR",
+        );
 
-    const hasAccess = await checkUserAccess(userLevelId, userJabatanId, "/api/perusahaan", "GET");
-    if (!hasAccess) {
-      return errorResponse(403, "Akses ditolak. Anda tidak memiliki izin membaca data perusahaan.", "FORBIDDEN");
+      // 1. Cek Redis cache
+      const cacheKey = REDIS_KEYS.PERUSAHAAN.SINGLE(itemId);
+      const cached = await getCache<unknown>(cacheKey);
+      if (cached) return successResponse(cached, 200);
+
+      // 2. Ambil dari Elasticsearch
+      const item = await getDocument(
+        ELASTIC_INDICES.PERUSAHAAN,
+        String(itemId),
+      );
+      if (!item)
+        return errorResponse(
+          404,
+          "Data perusahaan tidak ditemukan",
+          "NOT_FOUND",
+        );
+
+      // 3. Simpan ke cache
+      await setCache(cacheKey, item, DEFAULT_CACHE_TTL);
+
+      return successResponse(item, 200);
+    } catch (error) {
+      return handleApiError(error);
     }
-
-    const { id } = await props.params;
-    const itemId = parseInt(id, 10);
-
-    if (isNaN(itemId)) {
-      return errorResponse(400, "ID Perusahaan tidak valid", "BAD_REQUEST");
-    }
-
-    // 1. Ambil dari Elasticsearch
-    const item = await getDocument(ELASTIC_INDICES.PERUSAHAAN, String(itemId));
-
-    if (!item) {
-      return errorResponse(404, "Data perusahaan tidak ditemukan", "NOT_FOUND");
-    }
-
-    return successResponse(item, 200);
-  } catch (error) {
-    return handleApiError(error);
-  }
-});
+  },
+);
 
 // ──────────────────────────────────────────────────────────
 // PUT /api/perusahaan/:id — Update Perusahaan
 // ──────────────────────────────────────────────────────────
-export const PUT = withAuth(async (req: AuthenticatedRequest, props: RouteProps) => {
-  try {
-    const { m_level_id: userLevelId, m_jabatan_id: userJabatanId } = req.user;
+export const PUT = withAuth(
+  async (req: AuthenticatedRequest, { params }: RouteProps) => {
+    try {
+      const { id } = await params;
+      const itemId = parseId(id);
+      if (!itemId)
+        return errorResponse(
+          400,
+          "ID Perusahaan tidak valid",
+          "VALIDATION_ERROR",
+        );
 
-    const hasAccess = await checkUserAccess(userLevelId, userJabatanId, "/api/perusahaan", "PUT");
-    if (!hasAccess) {
-      return errorResponse(403, "Akses ditolak. Anda tidak memiliki izin mengubah data perusahaan.", "FORBIDDEN");
-    }
+      const existing = await prisma.m_perusahaan.findUnique({
+        where: { id: itemId },
+        select: { id: true },
+      });
+      if (!existing)
+        return errorResponse(
+          404,
+          "Data perusahaan tidak ditemukan",
+          "NOT_FOUND",
+        );
 
-    const { id } = await props.params;
-    const itemId = parseInt(id, 10);
+      const body = await req.json();
+      const validatedData = updatePerusahaanSchema.parse(body);
 
-    if (isNaN(itemId)) {
-      return errorResponse(400, "ID Perusahaan tidak valid", "BAD_REQUEST");
-    }
-
-    // 1. Periksa apakah data ada
-    const existing = await prisma.m_perusahaan.findUnique({ where: { id: itemId } });
-    if (!existing) {
-      return errorResponse(404, "Data perusahaan tidak ditemukan", "NOT_FOUND");
-    }
-
-    const body = await req.json();
-
-    // 2. Validasi Zod
-    const validatedData = updatePerusahaanSchema.parse(body);
-
-    // 3. Update ke database
-    const updatedItem = await prisma.m_perusahaan.update({
-      where: { id: itemId },
-      data: validatedData,
-      include: {
+      const updated = await prisma.m_perusahaan.update({
+        where: { id: itemId },
+        data: validatedData,
+        include: {
           sektor: true,
           skala: true,
           m_provinsi: true,
           m_kota: true,
           m_kecamatan: true,
           m_kelurahan: true,
-      },
-    });
+        },
+      });
 
-    return successResponse(updatedItem, 200);
-  } catch (error) {
-    return handleApiError(error);
-  }
-});
+      // Invalidate cache — CDC akan sync ke ES secara otomatis
+      await produceCacheInvalidate(REDIS_KEYS.PERUSAHAAN.SINGLE(itemId));
+      await produceCacheInvalidate(REDIS_KEYS.PERUSAHAAN.ALL_PREFIX);
+
+      return successResponse(updated, 200);
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+);
 
 // ──────────────────────────────────────────────────────────
 // DELETE /api/perusahaan/:id — Hapus Perusahaan
 // ──────────────────────────────────────────────────────────
-export const DELETE = withAuth(async (req: AuthenticatedRequest, props: RouteProps) => {
-  try {
-    const { m_level_id: userLevelId, m_jabatan_id: userJabatanId } = req.user;
+export const DELETE = withAuth(
+  async (_req: AuthenticatedRequest, { params }: RouteProps) => {
+    try {
+      const { id } = await params;
+      const itemId = parseId(id);
+      if (!itemId)
+        return errorResponse(
+          400,
+          "ID Perusahaan tidak valid",
+          "VALIDATION_ERROR",
+        );
 
-    const hasAccess = await checkUserAccess(userLevelId, userJabatanId, "/api/perusahaan", "DELETE");
-    if (!hasAccess) {
-      return errorResponse(403, "Akses ditolak. Anda tidak memiliki izin menghapus data perusahaan.", "FORBIDDEN");
+      const existing = await prisma.m_perusahaan.findUnique({
+        where: { id: itemId },
+        select: { id: true },
+      });
+      if (!existing)
+        return errorResponse(
+          404,
+          "Data perusahaan tidak ditemukan",
+          "NOT_FOUND",
+        );
+
+      await prisma.m_perusahaan.delete({ where: { id: itemId } });
+
+      // Invalidate cache — CDC akan remove dari ES secara otomatis
+      await produceCacheInvalidate(REDIS_KEYS.PERUSAHAAN.SINGLE(itemId));
+      await produceCacheInvalidate(REDIS_KEYS.PERUSAHAAN.ALL_PREFIX);
+
+      return successResponse(null, 200);
+    } catch (error) {
+      return handleApiError(error);
     }
-
-    const { id } = await props.params;
-    const itemId = parseInt(id, 10);
-
-    if (isNaN(itemId)) {
-      return errorResponse(400, "ID Perusahaan tidak valid", "BAD_REQUEST");
-    }
-
-    // 1. Periksa apakah data ada
-    const existing = await prisma.m_perusahaan.findUnique({ where: { id: itemId } });
-    if (!existing) {
-      return errorResponse(404, "Data perusahaan tidak ditemukan", "NOT_FOUND");
-    }
-
-    // 2. Hapus dari database (akan error/cascade dengan Sponsor tergantung skema)
-    await prisma.m_perusahaan.delete({ where: { id: itemId } });
-
-    return successResponse(null, 200);
-  } catch (error) {
-    return handleApiError(error);
-  }
-});
+  },
+);

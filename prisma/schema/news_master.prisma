@@ -1,0 +1,47 @@
+// =============================================================================
+// NEWS MASTER — Kategori Berita & Tag
+// Referensi: arsitekture.md > TASK 1 > schemas/news_master.prisma
+// =============================================================================
+
+// Tabel Master: Kategori Berita
+model m_kategori_berita {
+  id        Int     @id @default(autoincrement())
+  nama      String  @unique @db.VarChar(100)
+  slug      String  @unique @db.VarChar(120)
+  deskripsi String? @db.Text
+  warna_hex String? @db.VarChar(7)   // Untuk badge warna, contoh: #FF5733
+  icon_url  String? @db.VarChar(500) // S3 URL
+  is_aktif  Boolean @default(true)
+  urutan    Int     @default(0)      // Untuk ordering di nav
+
+  dibuat_pada     DateTime  @default(now())
+  diperbarui_pada DateTime  @updatedAt
+  dihapus_pada    DateTime?           // Soft delete
+
+  // Relations
+  c_berita c_berita[]
+
+  @@index([slug])
+  @@index([is_aktif, urutan])
+  @@map("m_kategori_berita")
+}
+
+// Tabel Master: Tag
+model m_tag {
+  id           Int     @id @default(autoincrement())
+  nama         String  @unique @db.VarChar(80)
+  slug         String  @unique @db.VarChar(100)
+  deskripsi    String? @db.Text
+  total_berita Int     @default(0)   // Denormalized counter
+
+  dibuat_pada     DateTime  @default(now())
+  diperbarui_pada DateTime  @updatedAt
+  dihapus_pada    DateTime?
+
+  // Relations
+  r_berita_tag r_berita_tag[]
+
+  @@index([slug])
+  @@index([total_berita(sort: Desc)])
+  @@map("m_tag")
+}

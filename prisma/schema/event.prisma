@@ -39,7 +39,6 @@ model event {
   proposal_sponsor proposal_sponsor[]
   event_vendor     event_vendor[]
   event_venue      event_venue[]
-  berita           berita[]
   kalender_konten  kalender_konten[]
   surat            surat[]
   dokumen          dokumen[]

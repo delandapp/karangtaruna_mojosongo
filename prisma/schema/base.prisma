@@ -3,6 +3,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["prismaSchemaFolder"]
 }
 
 // Di Prisma 7, url pindah ke prisma.config.ts / tidak perlu ditulis di sini jika pakai adapter

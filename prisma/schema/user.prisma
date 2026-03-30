@@ -55,7 +55,6 @@ model m_user {
   transaksi_disetujui  transaksi_keuangan[] @relation("transaksi_disetujui_oleh")
   proposal_dikirim     proposal_sponsor[]   @relation("proposal_dikirim_oleh")
   sponsor_ditangani    event_sponsor[]      @relation("sponsor_ditangani_oleh")
-  berita_ditulis       berita[]
   konten_ditugaskan    kalender_konten[]
   surat_dibuat         surat[]              @relation("surat_dibuat_oleh")
   surat_ditandatangani surat[]              @relation("surat_ditandatangani_oleh")
@@ -70,6 +69,11 @@ model m_user {
   rapat_dibuat         rapat[]
   saran_user           saran_masukan[]      @relation("saran_dari_user")
   respon_survei_user   respon_survei[]      @relation("respon_user")
+
+  // Relasi Berita
+  berita_ditulis       c_berita[]                  @relation("berita_ditulis_oleh")
+  komentar_berita      c_komentar_berita[]
+  interaksi_berita     r_user_interaksi_berita[]
 
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt

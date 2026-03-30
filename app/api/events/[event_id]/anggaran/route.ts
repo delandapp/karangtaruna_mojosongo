@@ -1,111 +1,166 @@
 import { prisma } from "@/lib/prisma";
 import { createAnggaranSchema } from "@/lib/validations/anggaran.schema";
-import { successResponse, errorResponse, paginatedResponse } from "@/lib/api-response";
+import {
+  successResponse,
+  errorResponse,
+  paginatedResponse,
+} from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
+import { getCache, setCache } from "@/lib/redis";
 import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-import { checkUserAccess } from "@/lib/rbac";
-import { paginationSchema } from "@/lib/validations/level.schema";
+import { produceCacheInvalidate } from "@/lib/kafka";
+import { z } from "zod";
 
-interface RouteProps {
-  params: Promise<{ event_id: string }>;
-}
+type RouteProps = { params: Promise<{ event_id: string }> };
 
-export const GET = withAuth(async (req: AuthenticatedRequest, props: RouteProps) => {
-  try {
-    const { m_level_id: levelId, m_jabatan_id: jabatanId } = req.user;
-    const hasAccess = await checkUserAccess(levelId, jabatanId, "/api/events/anggaran", "GET");
-    if (!hasAccess) return errorResponse(403, "Akses ditolak.", "FORBIDDEN");
+const listQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(20),
+  skenario: z.string().optional(),
+  status: z.string().optional(),
+});
 
-    const { event_id } = await props.params;
-    const eventId = parseInt(event_id, 10);
-    if (isNaN(eventId)) return errorResponse(400, "ID Event tidak valid", "BAD_REQUEST");
+const parseEventId = (id: string): number | null => {
+  const n = parseInt(id, 10);
+  return isNaN(n) || n <= 0 ? null : n;
+};
 
-    const eventExists = await prisma.event.findUnique({ where: { id: eventId }, select: { id: true } });
-    if (!eventExists) return errorResponse(404, "Event tidak ditemukan", "NOT_FOUND");
+// ──────────────────────────────────────────────────────────
+// GET /api/events/:event_id/anggaran — List Anggaran Event
+// ──────────────────────────────────────────────────────────
+export const GET = withAuth(
+  async (req: AuthenticatedRequest, { params }: RouteProps) => {
+    try {
+      const { event_id } = await params;
+      const eventId = parseEventId(event_id);
+      if (!eventId)
+        return errorResponse(400, "ID Event tidak valid", "VALIDATION_ERROR");
 
-    const { searchParams } = new URL(req.url);
-    const skenarioFilter = searchParams.get("skenario") || undefined;
-    const statusFilter = searchParams.get("status") || undefined;
-    
-    const { page, limit } = paginationSchema.parse({
-      page: searchParams.get("page") || "1",
-      limit: searchParams.get("limit") || "20",
-    });
-    const skip = (page - 1) * limit;
+      const eventExists = await prisma.event.findUnique({
+        where: { id: eventId },
+        select: { id: true },
+      });
+      if (!eventExists)
+        return errorResponse(404, "Event tidak ditemukan", "NOT_FOUND");
 
-    const where: any = { event_id: eventId };
-    if (skenarioFilter) where.skenario = skenarioFilter;
-    if (statusFilter) where.status = statusFilter;
-    const isFiltered = !!(skenarioFilter || statusFilter);
+      const { searchParams } = new URL(req.url);
+      const { page, limit, skenario, status } = listQuerySchema.parse(
+        Object.fromEntries(searchParams),
+      );
 
-    const cacheKey = `${REDIS_KEYS.ANGGARAN.ALL(eventId)}:page:${page}:limit:${limit}`;
-    if (!isFiltered) {
-      const cached = await getCache<{ data: any[]; meta: any }>(cacheKey);
-      if (cached) return paginatedResponse(cached.data, cached.meta, 200);
+      const skip = (page - 1) * limit;
+      const isFiltered = !!(skenario || status);
+
+      const cacheKey = `${REDIS_KEYS.ANGGARAN.ALL(eventId)}:page:${page}:limit:${limit}`;
+
+      // Cek cache hanya untuk query tanpa filter
+      if (!isFiltered) {
+        const cached = await getCache<{ data: unknown[]; meta: unknown }>(
+          cacheKey,
+        );
+        if (cached)
+          return paginatedResponse(
+            cached.data as any[],
+            cached.meta as any,
+            200,
+          );
+      }
+
+      // Build where clause
+      const where: Record<string, unknown> = { event_id: eventId };
+      if (skenario) where.skenario = skenario;
+      if (status) where.status = status;
+
+      const [anggaran_list, total] = await Promise.all([
+        prisma.anggaran.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: [{ versi: "desc" }],
+          include: {
+            dibuat_oleh: { select: { id: true, nama_lengkap: true } },
+            disetujui_oleh: { select: { id: true, nama_lengkap: true } },
+          },
+        }),
+        prisma.anggaran.count({ where }),
+      ]);
+
+      const totalPages = Math.ceil(total / limit);
+      const meta = { page, limit, total, totalPages };
+
+      // Simpan ke cache hanya untuk query tanpa filter
+      if (!isFiltered) {
+        await setCache(
+          cacheKey,
+          { data: anggaran_list, meta },
+          DEFAULT_CACHE_TTL,
+        );
+      }
+
+      return paginatedResponse(anggaran_list, meta, 200);
+    } catch (error) {
+      return handleApiError(error);
     }
+  },
+);
 
-    const [anggaran_list, total] = await Promise.all([
-      prisma.anggaran.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: [{ versi: "desc" }],
+// ──────────────────────────────────────────────────────────
+// POST /api/events/:event_id/anggaran — Buat Anggaran Baru
+// ──────────────────────────────────────────────────────────
+export const POST = withAuth(
+  async (req: AuthenticatedRequest, { params }: RouteProps) => {
+    try {
+      const { userId } = req.user;
+      const { event_id } = await params;
+      const eventId = parseEventId(event_id);
+      if (!eventId)
+        return errorResponse(400, "ID Event tidak valid", "VALIDATION_ERROR");
+
+      const eventExists = await prisma.event.findUnique({
+        where: { id: eventId },
+        select: { id: true },
+      });
+      if (!eventExists)
+        return errorResponse(404, "Event tidak ditemukan", "NOT_FOUND");
+
+      const body = await req.json();
+      const data = createAnggaranSchema.parse(body);
+
+      // Cek duplikasi skenario + versi dalam event yang sama
+      const duplicate = await prisma.anggaran.findFirst({
+        where: {
+          event_id: eventId,
+          skenario: data.skenario,
+          versi: data.versi,
+        },
+        select: { id: true },
+      });
+      if (duplicate) {
+        return errorResponse(
+          409,
+          `Anggaran dengan Skenario '${data.skenario}' dan Versi '${data.versi}' sudah ada.`,
+          "CONFLICT",
+        );
+      }
+
+      const anggaran = await prisma.anggaran.create({
+        data: {
+          event_id: eventId,
+          dibuat_oleh_id: userId,
+          ...data,
+        },
         include: {
           dibuat_oleh: { select: { id: true, nama_lengkap: true } },
-          disetujui_oleh: { select: { id: true, nama_lengkap: true } },
         },
-      }),
-      prisma.anggaran.count({ where }),
-    ]);
+      });
 
-    const meta = { page, limit, total, totalPages: Math.ceil(total / limit) };
-    if (!isFiltered) await setCache(cacheKey, { data: anggaran_list, meta }, DEFAULT_CACHE_TTL);
-    
-    // Convert decimal strings if necessary, though Decimal is handled well by Next.js if serialized correctly
-    return paginatedResponse(anggaran_list, meta, 200);
-  } catch (error) {
-    return handleApiError(error);
-  }
-});
+      // Invalidate list cache via Kafka — CDC akan sync ke ES secara otomatis
+      await produceCacheInvalidate(REDIS_KEYS.ANGGARAN.ALL_PREFIX(eventId));
 
-export const POST = withAuth(async (req: AuthenticatedRequest, props: RouteProps) => {
-  try {
-    const { userId, m_level_id: levelId, m_jabatan_id: jabatanId } = req.user;
-    const hasAccess = await checkUserAccess(levelId, jabatanId, "/api/events/anggaran", "POST");
-    if (!hasAccess) return errorResponse(403, "Akses ditolak.", "FORBIDDEN");
-
-    const { event_id } = await props.params;
-    const eventId = parseInt(event_id, 10);
-    if (isNaN(eventId)) return errorResponse(400, "ID Event tidak valid", "BAD_REQUEST");
-
-    const eventExists = await prisma.event.findUnique({ where: { id: eventId }, select: { id: true } });
-    if (!eventExists) return errorResponse(404, "Event tidak ditemukan", "NOT_FOUND");
-
-    const body = await req.json();
-    const data = createAnggaranSchema.parse(body);
-
-    const duplicate = await prisma.anggaran.findFirst({
-      where: { event_id: eventId, skenario: data.skenario, versi: data.versi },
-      select: { id: true }
-    });
-    if (duplicate) {
-      return errorResponse(409, `Anggaran dengan Skenario '${data.skenario}' dan Versi '${data.versi}' sudah ada.`, "CONFLICT");
+      return successResponse(anggaran, 201);
+    } catch (error) {
+      return handleApiError(error);
     }
-
-    const anggaran = await prisma.anggaran.create({
-      data: { 
-        event_id: eventId, 
-        dibuat_oleh_id: userId, 
-        ...data 
-      },
-      include: {
-        dibuat_oleh: { select: { id: true, nama_lengkap: true } },
-      },
-    });
-    return successResponse(anggaran, 201);
-  } catch (error) {
-    return handleApiError(error);
-  }
-});
+  },
+);

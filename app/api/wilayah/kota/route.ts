@@ -1,94 +1,111 @@
-import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { kotaSchema, wilayahQuerySchema } from "@/lib/validations/wilayah.schema";
-import { successResponse, errorResponse, paginatedResponse } from "@/lib/api-response";
+import {
+  kotaSchema,
+  wilayahQuerySchema,
+} from "@/lib/validations/wilayah.schema";
+import {
+  successResponse,
+  errorResponse,
+  paginatedResponse,
+} from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache } from "@/lib/redis";
-import { REDIS_KEYS, ELASTIC_INDICES } from "@/lib/constants";
+import { getCache, setCache } from "@/lib/redis";
+import {
+  REDIS_KEYS,
+  ELASTIC_INDICES,
+  DEFAULT_CACHE_TTL,
+} from "@/lib/constants";
 import { searchDocuments } from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-import { checkUserAccess } from "@/lib/rbac";
+import { produceCacheInvalidate } from "@/lib/kafka";
 
+// ──────────────────────────────────────────────────────────
+// GET /api/wilayah/kota — List dengan Pagination, Search & Dropdown
+// Filter opsional: ?m_provinsi_id=1
+// ──────────────────────────────────────────────────────────
 export const GET = withAuth(async (req: AuthenticatedRequest) => {
   try {
-    const { m_level_id: userLevelId, m_jabatan_id: userJabatanId } = req.user;
     const { searchParams } = new URL(req.url);
     const dropdown = searchParams.get("dropdown") === "true";
+    const m_provinsi_id = searchParams.get("m_provinsi_id")
+      ? parseInt(searchParams.get("m_provinsi_id")!, 10)
+      : undefined;
 
-    if (!dropdown) {
-      const hasAccess = await checkUserAccess(userLevelId, userJabatanId, "/api/wilayah/kota", "GET");
-      if (!hasAccess) {
-        return errorResponse(403, "Akses ditolak. Anda tidak memiliki izin membaca data kota.", "FORBIDDEN");
-      }
-    }
-    const m_provinsi_id = searchParams.get("m_provinsi_id");
-
+    // ── Mode Dropdown (untuk select input) ───────────────────────────────
     if (dropdown) {
-      const dropdownCacheKey = `${REDIS_KEYS.KOTA.ALL}:dropdown:prov:${m_provinsi_id || 'all'}`;
-      const cachedDropdown = await getCache<{ data: any[] }>(dropdownCacheKey);
-      if (cachedDropdown) {
-        return successResponse(cachedDropdown.data, 200);
-      }
+      const cacheKey = `${REDIS_KEYS.KOTA.ALL}:dropdown:prov:${m_provinsi_id ?? "all"}`;
+      const cached = await getCache<unknown[]>(cacheKey);
+      if (cached) return successResponse(cached, 200);
 
       const esQuery = m_provinsi_id
-        ? { term: { m_provinsi_id: parseInt(m_provinsi_id, 10) } }
+        ? { term: { m_provinsi_id } }
         : { match_all: {} };
 
       const { hits } = await searchDocuments(ELASTIC_INDICES.KOTA, esQuery, {
         size: 10000,
         _source: ["id", "kode_wilayah", "nama", "m_provinsi_id"],
-        sort: [{ nama: "asc" }],
+        sort: [{ nama: { order: "asc" } }],
       });
 
+      await setCache(cacheKey, hits, DEFAULT_CACHE_TTL);
       return successResponse(hits, 200);
     }
 
-    const pageStr = searchParams.get("page") || "1";
-    const limitStr = searchParams.get("limit") || "10";
-    const search = searchParams.get("search") || undefined;
-
-    const { page, limit, search: searchQuery } = wilayahQuerySchema.parse({
-      page: pageStr,
-      limit: limitStr,
-      search,
+    // ── Mode Paginated ────────────────────────────────────────────────────
+    const { page, limit, search } = wilayahQuerySchema.parse({
+      page: searchParams.get("page") || "1",
+      limit: searchParams.get("limit") || "10",
+      search: searchParams.get("search") || undefined,
     });
 
     const skip = (page - 1) * limit;
+    const isFiltered = !!(search || m_provinsi_id);
 
-    const cacheKey = `${REDIS_KEYS.KOTA.ALL}:prov:${m_provinsi_id || 'all'}:page:${page}:limit:${limit}`;
-    if (!searchQuery) {
-      const cachedData = await getCache<{ data: any[]; meta: any }>(cacheKey);
-      if (cachedData) {
-        return paginatedResponse(cachedData.data, cachedData.meta, 200);
-      }
+    const cacheKey = `${REDIS_KEYS.KOTA.ALL}:prov:${m_provinsi_id ?? "all"}:page:${page}:limit:${limit}`;
+
+    // Cek cache hanya untuk non-search
+    if (!isFiltered) {
+      const cached = await getCache<{ data: unknown[]; meta: unknown }>(
+        cacheKey,
+      );
+      if (cached)
+        return paginatedResponse(cached.data as any[], cached.meta as any, 200);
     }
 
-    const mustClauses: any[] = [];
+    // Build Elasticsearch query
+    const must: Record<string, unknown>[] = [];
     if (m_provinsi_id) {
-      mustClauses.push({ term: { m_provinsi_id: parseInt(m_provinsi_id, 10) } });
+      must.push({ term: { m_provinsi_id } });
     }
-    if (searchQuery) {
-      mustClauses.push({
+    if (search) {
+      must.push({
         multi_match: {
-          query: searchQuery,
+          query: search,
           fields: ["nama", "kode_wilayah"],
           type: "phrase_prefix" as const,
         },
       });
     }
 
-    const esQuery = mustClauses.length > 0
-      ? { bool: { must: mustClauses } }
-      : { match_all: {} };
+    const esQuery = must.length > 0 ? { bool: { must } } : { match_all: {} };
 
-    const { hits, total } = await searchDocuments(ELASTIC_INDICES.KOTA, esQuery, {
-      from: skip,
-      size: limit,
-      sort: [{ nama: "asc" }],
-    });
+    const { hits, total } = await searchDocuments(
+      ELASTIC_INDICES.KOTA,
+      esQuery,
+      {
+        from: skip,
+        size: limit,
+        sort: [{ nama: { order: "asc" } }],
+      },
+    );
 
     const totalPages = Math.ceil(total / limit);
     const meta = { page, limit, total, totalPages };
+
+    // Simpan ke cache jika bukan pencarian
+    if (!isFiltered) {
+      await setCache(cacheKey, { data: hits, meta }, DEFAULT_CACHE_TTL);
+    }
 
     return paginatedResponse(hits, meta, 200);
   } catch (error) {
@@ -96,24 +113,34 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
   }
 });
 
+// ──────────────────────────────────────────────────────────
+// POST /api/wilayah/kota — Tambah Kota/Kabupaten
+// ──────────────────────────────────────────────────────────
 export const POST = withAuth(async (req: AuthenticatedRequest) => {
   try {
-    const { m_level_id: userLevelId, m_jabatan_id: userJabatanId } = req.user;
-
-    const hasAccess = await checkUserAccess(userLevelId, userJabatanId, "/api/wilayah/kota", "POST");
-    if (!hasAccess) {
-      return errorResponse(403, "Akses ditolak.", "FORBIDDEN");
-    }
-
     const body = await req.json();
     const validatedData = kotaSchema.parse(body);
 
+    // Cek duplikasi kode wilayah
     const existing = await prisma.m_kota.findUnique({
       where: { kode_wilayah: validatedData.kode_wilayah },
+      select: { id: true },
     });
-
     if (existing) {
-      return errorResponse(400, "Kode wilayah kota sudah digunakan");
+      return errorResponse(
+        409,
+        "Kode wilayah kota sudah digunakan",
+        "CONFLICT",
+      );
+    }
+
+    // Verifikasi provinsi induk
+    const provinsiExists = await prisma.m_provinsi.findUnique({
+      where: { id: validatedData.m_provinsi_id },
+      select: { id: true },
+    });
+    if (!provinsiExists) {
+      return errorResponse(404, "Provinsi induk tidak ditemukan", "NOT_FOUND");
     }
 
     const newData = await prisma.m_kota.create({
@@ -123,6 +150,10 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
         m_provinsi_id: validatedData.m_provinsi_id,
       },
     });
+
+    // Invalidate list cache — CDC akan sync ke ES secara otomatis
+    await produceCacheInvalidate(REDIS_KEYS.KOTA.ALL_PREFIX);
+
     return successResponse(newData, 201);
   } catch (error) {
     return handleApiError(error);

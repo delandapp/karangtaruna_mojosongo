@@ -1,82 +1,77 @@
 import { prisma } from "@/lib/prisma";
 import { createEventSchema } from "@/lib/validations/event.schema";
-import { paginationSchema } from "@/lib/validations/level.schema";
 import {
   successResponse,
   errorResponse,
   paginatedResponse,
 } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache } from "@/lib/redis";
-import { REDIS_KEYS, ELASTIC_INDICES } from "@/lib/constants";
+import { getCache, setCache } from "@/lib/redis";
+import {
+  REDIS_KEYS,
+  ELASTIC_INDICES,
+  DEFAULT_CACHE_TTL,
+} from "@/lib/constants";
 import { searchDocuments } from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-import { checkUserAccess } from "@/lib/rbac";
+import { produceCacheInvalidate } from "@/lib/kafka";
 import { generateKodeEvent } from "@/lib/generator/event-code-generator";
+import { z } from "zod";
+
+const listQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(10),
+  search: z.string().optional(),
+});
 
 // ──────────────────────────────────────────────────────────
-// GET /api/events — List dengan Pagination, Search & Filter
+// GET /api/events — List dengan Pagination & Search
 // ──────────────────────────────────────────────────────────
 export const GET = withAuth(async (req: AuthenticatedRequest) => {
   try {
-    const { m_level_id: userLevelId, m_jabatan_id: userJabatanId } = req.user;
-
-    const hasAccess = await checkUserAccess(
-      userLevelId,
-      userJabatanId,
-      "/api/events",
-      "GET",
-    );
-    if (!hasAccess) {
-      return errorResponse(
-        403,
-        "Akses ditolak. Anda tidak memiliki izin membaca data event.",
-        "FORBIDDEN",
-      );
-    }
-
     const { searchParams } = new URL(req.url);
-    const pageStr = searchParams.get("page") || "1";
-    const limitStr = searchParams.get("limit") || "10";
-    const search = searchParams.get("search") || undefined;
-
-    // 1. Validasi Query Param
-    const {
-      page,
-      limit,
-      search: searchQuery,
-    } = paginationSchema.parse({
-      page: pageStr,
-      limit: limitStr,
-      search,
-    });
+    const { page, limit, search } = listQuerySchema.parse(
+      Object.fromEntries(searchParams),
+    );
 
     const skip = (page - 1) * limit;
-
-    // 2. Cek Cache Redis (hanya untuk non-search)
     const cacheKey = `${REDIS_KEYS.EVENTS.ALL}:page:${page}:limit:${limit}`;
-    if (!searchQuery) {
-      const cachedData = await getCache<{ data: any[]; meta: any }>(cacheKey);
-      if (cachedData) {
-        return paginatedResponse(cachedData.data, cachedData.meta, 200);
-      }
+
+    // Cek cache hanya untuk non-search
+    if (!search) {
+      const cached = await getCache<{ data: unknown[]; meta: unknown }>(
+        cacheKey,
+      );
+      if (cached)
+        return paginatedResponse(cached.data as any[], cached.meta as any, 200);
     }
 
-    // 3. Query Elasticsearch
-    const esQuery: Record<string, unknown> = searchQuery
-      ? { multi_match: { query: searchQuery, fields: ["nama_event", "kode_event", "lokasi"], fuzziness: "AUTO" } }
+    // Query Elasticsearch
+    const esQuery: Record<string, unknown> = search
+      ? {
+          multi_match: {
+            query: search,
+            fields: ["nama_event", "kode_event", "lokasi"],
+            fuzziness: "AUTO",
+          },
+        }
       : { match_all: {} };
 
-    const { hits: events, total } = await searchDocuments(
+    const { hits, total } = await searchDocuments(
       ELASTIC_INDICES.EVENTS,
       esQuery,
-      { from: skip, size: limit, sort: [{ dibuat_pada: "desc" }] },
+      { from: skip, size: limit, sort: [{ dibuat_pada: { order: "desc" } }] },
     );
 
     const totalPages = Math.ceil(total / limit);
     const meta = { page, limit, total, totalPages };
 
-    return paginatedResponse(events, meta, 200);
+    // Simpan ke cache jika bukan pencarian
+    if (!search) {
+      await setCache(cacheKey, { data: hits, meta }, DEFAULT_CACHE_TTL);
+    }
+
+    return paginatedResponse(hits, meta, 200);
   } catch (error) {
     return handleApiError(error);
   }
@@ -87,25 +82,7 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
 // ──────────────────────────────────────────────────────────
 export const POST = withAuth(async (req: AuthenticatedRequest) => {
   try {
-    const {
-      userId,
-      m_level_id: userLevelId,
-      m_jabatan_id: userJabatanId,
-    } = req.user;
-
-    const hasAccess = await checkUserAccess(
-      userLevelId,
-      userJabatanId,
-      "/api/events",
-      "POST",
-    );
-    if (!hasAccess) {
-      return errorResponse(
-        403,
-        "Akses ditolak. Anda tidak memiliki izin membuat event.",
-        "FORBIDDEN",
-      );
-    }
+    const { userId } = req.user;
 
     const body = await req.json();
 
@@ -152,6 +129,9 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
         dibuat_oleh: { select: { id: true, nama_lengkap: true } },
       },
     });
+
+    // Invalidate list cache — CDC akan sync ke ES secara otomatis
+    await produceCacheInvalidate(REDIS_KEYS.EVENTS.ALL_PREFIX);
 
     return successResponse(newEvent, 201);
   } catch (error) {

@@ -1,131 +1,205 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { successResponse, errorResponse } from "@/lib/api-response";
+import { handleApiError } from "@/lib/error-handler";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-import { checkUserAccess } from "@/lib/rbac";
-import { errorResponse } from "@/lib/api-response";
+import { produceCacheInvalidate } from "@/lib/kafka";
+import { REDIS_KEYS } from "@/lib/constants";
 
-export const PUT = withAuth(async (
-  req: AuthenticatedRequest,
-  props: { params: Promise<{ id: string }> }
-) => {
-  try {
-    const { m_level_id: userLevelId, m_jabatan_id: userJabatanId } = req.user;
+type RouteProps = { params: Promise<{ id: string }> };
 
-    const hasAccess = await checkUserAccess(
-      userLevelId,
-      userJabatanId,
-      "/api/eproposal",
-      "PUT"
-    );
-    if (!hasAccess) {
-      return errorResponse(
-        403,
-        "Akses ditolak. Anda tidak memiliki izin mengubah e-proposal.",
-        "FORBIDDEN"
-      );
-    }
+const parseId = (id: string): number | null => {
+  const n = Number(id);
+  return Number.isInteger(n) && n > 0 ? n : null;
+};
 
-    const params = await props.params;
-    const id = Number(params.id);
-    const body = await req.json();
-
-    const { pengaturan, daftar_isi, ...proposalData } = body;
-
-    const dataToUpdate: any = { ...proposalData };
-
-    // Safety check just in case the client sends an object
-    if (typeof dataToUpdate.file_pdf_url === 'object' && dataToUpdate.file_pdf_url !== null) {
-      dataToUpdate.file_pdf_url = dataToUpdate.file_pdf_url.file?.urlPublik || dataToUpdate.file_pdf_url.url || '';
-    }
-    if (typeof dataToUpdate.cover_url === 'object' && dataToUpdate.cover_url !== null) {
-      dataToUpdate.cover_url = dataToUpdate.cover_url.file?.urlPublik || dataToUpdate.cover_url.url || '';
-    }
-
-    // Safety check for bg_music_url in pengaturan
-    if (pengaturan?.bg_music_url && typeof pengaturan.bg_music_url === 'object') {
-      pengaturan.bg_music_url = (pengaturan.bg_music_url as any).file?.urlPublik || (pengaturan.bg_music_url as any).url || '';
-    }
-
-    // Validate cover_url format: only JPEG/PNG allowed
-    if (dataToUpdate.cover_url && typeof dataToUpdate.cover_url === 'string') {
-      const coverExt = dataToUpdate.cover_url.split('?')[0].split('.').pop()?.toLowerCase();
-      if (!['jpg', 'jpeg', 'png'].includes(coverExt || '')) {
-        return NextResponse.json(
-          { success: false, message: 'Format cover tidak valid. Hanya file JPEG dan PNG yang diizinkan.' },
-          { status: 400 }
+// ──────────────────────────────────────────────────────────
+// PUT /api/eproposal/[id] — Update E-Proposal
+// ──────────────────────────────────────────────────────────
+export const PUT = withAuth(
+  async (req: AuthenticatedRequest, { params }: RouteProps) => {
+    try {
+      const { id: rawId } = await params;
+      const id = parseId(rawId);
+      if (!id)
+        return errorResponse(
+          400,
+          "ID E-Proposal tidak valid",
+          "VALIDATION_ERROR",
         );
+
+      const existing = await prisma.m_eproposal.findUnique({
+        where: { id },
+        select: { id: true },
+      });
+      if (!existing)
+        return errorResponse(404, "E-Proposal tidak ditemukan", "NOT_FOUND");
+
+      const body = await req.json();
+      const { pengaturan, daftar_isi, ...proposalData } = body;
+
+      const dataToUpdate: Record<string, unknown> = { ...proposalData };
+
+      // Normalisasi URL jika dikirim sebagai object (dari file upload response)
+      if (
+        typeof dataToUpdate.file_pdf_url === "object" &&
+        dataToUpdate.file_pdf_url !== null
+      ) {
+        dataToUpdate.file_pdf_url =
+          (dataToUpdate.file_pdf_url as any).file?.urlPublik ||
+          (dataToUpdate.file_pdf_url as any).url ||
+          "";
       }
-    }
-
-    // Validate bg_music_url format: only MP3 allowed
-    if (pengaturan?.bg_music_url && typeof pengaturan.bg_music_url === 'string') {
-      const musicExt = pengaturan.bg_music_url.split('?')[0].split('.').pop()?.toLowerCase();
-      if (musicExt !== 'mp3') {
-        return NextResponse.json(
-          { success: false, message: 'Format musik tidak valid. Hanya file MP3 yang diizinkan.' },
-          { status: 400 }
-        );
+      if (
+        typeof dataToUpdate.cover_url === "object" &&
+        dataToUpdate.cover_url !== null
+      ) {
+        dataToUpdate.cover_url =
+          (dataToUpdate.cover_url as any).file?.urlPublik ||
+          (dataToUpdate.cover_url as any).url ||
+          "";
       }
-    }
 
-    if (pengaturan) {
-      dataToUpdate.pengaturan = {
-        upsert: {
-          create: pengaturan,
-          update: pengaturan,
-        },
-      };
-    }
+      // Normalisasi bg_music_url dalam pengaturan
+      if (
+        pengaturan?.bg_music_url &&
+        typeof pengaturan.bg_music_url === "object"
+      ) {
+        pengaturan.bg_music_url =
+          (pengaturan.bg_music_url as any).file?.urlPublik ||
+          (pengaturan.bg_music_url as any).url ||
+          "";
+      }
 
-    // Replace daftar_isi: delete old entries, create new ones
-    if (Array.isArray(daftar_isi)) {
-      await prisma.c_eproposal_daftar_isi.deleteMany({ where: { m_eproposal_id: id } });
-      if (daftar_isi.length > 0) {
-        dataToUpdate.daftar_isi = {
-          createMany: { data: daftar_isi.map((d: any, i: number) => ({ judul: d.judul, halaman: d.halaman, urutan: d.urutan ?? i + 1 })) },
+      // Validasi format cover_url — hanya JPEG/PNG
+      if (
+        dataToUpdate.cover_url &&
+        typeof dataToUpdate.cover_url === "string"
+      ) {
+        const ext = dataToUpdate.cover_url
+          .split("?")[0]
+          .split(".")
+          .pop()
+          ?.toLowerCase();
+        if (!["jpg", "jpeg", "png"].includes(ext ?? "")) {
+          return errorResponse(
+            400,
+            "Format cover tidak valid. Hanya file JPEG dan PNG yang diizinkan.",
+            "VALIDATION_ERROR",
+          );
+        }
+      }
+
+      // Validasi format bg_music_url — hanya MP3
+      if (
+        pengaturan?.bg_music_url &&
+        typeof pengaturan.bg_music_url === "string"
+      ) {
+        const ext = pengaturan.bg_music_url
+          .split("?")[0]
+          .split(".")
+          .pop()
+          ?.toLowerCase();
+        if (ext !== "mp3") {
+          return errorResponse(
+            400,
+            "Format musik tidak valid. Hanya file MP3 yang diizinkan.",
+            "VALIDATION_ERROR",
+          );
+        }
+      }
+
+      // Upsert pengaturan jika dikirim
+      if (pengaturan) {
+        dataToUpdate.pengaturan = {
+          upsert: {
+            create: pengaturan,
+            update: pengaturan,
+          },
         };
       }
-    }
 
-    const updated = await prisma.m_eproposal.update({
-      where: { id },
-      data: dataToUpdate,
-      include: { pengaturan: true, daftar_isi: { orderBy: { urutan: 'asc' } } },
-    });
+      // Replace daftar_isi — hapus semua lama, buat ulang
+      if (Array.isArray(daftar_isi)) {
+        await prisma.c_eproposal_daftar_isi.deleteMany({
+          where: { m_eproposal_id: id },
+        });
 
-    return NextResponse.json({ success: true, data: updated });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
-  }
-});
+        if (daftar_isi.length > 0) {
+          dataToUpdate.daftar_isi = {
+            createMany: {
+              data: daftar_isi.map((d: any, i: number) => ({
+                judul: d.judul,
+                halaman: d.halaman,
+                urutan: d.urutan ?? i + 1,
+              })),
+            },
+          };
+        }
+      }
 
-export const DELETE = withAuth(async (
-  req: AuthenticatedRequest,
-  props: { params: Promise<{ id: string }> }
-) => {
-  try {
-    const { m_level_id: userLevelId, m_jabatan_id: userJabatanId } = req.user;
+      const updated = await prisma.m_eproposal.update({
+        where: { id },
+        data: dataToUpdate as any,
+        include: {
+          pengaturan: true,
+          daftar_isi: { orderBy: { urutan: "asc" } },
+        },
+      });
 
-    const hasAccess = await checkUserAccess(
-      userLevelId,
-      userJabatanId,
-      "/api/eproposal",
-      "DELETE"
-    );
-    if (!hasAccess) {
-      return errorResponse(
-        403,
-        "Akses ditolak. Anda tidak memiliki izin menghapus e-proposal.",
-        "FORBIDDEN"
+      // Invalidate cache — CDC akan sync ke ES secara otomatis
+      await produceCacheInvalidate(REDIS_KEYS.E_PROPOSAL.SINGLE(0, id));
+      await produceCacheInvalidate(
+        REDIS_KEYS.E_PROPOSAL.SINGLE_BY_SLUG(updated.slug ?? ""),
       );
+
+      return successResponse(updated, 200);
+    } catch (error) {
+      return handleApiError(error);
     }
+  },
+);
 
-    const params = await props.params;
-    const id = Number(params.id);
-    await prisma.m_eproposal.delete({ where: { id } });
+// ──────────────────────────────────────────────────────────
+// DELETE /api/eproposal/[id] — Hapus E-Proposal
+// ──────────────────────────────────────────────────────────
+export const DELETE = withAuth(
+  async (_req: AuthenticatedRequest, { params }: RouteProps) => {
+    try {
+      const { id: rawId } = await params;
+      const id = parseId(rawId);
+      if (!id)
+        return errorResponse(
+          400,
+          "ID E-Proposal tidak valid",
+          "VALIDATION_ERROR",
+        );
 
-    return NextResponse.json({ success: true, data: null });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
-  }
-});
+      const existing = await prisma.m_eproposal.findUnique({
+        where: { id },
+        select: { id: true, slug: true, event_id: true },
+      });
+      if (!existing)
+        return errorResponse(404, "E-Proposal tidak ditemukan", "NOT_FOUND");
+
+      await prisma.m_eproposal.delete({ where: { id } });
+
+      // Invalidate cache
+      await produceCacheInvalidate(
+        REDIS_KEYS.E_PROPOSAL.SINGLE(existing.event_id ?? 0, id),
+      );
+      if (existing.slug) {
+        await produceCacheInvalidate(
+          REDIS_KEYS.E_PROPOSAL.SINGLE_BY_SLUG(existing.slug),
+        );
+      }
+      await produceCacheInvalidate(
+        REDIS_KEYS.E_PROPOSAL.ALL_PREFIX(existing.event_id ?? 0),
+      );
+
+      return successResponse(null, 200);
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+);

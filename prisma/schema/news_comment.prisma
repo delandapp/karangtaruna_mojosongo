@@ -1,0 +1,61 @@
+// =============================================================================
+// NEWS COMMENT — Komentar Berita
+// Relasi: c_berita (news_content.prisma), m_user (user.prisma)
+// =============================================================================
+
+// Enum Status Moderasi Komentar
+enum StatusKomentar {
+  PENDING  // Menunggu moderasi
+  APPROVED // Disetujui, tampil publik
+  REJECTED // Ditolak moderator
+  SPAM     // Ditandai spam
+  DELETED  // Dihapus pemilik
+
+  @@map("status_komentar")
+}
+
+// Tabel Child: Komentar Berita (mendukung nested reply 1 level)
+model c_komentar_berita {
+  id          Int  @id @default(autoincrement())
+  c_berita_id Int
+  parent_id   Int? // Untuk nested reply (max 1 level)
+
+  // Jika user login
+  m_user_id Int?
+
+  // Jika guest (tidak login) — diisi manual
+  guest_nama  String? @db.VarChar(100)
+  guest_email String? @db.VarChar(200)
+
+  // Identitas teknis anti-spam
+  guest_fingerprint String? @db.VarChar(200) // Device fingerprint hash
+  ip_address        String? @db.VarChar(45)  // Support IPv4 & IPv6
+  user_agent        String? @db.Text
+
+  isi              String         @db.Text
+  status           StatusKomentar @default(PENDING)
+  alasan_penolakan String?        @db.Text
+
+  total_likes Int @default(0)
+
+  dibuat_pada     DateTime  @default(now())
+  diperbarui_pada DateTime  @updatedAt
+  dihapus_pada    DateTime? // Soft delete
+
+  // -------------------------------------------------------------------------
+  // Relations
+  // -------------------------------------------------------------------------
+  c_berita c_berita           @relation(fields: [c_berita_id], references: [id], onDelete: Cascade)
+  m_user   m_user?            @relation(fields: [m_user_id], references: [id], onDelete: SetNull)
+  parent   c_komentar_berita? @relation("KomentarReplies", fields: [parent_id], references: [id])
+  replies  c_komentar_berita[] @relation("KomentarReplies")
+
+  // -------------------------------------------------------------------------
+  // Index
+  // -------------------------------------------------------------------------
+  @@index([c_berita_id, status, dibuat_pada(sort: Desc)])
+  @@index([m_user_id])
+  @@index([parent_id])
+  @@index([status])
+  @@map("c_komentar_berita")
+}

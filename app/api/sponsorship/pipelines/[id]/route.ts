@@ -1,91 +1,171 @@
-import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
+import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
+import { produceCacheInvalidate } from "@/lib/kafka";
 import { eventSponsorSchema } from "@/lib/validations/sponsorship.schema";
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const resolvedParams = await params;
-    const id = parseInt(resolvedParams.id);
-    const pipeline = await prisma.event_sponsor.findUnique({
-      where: { id },
-      include: {
-        sponsor: { include: { m_perusahaan: true, kategori: true } },
-        event: true,
-        ditangani_oleh: { select: { id: true, nama_lengkap: true } },
-      },
-    });
+type RouteProps = { params: Promise<{ id: string }> };
 
-    if (!pipeline) return errorResponse(404, "Data pipeline tidak ditemukan", "NOT_FOUND");
-    return successResponse(pipeline);
-  } catch (error) {
-    return handleApiError(error);
-  }
-}
+const parseId = (id: string): number | null => {
+  const n = parseInt(id, 10);
+  return isNaN(n) || n <= 0 ? null : n;
+};
 
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const resolvedParams = await params;
-    const id = parseInt(resolvedParams.id);
-    const json = await request.json();
-    const validatedData = eventSponsorSchema.parse(json);
+const CACHE_INVALIDATE_PREFIX = "pipeline:all:*";
 
-    const existingPipeline = await prisma.event_sponsor.findUnique({ where: { id } });
-    if (!existingPipeline) return errorResponse(404, "Data pipeline tidak ditemukan", "NOT_FOUND");
+// ──────────────────────────────────────────────────────────
+// GET /api/sponsorship/pipelines/[id] — Detail Pipeline
+// ──────────────────────────────────────────────────────────
+export const GET = withAuth(
+  async (_req: AuthenticatedRequest, { params }: RouteProps) => {
+    try {
+      const { id } = await params;
+      const pipelineId = parseId(id);
+      if (!pipelineId)
+        return errorResponse(
+          400,
+          "ID Pipeline tidak valid",
+          "VALIDATION_ERROR",
+        );
 
-    const sponsorId = validatedData.m_sponsor_id ?? existingPipeline.m_sponsor_id;
-
-    if (
-      validatedData.event_id !== existingPipeline.event_id ||
-      sponsorId !== existingPipeline.m_sponsor_id
-    ) {
-      const duplicate = await prisma.event_sponsor.findUnique({
-        where: {
-          event_id_m_sponsor_id: {
-            event_id: validatedData.event_id,
-            m_sponsor_id: sponsorId,
-          },
+      const pipeline = await prisma.event_sponsor.findUnique({
+        where: { id: pipelineId },
+        include: {
+          sponsor: { include: { m_perusahaan: true, kategori: true } },
+          event: true,
+          ditangani_oleh: { select: { id: true, nama_lengkap: true } },
         },
       });
-      if (duplicate) return errorResponse(400, "Sponsor ini sudah dimasukkan ke pipeline event tersebut.", "DUPLICATE_PIPELINE");
+
+      if (!pipeline)
+        return errorResponse(404, "Data pipeline tidak ditemukan", "NOT_FOUND");
+
+      return successResponse(pipeline, 200);
+    } catch (error) {
+      return handleApiError(error);
     }
+  },
+);
 
-    const updatedPipeline = await prisma.event_sponsor.update({
-      where: { id },
-      data: {
-        event_id: validatedData.event_id,
-        m_sponsor_id: sponsorId,
-        ditangani_oleh_id: validatedData.ditangani_oleh_id ?? existingPipeline.ditangani_oleh_id,
-        tier: validatedData.tier,
-        jenis_kontribusi: validatedData.jenis_kontribusi,
-        status_pipeline: validatedData.status_pipeline,
-        jumlah_disepakati: validatedData.jumlah_disepakati,
-        jumlah_diterima: validatedData.jumlah_diterima,
-        deskripsi_inkind: validatedData.deskripsi_inkind,
-        benefit_disepakati: validatedData.benefit_disepakati ?? undefined,
-        benefit_terealisasi: validatedData.benefit_terealisasi ?? undefined,
-        url_mou: validatedData.url_mou,
-        dikonfirmasi_pada: validatedData.status_pipeline === 'dikonfirmasi' && existingPipeline.status_pipeline !== 'dikonfirmasi' ? new Date() : existingPipeline.dikonfirmasi_pada,
-      },
-      include: {
-        sponsor: { include: { m_perusahaan: true } },
-      },
-    });
+// ──────────────────────────────────────────────────────────
+// PUT /api/sponsorship/pipelines/[id] — Update Pipeline
+// ──────────────────────────────────────────────────────────
+export const PUT = withAuth(
+  async (req: AuthenticatedRequest, { params }: RouteProps) => {
+    try {
+      const { id } = await params;
+      const pipelineId = parseId(id);
+      if (!pipelineId)
+        return errorResponse(
+          400,
+          "ID Pipeline tidak valid",
+          "VALIDATION_ERROR",
+        );
 
-    return successResponse(updatedPipeline);
-  } catch (error) {
-    return handleApiError(error);
-  }
-}
+      const existing = await prisma.event_sponsor.findUnique({
+        where: { id: pipelineId },
+      });
+      if (!existing)
+        return errorResponse(404, "Data pipeline tidak ditemukan", "NOT_FOUND");
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const resolvedParams = await params;
-    const id = parseInt(resolvedParams.id);
-    await prisma.event_sponsor.delete({ where: { id } });
-    return successResponse({ message: "Data pipeline berhasil dihapus" });
-  } catch (error) {
-    return handleApiError(error);
-  }
-}
+      const body = await req.json();
+      const validatedData = eventSponsorSchema.parse(body);
+
+      const sponsorId = validatedData.m_sponsor_id ?? existing.m_sponsor_id;
+
+      // Cek duplikasi jika event_id atau m_sponsor_id berubah
+      if (
+        validatedData.event_id !== existing.event_id ||
+        sponsorId !== existing.m_sponsor_id
+      ) {
+        const duplicate = await prisma.event_sponsor.findUnique({
+          where: {
+            event_id_m_sponsor_id: {
+              event_id: validatedData.event_id,
+              m_sponsor_id: sponsorId,
+            },
+          },
+        });
+        if (duplicate)
+          return errorResponse(
+            409,
+            "Sponsor ini sudah dimasukkan ke pipeline event tersebut.",
+            "CONFLICT",
+          );
+      }
+
+      const updated = await prisma.event_sponsor.update({
+        where: { id: pipelineId },
+        data: {
+          event_id: validatedData.event_id,
+          m_sponsor_id: sponsorId,
+          ditangani_oleh_id:
+            validatedData.ditangani_oleh_id ?? existing.ditangani_oleh_id,
+          tier: validatedData.tier,
+          jenis_kontribusi: validatedData.jenis_kontribusi,
+          status_pipeline: validatedData.status_pipeline,
+          jumlah_disepakati: validatedData.jumlah_disepakati,
+          jumlah_diterima: validatedData.jumlah_diterima,
+          deskripsi_inkind: validatedData.deskripsi_inkind,
+          benefit_disepakati: validatedData.benefit_disepakati ?? undefined,
+          benefit_terealisasi: validatedData.benefit_terealisasi ?? undefined,
+          url_mou: validatedData.url_mou,
+          // Set dikonfirmasi_pada saat status pertama kali dikonfirmasi
+          dikonfirmasi_pada:
+            validatedData.status_pipeline === "dikonfirmasi" &&
+            existing.status_pipeline !== "dikonfirmasi"
+              ? new Date()
+              : existing.dikonfirmasi_pada,
+        },
+        include: {
+          sponsor: { include: { m_perusahaan: true } },
+        },
+      });
+
+      // Invalidate cache via Kafka
+      await produceCacheInvalidate(CACHE_INVALIDATE_PREFIX);
+
+      return successResponse(updated, 200);
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+);
+
+// ──────────────────────────────────────────────────────────
+// DELETE /api/sponsorship/pipelines/[id] — Hapus Pipeline
+// ──────────────────────────────────────────────────────────
+export const DELETE = withAuth(
+  async (_req: AuthenticatedRequest, { params }: RouteProps) => {
+    try {
+      const { id } = await params;
+      const pipelineId = parseId(id);
+      if (!pipelineId)
+        return errorResponse(
+          400,
+          "ID Pipeline tidak valid",
+          "VALIDATION_ERROR",
+        );
+
+      const existing = await prisma.event_sponsor.findUnique({
+        where: { id: pipelineId },
+        select: { id: true },
+      });
+      if (!existing)
+        return errorResponse(404, "Data pipeline tidak ditemukan", "NOT_FOUND");
+
+      await prisma.event_sponsor.delete({ where: { id: pipelineId } });
+
+      // Invalidate cache via Kafka
+      await produceCacheInvalidate(CACHE_INVALIDATE_PREFIX);
+
+      return successResponse(
+        { message: "Data pipeline berhasil dihapus" },
+        200,
+      );
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+);

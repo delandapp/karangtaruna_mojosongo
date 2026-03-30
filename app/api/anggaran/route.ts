@@ -1,54 +1,93 @@
 import { prisma } from "@/lib/prisma";
-import { successResponse, errorResponse, paginatedResponse } from "@/lib/api-response";
+import {
+  successResponse,
+  errorResponse,
+  paginatedResponse,
+} from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache } from "@/lib/redis";
-import { ELASTIC_INDICES } from "@/lib/constants";
+import { getCache, setCache } from "@/lib/redis";
+import { ELASTIC_INDICES, DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { searchDocuments } from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-import { checkUserAccess } from "@/lib/rbac";
-import { paginationSchema } from "@/lib/validations/level.schema";
+import { produceCacheInvalidate } from "@/lib/kafka";
+import { z } from "zod";
 
+const listQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(20),
+  search: z.string().optional(),
+  status: z.string().optional(),
+  skenario: z.string().optional(),
+  event_id: z.coerce.number().int().positive().optional(),
+});
+
+// ──────────────────────────────────────────────────────────
+// GET /api/anggaran — List dengan Pagination, Search & Filter
+// ──────────────────────────────────────────────────────────
 export const GET = withAuth(async (req: AuthenticatedRequest) => {
   try {
-    const { m_level_id: levelId, m_jabatan_id: jabatanId } = req.user;
-    const hasAccess = await checkUserAccess(levelId, jabatanId, "/api/events/anggaran", "GET");
-    if (!hasAccess) return errorResponse(403, "Akses ditolak.", "FORBIDDEN");
-
     const { searchParams } = new URL(req.url);
-    const statusFilter = searchParams.get("status") || undefined;
-    const skenarioFilter = searchParams.get("skenario") || undefined;
-    const eventSearch = searchParams.get("search") || undefined;
+    const { page, limit, search, status, skenario, event_id } =
+      listQuerySchema.parse(Object.fromEntries(searchParams));
 
-    const { page, limit } = paginationSchema.parse({
-      page: searchParams.get("page") || "1",
-      limit: searchParams.get("limit") || "20",
-    });
     const skip = (page - 1) * limit;
+    const isFiltered = !!(search || status || skenario || event_id);
 
-    const isFiltered = !!(statusFilter || skenarioFilter || eventSearch);
-
-    // 1. Cek Cache Redis (hanya untuk non-filtered)
+    // Cek cache hanya untuk non-filter
     const cacheKey = `anggaran:all:page:${page}:limit:${limit}`;
     if (!isFiltered) {
-      const cached = await getCache<{ data: any[]; meta: any }>(cacheKey);
-      if (cached) return paginatedResponse(cached.data, cached.meta, 200);
+      const cached = await getCache<{ data: unknown[]; meta: unknown }>(
+        cacheKey,
+      );
+      if (cached)
+        return paginatedResponse(cached.data as any[], cached.meta as any, 200);
     }
 
-    // 2. Query Elasticsearch
-    const must: any[] = [];
-    if (statusFilter) must.push({ term: { status: statusFilter } });
-    if (skenarioFilter) must.push({ term: { skenario: skenarioFilter } });
-    if (eventSearch) must.push({ multi_match: { query: eventSearch, fields: ["skenario", "deskripsi"] } });
+    // Build Elasticsearch query
+    const must: Record<string, unknown>[] = [];
+    const filter: Record<string, unknown>[] = [];
 
-    const query = must.length > 0 ? { bool: { must } } : { match_all: {} };
+    if (search) {
+      must.push({
+        multi_match: {
+          query: search,
+          fields: ["skenario", "deskripsi"],
+          fuzziness: "AUTO",
+        },
+      });
+    }
+    if (status) filter.push({ term: { status } });
+    if (skenario) filter.push({ term: { skenario } });
+    if (event_id) filter.push({ term: { event_id } });
+
+    const esQuery =
+      must.length > 0 || filter.length > 0
+        ? {
+            bool: {
+              must: must.length > 0 ? must : [{ match_all: {} }],
+              filter,
+            },
+          }
+        : { match_all: {} };
 
     const { hits, total } = await searchDocuments(
       ELASTIC_INDICES.ANGGARAN,
-      query,
-      { from: skip, size: limit, sort: [{ id: { order: "desc" } }] },
+      esQuery,
+      {
+        from: skip,
+        size: limit,
+        sort: [{ id: { order: "desc" } }],
+      },
     );
 
-    const meta = { page, limit, total, totalPages: Math.ceil(total / limit) };
+    const totalPages = Math.ceil(total / limit);
+    const meta = { page, limit, total, totalPages };
+
+    // Simpan ke cache jika query tanpa filter
+    if (!isFiltered) {
+      await setCache(cacheKey, { data: hits, meta }, DEFAULT_CACHE_TTL);
+    }
+
     return paginatedResponse(hits, meta, 200);
   } catch (error) {
     return handleApiError(error);

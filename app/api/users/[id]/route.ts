@@ -1,11 +1,15 @@
-import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
+import { produceCacheInvalidate } from "@/lib/kafka";
+import { REDIS_KEYS } from "@/lib/constants";
 import bcrypt from "bcrypt";
 import { z } from "zod";
-import { checkUserAccess } from "@/lib/rbac";
+
+type RouteProps = { params: Promise<{ id: string }> };
+
+// ─── Schema ───────────────────────────────────────────────────────────────────
 
 const updateUserSchema = z.object({
   nama_lengkap: z.string().min(3).max(100).optional(),
@@ -35,39 +39,44 @@ const updateUserSchema = z.object({
   m_level_id: z.number().int().positive().optional(),
 });
 
-export const PUT = withAuth(
-  async (
-    req: AuthenticatedRequest,
-    { params }: { params: Promise<{ id: string }> },
-  ) => {
-    try {
-      const resolvedParams = await params;
-      const userId = parseInt(resolvedParams.id, 10);
-      if (isNaN(userId)) return errorResponse(400, "ID tidak valid");
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-      const { level: userLevel, m_level_id: userLevelId, m_jabatan_id: userJabatanId } = req.user;
+const parseId = (id: string): number | null => {
+  const n = parseInt(id, 10);
+  return isNaN(n) || n <= 0 ? null : n;
+};
+
+// ──────────────────────────────────────────────────────────
+// PUT /api/users/[id] — Update User
+// ──────────────────────────────────────────────────────────
+export const PUT = withAuth(
+  async (req: AuthenticatedRequest, { params }: RouteProps) => {
+    try {
+      const { id: rawId } = await params;
+      const userId = parseId(rawId);
+      if (!userId)
+        return errorResponse(400, "ID tidak valid", "VALIDATION_ERROR");
+
+      const { level: userLevel } = req.user;
       const isKoordinator = userLevel.toLowerCase() === "koordinator";
 
-      const hasAccess = await checkUserAccess(userLevelId, userJabatanId, "/api/users", "PUT");
-      if (!hasAccess) {
-        return errorResponse(
-          403,
-          "Akses ditolak. Anda tidak memiliki izin untuk mengubah data.",
-          "FORBIDDEN",
-        );
-      }
-
-      const body = await req.json();
-      const data = updateUserSchema.parse(body);
-
-      // Fetch target user to check existance and current jabata_id
+      // Ambil target user
       const targetUser = await prisma.m_user.findUnique({
         where: { id: userId },
+        select: {
+          id: true,
+          username: true,
+          no_handphone: true,
+          m_jabatan_id: true,
+        },
       });
       if (!targetUser)
         return errorResponse(404, "Data tidak ditemukan", "NOT_FOUND");
 
-      // RBAC logic for Koordinator
+      const body = await req.json();
+      const data = updateUserSchema.parse(body);
+
+      // RBAC: Koordinator hanya boleh update user di jabatannya sendiri
       if (isKoordinator) {
         const currentUser = await prisma.m_user.findUnique({
           where: { id: req.user.userId },
@@ -85,7 +94,7 @@ export const PUT = withAuth(
           );
         }
 
-        // Prevent Koordinator from changing the user's jabatan
+        // Koordinator tidak boleh memindahkan user ke jabatan lain
         if (
           data.m_jabatan_id &&
           data.m_jabatan_id !== currentUser.m_jabatan_id
@@ -98,20 +107,21 @@ export const PUT = withAuth(
         }
       }
 
-      // Check unique constraints if username or no_handphone is updated
+      // Cek uniqueness username jika berubah
       if (data.username && data.username !== targetUser.username) {
-        const existingUsername = await prisma.m_user.findUnique({
+        const existing = await prisma.m_user.findUnique({
           where: { username: data.username },
         });
-        if (existingUsername)
+        if (existing)
           return errorResponse(409, "Username sudah digunakan", "CONFLICT");
       }
 
+      // Cek uniqueness no_handphone jika berubah
       if (data.no_handphone && data.no_handphone !== targetUser.no_handphone) {
-        const existingPhone = await prisma.m_user.findUnique({
+        const existing = await prisma.m_user.findUnique({
           where: { no_handphone: data.no_handphone },
         });
-        if (existingPhone)
+        if (existing)
           return errorResponse(
             409,
             "Nomor handphone sudah digunakan",
@@ -119,18 +129,17 @@ export const PUT = withAuth(
           );
       }
 
-      // Prepare update data
-      const updateData: any = { ...data };
+      // Hash password jika disertakan
+      const updateData: Record<string, unknown> = { ...data };
       if (data.password) {
-        const saltRounds = 10;
-        updateData.password = await bcrypt.hash(data.password, saltRounds);
+        updateData.password = await bcrypt.hash(data.password, 10);
       } else {
         delete updateData.password;
       }
 
-      const updatedUser = await prisma.m_user.update({
+      const updated = await prisma.m_user.update({
         where: { id: userId },
-        data: updateData,
+        data: updateData as any,
         select: {
           id: true,
           nama_lengkap: true,
@@ -140,42 +149,48 @@ export const PUT = withAuth(
         },
       });
 
-      return successResponse(updatedUser);
+      // Invalidate cache via Kafka — CDC akan sync ke ES secara otomatis
+      await produceCacheInvalidate(REDIS_KEYS.USERS.SINGLE(userId));
+      await produceCacheInvalidate(REDIS_KEYS.USERS.ALL_PREFIX);
+
+      return successResponse(updated, 200);
     } catch (error) {
       return handleApiError(error);
     }
   },
 );
 
+// ──────────────────────────────────────────────────────────
+// DELETE /api/users/[id] — Hapus User
+// ──────────────────────────────────────────────────────────
 export const DELETE = withAuth(
-  async (
-    req: AuthenticatedRequest,
-    { params }: { params: Promise<{ id: string }> },
-  ) => {
+  async (req: AuthenticatedRequest, { params }: RouteProps) => {
     try {
-      const resolvedParams = await params;
-      const userId = parseInt(resolvedParams.id, 10);
-      if (isNaN(userId)) return errorResponse(400, "ID tidak valid");
+      const { id: rawId } = await params;
+      const userId = parseId(rawId);
+      if (!userId)
+        return errorResponse(400, "ID tidak valid", "VALIDATION_ERROR");
 
-      const { level: userLevel, m_level_id: userLevelId, m_jabatan_id: userJabatanId } = req.user;
+      const { level: userLevel } = req.user;
       const isKoordinator = userLevel.toLowerCase() === "koordinator";
 
-      const hasAccess = await checkUserAccess(userLevelId, userJabatanId, "/api/users", "DELETE");
-      if (!hasAccess) {
+      // Cegah user menghapus dirinya sendiri
+      if (req.user.userId === userId) {
         return errorResponse(
           403,
-          "Akses ditolak. Anda tidak memiliki izin untuk menghapus data.",
+          "Tidak dapat menghapus akun Anda sendiri.",
           "FORBIDDEN",
         );
       }
 
       const targetUser = await prisma.m_user.findUnique({
         where: { id: userId },
+        select: { id: true, m_jabatan_id: true },
       });
       if (!targetUser)
         return errorResponse(404, "Data tidak ditemukan", "NOT_FOUND");
 
-      // RBAC logic for Koordinator
+      // RBAC: Koordinator hanya boleh hapus user di jabatannya sendiri
       if (isKoordinator) {
         const currentUser = await prisma.m_user.findUnique({
           where: { id: req.user.userId },
@@ -194,18 +209,13 @@ export const DELETE = withAuth(
         }
       }
 
-      // Prevent deleting oneself
-      if (req.user.userId === userId) {
-        return errorResponse(
-          403,
-          "Tidak dapat menghapus akun Anda sendiri.",
-          "FORBIDDEN",
-        );
-      }
-
       await prisma.m_user.delete({ where: { id: userId } });
 
-      return successResponse(null);
+      // Invalidate cache via Kafka
+      await produceCacheInvalidate(REDIS_KEYS.USERS.SINGLE(userId));
+      await produceCacheInvalidate(REDIS_KEYS.USERS.ALL_PREFIX);
+
+      return successResponse(null, 200);
     } catch (error) {
       return handleApiError(error);
     }

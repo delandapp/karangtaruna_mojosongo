@@ -9,36 +9,68 @@ import {
 import { handleApiError } from "@/lib/error-handler";
 import bcrypt from "bcrypt";
 import { z } from "zod";
-import { redis, getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import { REDIS_KEYS, DEFAULT_CACHE_TTL, ELASTIC_INDICES } from "@/lib/constants";
+import { getCache, setCache } from "@/lib/redis";
+import {
+  REDIS_KEYS,
+  DEFAULT_CACHE_TTL,
+  ELASTIC_INDICES,
+} from "@/lib/constants";
 import { searchDocuments } from "@/lib/elasticsearch";
+import { produceCacheInvalidate } from "@/lib/kafka";
 
-// Schema validation for query params filtering
-const querySchema = z.object({
-  page: z.coerce.number().min(1).default(1),
-  limit: z.coerce.number().min(1).max(100).default(10),
-  m_jabatan_id: zCommaSeparatedNumbers,
-  m_level_id: zCommaSeparatedNumbers,
+// ─── Validation Schemas ───────────────────────────────────────────────────────
+
+const listQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(10),
   search: z.string().optional(),
+  m_jabatan_id: z
+    .string()
+    .optional()
+    .transform((v) =>
+      v
+        ? v
+            .split(",")
+            .map(Number)
+            .filter((n) => !isNaN(n))
+        : undefined,
+    ),
+  m_level_id: z
+    .string()
+    .optional()
+    .transform((v) =>
+      v
+        ? v
+            .split(",")
+            .map(Number)
+            .filter((n) => !isNaN(n))
+        : undefined,
+    ),
+  dropdown: z.coerce.boolean().default(false),
 });
 
-// Schema for POST
 const createUserSchema = z.object({
   nama_lengkap: z.string().min(3).max(100),
   username: z
     .string()
     .min(4)
     .max(50)
-    .regex(/^[a-zA-Z0-9_]+$/),
+    .regex(
+      /^[a-zA-Z0-9_]+$/,
+      "Username hanya boleh huruf, angka, dan underscore",
+    ),
   password: z
     .string()
     .min(8)
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/),
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      "Password harus mengandung huruf besar, kecil, dan angka",
+    ),
   no_handphone: z
     .string()
     .min(10)
     .max(15)
-    .regex(/^[0-9]+$/),
+    .regex(/^[0-9]+$/, "Nomor handphone hanya boleh berisi angka"),
   rt: z.string().min(1).max(5),
   rw: z.string().min(1).max(5),
   alamat: z.string().optional(),
@@ -47,89 +79,38 @@ const createUserSchema = z.object({
   m_level_id: z.number().int().positive().optional(),
 });
 
-import { checkUserAccess } from "@/lib/rbac";
-import { buildCacheKeyPart, buildInFilter, zCommaSeparatedNumbers } from "@/utils/helpers/api-filter";
-
+// ──────────────────────────────────────────────────────────
+// GET /api/users — List dengan Pagination, Search & Filter
+// ──────────────────────────────────────────────────────────
 export const GET = withAuth(async (req: AuthenticatedRequest) => {
   try {
-    const { level: userLevel, m_level_id: userLevelId, m_jabatan_id: userJabatanId } = req.user;
-
-    const hasAccess = await checkUserAccess(userLevelId, userJabatanId, "/api/users", "GET");
-    if (!hasAccess) {
-      return errorResponse(403, "Akses ditolak. Anda tidak memiliki izin untuk melihat data anggota.", "FORBIDDEN");
-    }
-
+    const { level: userLevel } = req.user;
     const { searchParams } = new URL(req.url);
-    const dropdown = searchParams.get("dropdown") === "true";
+    const { page, limit, search, m_jabatan_id, m_level_id, dropdown } =
+      listQuerySchema.parse(Object.fromEntries(searchParams));
 
+    // ── Mode Dropdown (untuk select input) ───────────────────────────────
     if (dropdown) {
-      const dropdownCacheKey = `${REDIS_KEYS.USERS.ALL}:dropdown`;
-      const cachedDropdown = await getCache<{ data: any[] }>(dropdownCacheKey);
-      if (cachedDropdown) {
-        return successResponse(cachedDropdown.data, 200);
-      }
+      const cacheKey = `${REDIS_KEYS.USERS.ALL}:dropdown`;
+      const cached = await getCache<unknown[]>(cacheKey);
+      if (cached) return successResponse(cached, 200);
 
-      const usersResult = await prisma.m_user.findMany({
+      const users = await prisma.m_user.findMany({
         select: { id: true, nama_lengkap: true },
         orderBy: { nama_lengkap: "asc" },
       });
 
-      await setCache(dropdownCacheKey, { data: usersResult }, DEFAULT_CACHE_TTL);
-      return successResponse(usersResult, 200);
+      await setCache(cacheKey, users, DEFAULT_CACHE_TTL);
+      return successResponse(users, 200);
     }
 
-    const query = Object.fromEntries(searchParams.entries());
-    const validatedQuery = querySchema.parse(query);
-
-    const { page, limit, m_jabatan_id, m_level_id, search } = validatedQuery;
+    // ── Mode Paginated ────────────────────────────────────────────────────
     const skip = (page - 1) * limit;
+    const isFiltered = !!(search || m_jabatan_id?.length || m_level_id?.length);
 
-    const where: any = {};
-
-    // Apply filters utilizing reusable helper
-    if (m_jabatan_id && m_jabatan_id.length > 0) {
-      where.m_jabatan_id = buildInFilter(m_jabatan_id);
-    }
-    if (m_level_id && m_level_id.length > 0) {
-      where.m_level_id = buildInFilter(m_level_id);
-    }
-    if (search) {
-      const { hits } = await searchDocuments(
-        ELASTIC_INDICES.USERS,
-        {
-          multi_match: {
-            query: search,
-            fields: ["nama_lengkap", "username"],
-          },
-        },
-        { size: 5000 } // Ambil cukup banyak id untuk difilter oleh Prisma Security
-      );
-      
-      const ids = hits.map((h: any) => parseInt(h.id, 10)).filter((id: number) => !isNaN(id));
-      
-      if (ids.length === 0) {
-        return paginatedResponse([], { total: 0, page, limit, totalPages: 0 });
-      }
-      where.id = { in: ids };
-    }
-
-    // Generate deterministric Cache Key parameter mapping based on query combinations
-    const jabKey = buildCacheKeyPart(m_jabatan_id, "all");
-    const lvlKey = buildCacheKeyPart(m_level_id, "all");
-    const cacheKey = `${REDIS_KEYS.USERS.ALL}:page:${page}:limit:${limit}:jab:${jabKey}:lvl:${lvlKey}:search:${search || "none"}`;
-
-    // Try hitting cache first
-    const cachedData = !search ? await getCache<{ data: any[]; meta: any }>(cacheKey) : null;
-    if (cachedData) {
-      // Perhatikan Koordinator strict isolation di filter cache
-      // The Koordinator logic below should still work if isolated correctly by params,
-      // but to be safe, caching structure isolates them by their explicit jabata_id
-      return paginatedResponse(cachedData.data, cachedData.meta, 200);
-    }
-
-    // Koordinator can only see users of the same jabatan
+    // Koordinator hanya boleh melihat user di jabatannya sendiri
+    let forcedJabatanId: number | null = null;
     if (userLevel.toLowerCase() === "koordinator") {
-      // we need to get current user's jabatan
       const currentUser = await prisma.m_user.findUnique({
         where: { id: req.user.userId },
         select: { m_jabatan_id: true },
@@ -143,17 +124,72 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
         );
       }
 
-      // Pastikan koordinator hanya bisa memfilter jabatannya sendiri.
-      // Jika mereka mecoba memfilter jabatan lain, kembalikan kosong.
-      if (m_jabatan_id && m_jabatan_id.length > 0) {
-        const isRequestingOtherJabatan = !m_jabatan_id.includes(currentUser.m_jabatan_id);
-        if (isRequestingOtherJabatan) {
-           return successResponse({ data: [], total: 0, page, limit }); // return empty if trying to access other jabatan
-        }
+      // Jika koordinator mencoba filter jabatan lain → return kosong
+      if (
+        m_jabatan_id?.length &&
+        !m_jabatan_id.includes(currentUser.m_jabatan_id)
+      ) {
+        return paginatedResponse(
+          [],
+          { total: 0, page, limit, totalPages: 0 },
+          200,
+        );
       }
-      
-      // Override/Set filter ke jabatan koordinator itu sendiri
-      where.m_jabatan_id = currentUser.m_jabatan_id;
+
+      forcedJabatanId = currentUser.m_jabatan_id;
+    }
+
+    // Buat cache key yang mencerminkan semua parameter
+    const jabKey = m_jabatan_id?.join(",") ?? "all";
+    const lvlKey = m_level_id?.join(",") ?? "all";
+    const cacheKey = `${REDIS_KEYS.USERS.ALL}:page:${page}:limit:${limit}:jab:${jabKey}:lvl:${lvlKey}`;
+
+    // Cek cache hanya untuk query tanpa search
+    if (!search) {
+      const cached = await getCache<{ data: unknown[]; meta: unknown }>(
+        cacheKey,
+      );
+      if (cached)
+        return paginatedResponse(cached.data as any[], cached.meta as any, 200);
+    }
+
+    // ── Query via Elasticsearch untuk search, Prisma untuk list ──────────
+    let idFilter: number[] | undefined;
+
+    if (search) {
+      const { hits } = await searchDocuments(
+        ELASTIC_INDICES.USERS,
+        {
+          multi_match: {
+            query: search,
+            fields: ["nama_lengkap", "username"],
+            fuzziness: "AUTO",
+          },
+        },
+        { size: 5000 },
+      );
+
+      idFilter = hits
+        .map((h: any) => parseInt(h.id ?? h._id, 10))
+        .filter((id: number) => !isNaN(id));
+
+      if (idFilter.length === 0) {
+        return paginatedResponse(
+          [],
+          { total: 0, page, limit, totalPages: 0 },
+          200,
+        );
+      }
+    }
+
+    // Build Prisma where clause
+    const where: Record<string, unknown> = {};
+    if (idFilter) where.id = { in: idFilter };
+    if (forcedJabatanId) {
+      where.m_jabatan_id = forcedJabatanId;
+    } else {
+      if (m_jabatan_id?.length) where.m_jabatan_id = { in: m_jabatan_id };
+      if (m_level_id?.length) where.m_level_id = { in: m_level_id };
     }
 
     const [users, total] = await Promise.all([
@@ -176,7 +212,7 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
           createdAt: true,
           jabatan: { select: { nama_jabatan: true } },
           level: { select: { nama_level: true } },
-        }, // Omit password
+        },
       }),
       prisma.m_user.count({ where }),
     ]);
@@ -184,34 +220,29 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
     const totalPages = Math.ceil(total / limit);
     const meta = { total, page, limit, totalPages };
 
-    // Set to Cache
-    if (!search) { await setCache(cacheKey, { data: users, meta }, DEFAULT_CACHE_TTL); }
+    // Simpan ke cache jika bukan search
+    if (!search) {
+      await setCache(cacheKey, { data: users, meta }, DEFAULT_CACHE_TTL);
+    }
 
-    return paginatedResponse(users, meta);
+    return paginatedResponse(users, meta, 200);
   } catch (error) {
     return handleApiError(error);
   }
 });
 
+// ──────────────────────────────────────────────────────────
+// POST /api/users — Buat User Baru
+// ──────────────────────────────────────────────────────────
 export const POST = withAuth(async (req: AuthenticatedRequest) => {
   try {
-    const { level: userLevel, m_level_id: userLevelId, m_jabatan_id: userJabatanId } = req.user;
+    const { level: userLevel } = req.user;
     const isKoordinator = userLevel.toLowerCase() === "koordinator";
-
-    const hasAccess = await checkUserAccess(userLevelId, userJabatanId, "/api/users", "POST");
-
-    if (!hasAccess) {
-      return errorResponse(
-        403,
-        "Akses ditolak. Anda tidak memiliki izin untuk menambah data.",
-        "FORBIDDEN",
-      );
-    }
 
     const body = await req.json();
     const data = createUserSchema.parse(body);
 
-    // RBAC logic for Koordinator
+    // Koordinator hanya boleh membuat user di jabatannya sendiri
     if (isKoordinator) {
       const currentUser = await prisma.m_user.findUnique({
         where: { id: req.user.userId },
@@ -226,7 +257,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
         );
       }
 
-      // Koordinator MUST create user within their own jabatan
       if (data.m_jabatan_id !== currentUser.m_jabatan_id) {
         return errorResponse(
           403,
@@ -236,9 +266,10 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
       }
     }
 
-    // Check unique constraints manually to provide clear error messages
+    // Cek unique constraints dengan pesan error yang jelas
     const existingUsername = await prisma.m_user.findUnique({
       where: { username: data.username },
+      select: { id: true },
     });
     if (existingUsername) {
       return errorResponse(409, "Username sudah digunakan", "CONFLICT");
@@ -246,21 +277,17 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
 
     const existingPhone = await prisma.m_user.findUnique({
       where: { no_handphone: data.no_handphone },
+      select: { id: true },
     });
     if (existingPhone) {
       return errorResponse(409, "Nomor handphone sudah digunakan", "CONFLICT");
     }
 
     // Hash password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(data.password, saltRounds);
+    const hashedPassword = await bcrypt.hash(data.password, 10);
 
-    // Create user
     const newUser = await prisma.m_user.create({
-      data: {
-        ...data,
-        password: hashedPassword,
-      },
+      data: { ...data, password: hashedPassword },
       select: {
         id: true,
         nama_lengkap: true,
@@ -270,7 +297,9 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
       },
     });
 
-    // Invalidate All Users Cache Prefix on successful creation
+    // Invalidate list cache — CDC akan sync ke ES secara otomatis
+    await produceCacheInvalidate(REDIS_KEYS.USERS.ALL_PREFIX);
+
     return successResponse(newUser, 201);
   } catch (error) {
     return handleApiError(error);

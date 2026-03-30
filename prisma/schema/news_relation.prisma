@@ -1,0 +1,62 @@
+// =============================================================================
+// NEWS RELATION — Tabel pivot & relasi interaksi user terhadap berita
+// =============================================================================
+
+// Enum Tipe Interaksi User terhadap Berita
+enum TipeInteraksi {
+  LIKE
+  DISLIKE
+
+  @@map("tipe_interaksi")
+}
+
+// -----------------------------------------------------------------------------
+// Tabel Pivot: Berita ↔ Tag (Many-to-Many)
+// -----------------------------------------------------------------------------
+model r_berita_tag {
+  id          Int      @id @default(autoincrement())
+  c_berita_id Int
+  m_tag_id    Int
+
+  dibuat_pada DateTime @default(now())
+
+  // Relations
+  c_berita c_berita @relation(fields: [c_berita_id], references: [id], onDelete: Cascade)
+  m_tag    m_tag    @relation(fields: [m_tag_id], references: [id], onDelete: Cascade)
+
+  // 1 berita tidak boleh punya tag yang sama lebih dari sekali
+  @@unique([c_berita_id, m_tag_id])
+  @@index([c_berita_id])
+  @@index([m_tag_id])
+  @@map("r_berita_tag")
+}
+
+// -----------------------------------------------------------------------------
+// Tabel Relasi: Log Interaksi User terhadap Berita (Like / Dislike)
+// Mendukung user login (m_user_id) maupun guest (guest_identifier)
+// -----------------------------------------------------------------------------
+model r_user_interaksi_berita {
+  id          Int           @id @default(autoincrement())
+  c_berita_id Int
+
+  // Salah satu wajib terisi — user login ATAU guest
+  m_user_id        Int?           // Diisi jika user sedang login
+  guest_identifier String?        @db.VarChar(200) // Hash fingerprint+IP untuk guest
+
+  tipe TipeInteraksi
+
+  dibuat_pada     DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
+
+  // Relations
+  c_berita c_berita  @relation(fields: [c_berita_id], references: [id], onDelete: Cascade)
+  m_user   m_user?   @relation(fields: [m_user_id], references: [id], onDelete: SetNull)
+
+  // Constraint: 1 user login hanya boleh 1 interaksi per berita
+  @@unique([c_berita_id, m_user_id])
+  // Constraint: 1 guest hanya boleh 1 interaksi per berita
+  @@unique([c_berita_id, guest_identifier])
+  @@index([c_berita_id])
+  @@index([m_user_id])
+  @@map("r_user_interaksi_berita")
+}

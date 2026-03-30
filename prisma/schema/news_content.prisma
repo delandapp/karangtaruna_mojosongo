@@ -1,0 +1,168 @@
+// =============================================================================
+// NEWS CONTENT — Schema untuk konten berita utama, gambar inline, dan cover
+// =============================================================================
+
+// Enum Status Publikasi Berita
+enum StatusBerita {
+  DRAFT       // Sedang ditulis, belum dikirim review
+  REVIEW      // Menunggu persetujuan editor
+  SCHEDULED   // Dijadwalkan tayang pada waktu tertentu
+  PUBLISHED   // Sudah tayang publik
+  ARCHIVED    // Diarsipkan, tidak tampil di listing
+  REJECTED    // Ditolak editor, perlu revisi
+
+  @@map("status_berita")
+}
+
+// Enum Tipe Cover — mendukung berbagai rasio aspek untuk multi-platform
+enum TipeCover {
+  LANDSCAPE_16_9  // 1920x1080 — Hero/Banner utama halaman berita
+  LANDSCAPE_4_3   // 800x600   — Card listing berita
+  SQUARE_1_1      // 400x400   — Thumbnail sosial media
+  PORTRAIT_9_16   // 1080x1920 — Instagram Story / Reels
+
+  @@map("tipe_cover")
+}
+
+// =============================================================================
+// c_berita — Tabel utama konten berita
+// =============================================================================
+model c_berita {
+  id        Int    @id @default(autoincrement())
+  judul     String @db.VarChar(300)
+  sub_judul String? @db.VarChar(500)
+  penulis   String  @db.VarChar(150)
+  editor    String? @db.VarChar(150)
+
+  // Konten disimpan dalam 3 format:
+  // - JSON  → untuk editor rich-text (Tiptap/Editor.js)
+  // - HTML  → untuk SSR & SEO rendering
+  // - Plain → untuk snippet & Elasticsearch indexing
+  konten_json      Json
+  konten_html      String @db.Text
+  konten_plaintext String @db.Text
+
+  status           StatusBerita @default(DRAFT)
+  is_featured      Boolean      @default(false)
+  is_breaking_news Boolean      @default(false)
+  scheduled_at     DateTime?
+  published_at     DateTime?
+
+  // -------------------------------------------------------------------------
+  // SEO
+  // -------------------------------------------------------------------------
+  seo_title         String?  @db.VarChar(70)   // Maks 70 karakter (standar Google)
+  seo_description   String?  @db.VarChar(160)  // Maks 160 karakter
+  seo_slug          String   @unique @db.VarChar(300)
+  seo_canonical_url String?  @db.VarChar(500)
+  seo_og_title      String?  @db.VarChar(200)
+  seo_og_description String? @db.VarChar(300)
+  seo_og_image_url  String?  @db.VarChar(500)  // S3 / CDN URL
+  seo_twitter_card  String?  @db.VarChar(20)   // "summary_large_image"
+  seo_keywords      String[]                    // Array kata kunci
+  seo_robots        String?  @db.VarChar(100)  // "index,follow" | "noindex"
+  seo_schema_json   Json?                       // JSON-LD structured data
+
+  // -------------------------------------------------------------------------
+  // Counter Agregasi — Denormalized untuk performa tinggi tanpa JOIN
+  // -------------------------------------------------------------------------
+  total_views    BigInt @default(0)
+  total_likes    Int    @default(0)
+  total_dislikes Int    @default(0)
+  total_komentar Int    @default(0)
+  total_share    Int    @default(0)
+
+  // -------------------------------------------------------------------------
+  // Skor Trending — dihitung oleh background worker (lihat TASK 2.3)
+  // Formula: (views * 0.3 + likes * 0.5 + share * 0.2) * decay_factor
+  // -------------------------------------------------------------------------
+  trending_score      Float     @default(0)
+  trending_updated_at DateTime?
+
+  // -------------------------------------------------------------------------
+  // Foreign Keys
+  // -------------------------------------------------------------------------
+  m_kategori_berita_id Int
+  m_user_id            Int? // Penulis — referensi ke m_user (tabel existing)
+
+  dibuat_pada     DateTime  @default(now())
+  diperbarui_pada DateTime  @updatedAt
+  dihapus_pada    DateTime? // Soft delete — null = aktif
+
+  // -------------------------------------------------------------------------
+  // Relations
+  // -------------------------------------------------------------------------
+  m_kategori_berita       m_kategori_berita         @relation(fields: [m_kategori_berita_id], references: [id])
+  m_user                  m_user?                   @relation("berita_ditulis_oleh", fields: [m_user_id], references: [id], onDelete: SetNull)
+  c_berita_image          c_berita_image[]
+  c_berita_cover          c_berita_cover[]
+  c_komentar_berita       c_komentar_berita[]
+  r_berita_tag            r_berita_tag[]
+  r_user_interaksi_berita r_user_interaksi_berita[]
+
+  // -------------------------------------------------------------------------
+  // Index — dioptimasi untuk query listing, trending, dan detail
+  // -------------------------------------------------------------------------
+  @@index([status, published_at(sort: Desc)])
+  @@index([m_kategori_berita_id, status, published_at(sort: Desc)])
+  @@index([trending_score(sort: Desc)])
+  @@index([total_views(sort: Desc)])
+  @@index([seo_slug])
+  @@index([is_featured, status])
+  @@index([is_breaking_news, status])
+  @@index([m_user_id])
+  @@index([dihapus_pada])
+  @@map("c_berita")
+}
+
+// =============================================================================
+// c_berita_image — Gambar inline di dalam konten berita
+// =============================================================================
+model c_berita_image {
+  id          Int     @id @default(autoincrement())
+  c_berita_id Int
+  s3_key      String  @db.VarChar(500) // Object key di bucket S3
+  s3_url      String  @db.VarChar(500) // Public URL / CDN URL
+  alt_text    String? @db.VarChar(300) // Teks alternatif untuk aksesibilitas & SEO
+  caption     String? @db.Text
+  mime_type   String  @db.VarChar(50)  // "image/jpeg", "image/webp", dll
+  width       Int?
+  height      Int?
+  ukuran_byte BigInt?
+  urutan      Int     @default(0)      // Urutan tampil dalam konten
+
+  dibuat_pada DateTime @default(now())
+
+  // Relations
+  c_berita c_berita @relation(fields: [c_berita_id], references: [id], onDelete: Cascade)
+
+  @@index([c_berita_id])
+  @@map("c_berita_image")
+}
+
+// =============================================================================
+// c_berita_cover — Cover / thumbnail berita dalam berbagai rasio aspek
+// =============================================================================
+model c_berita_cover {
+  id          Int       @id @default(autoincrement())
+  c_berita_id Int
+  tipe        TipeCover
+  s3_key      String    @db.VarChar(500)
+  s3_url      String    @db.VarChar(500)
+  alt_text    String?   @db.VarChar(300)
+  mime_type   String    @db.VarChar(50)
+  width       Int
+  height      Int
+  ukuran_byte BigInt?
+  is_primary  Boolean   @default(false) // Cover utama — digunakan untuk og:image SEO
+
+  dibuat_pada DateTime @default(now())
+
+  // Relations
+  c_berita c_berita @relation(fields: [c_berita_id], references: [id], onDelete: Cascade)
+
+  // Constraint: 1 berita hanya boleh memiliki 1 cover per tipe rasio
+  @@unique([c_berita_id, tipe])
+  @@index([c_berita_id])
+  @@map("c_berita_cover")
+}

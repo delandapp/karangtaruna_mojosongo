@@ -74,7 +74,7 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: "desc" },
+        orderBy: { dibuat_pada: "desc" },
       }),
       prisma.m_bidang_brand.count({ where }),
     ]);

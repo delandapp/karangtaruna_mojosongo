@@ -135,7 +135,7 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
         },
         skip,
         take: limit,
-        orderBy: { createdAt: "desc" },
+        orderBy: { dibuat_pada: "desc" },
       }),
       prisma.m_brand.count({ where }),
     ]);

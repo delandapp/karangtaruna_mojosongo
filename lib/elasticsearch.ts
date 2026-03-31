@@ -91,6 +91,17 @@ export async function ensureIndex(
 }
 
 /**
+ * Helper to serialize BigInts to Number to avoid Elasticsearch serialization errors
+ */
+function serializeBigInt<T>(obj: T): T {
+  return JSON.parse(
+    JSON.stringify(obj, (_, value) =>
+      typeof value === "bigint" ? Number(value) : value,
+    ),
+  );
+}
+
+/**
  * Index (upsert) satu dokumen ke Elasticsearch
  */
 export async function indexDocument<T extends Record<string, unknown>>(
@@ -99,10 +110,12 @@ export async function indexDocument<T extends Record<string, unknown>>(
   document: T,
 ): Promise<void> {
   try {
+    const safeDocument = serializeBigInt(document);
+
     await elasticClient.index({
       index: indexName,
       id: String(id),
-      body: document,
+      body: safeDocument,
       refresh: "wait_for", // Langsung searchable setelah index
     });
   } catch (error) {
@@ -152,13 +165,26 @@ export async function searchDocuments<T = unknown>(
   try {
     const { from = 0, size = 10, sort, _source } = options;
 
+    // Tambahkan unmapped_type ke setiap sort field agar tidak error
+    // saat index kosong atau field belum di-mapping
+    const safeSortFields = sort?.map((sortItem) => {
+      const entries = Object.entries(sortItem);
+      const safeEntries = entries.map(([field, value]) => {
+        if (typeof value === "object" && value !== null && !("unmapped_type" in value)) {
+          return [field, { ...value, unmapped_type: "date" }];
+        }
+        return [field, value];
+      });
+      return Object.fromEntries(safeEntries);
+    });
+
     const response = await elasticClient.search({
       index: indexName,
       body: {
         query,
         from,
         size,
-        ...(sort ? { sort } : {}),
+        ...(safeSortFields ? { sort: safeSortFields } : {}),
         ...(_source ? { _source } : {}),
       },
     });
@@ -190,7 +216,9 @@ export async function bulkIndex<T extends Record<string, unknown>>(
   if (documents.length === 0) return;
 
   try {
-    const body = documents.flatMap(({ id, doc }) => [
+    const safeDocuments = serializeBigInt(documents);
+
+    const body = safeDocuments.flatMap(({ id, doc }) => [
       { index: { _index: indexName, _id: String(id) } },
       doc,
     ]);

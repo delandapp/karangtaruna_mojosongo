@@ -24,6 +24,15 @@ dotenv.config({ path: ".env.development" });
 import fs from "fs";
 import path from "path";
 
+import { indexDocument } from "../lib/elasticsearch";
+import { produceCacheInvalidate } from "../lib/kafka";
+import { ELASTIC_INDICES, REDIS_KEYS } from "../lib/constants/key";
+
+// Helper delay
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 // ─── Konfigurasi ──────────────────────────────────────────────────────────────
 
 // id_level_wilayah: 2 = Kabupaten/Kota → menghasilkan data kecamatan di kota tsb
@@ -238,7 +247,7 @@ async function main() {
 
             if (upserted) {
               // Check if it was an update or create
-              const isNew = upserted.createdAt.getTime() === upserted.updatedAt.getTime();
+              const isNew = upserted.dibuat_pada.getTime() === upserted.diperbarui_pada.getTime();
               if (isNew) {
                 log("SUCCESS", `  Baru — [${kode}] ${nama} (id=${upserted.id})`);
                 detail.baru++;
@@ -248,6 +257,9 @@ async function main() {
                 detail.update++;
                 report.kec_update++;
               }
+              
+              // Sync ke ES
+              await indexDocument(ELASTIC_INDICES.KECAMATAN, String(upserted.id), upserted);
             }
           } catch (err: any) {
             const alasan = err instanceof Error ? err.message : String(err);
@@ -270,6 +282,15 @@ async function main() {
     process.exitCode = 1;
   } finally {
     cetakLaporan(report);
+
+    try {
+      log("INFO", "Invalidasi Cache Redis via Kafka...");
+      await produceCacheInvalidate(REDIS_KEYS.KECAMATAN.ALL_PREFIX);
+      await delay(500); 
+    } catch (e) {
+      log("ERROR", "Gagal me-request invalidasi Cache.");
+    }
+
     await prisma.$disconnect();
     await pool.end();
   }

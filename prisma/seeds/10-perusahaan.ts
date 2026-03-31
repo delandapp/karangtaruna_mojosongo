@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import fs from "fs";
 import path from "path";
+import { indexDocument } from "../../lib/elasticsearch";
+import { ELASTIC_INDICES } from "../../lib/constants/key";
 
 export async function seedPerusahaan(prisma: PrismaClient) {
     console.log("Seeding perusahaan...");
@@ -67,7 +69,7 @@ export async function seedPerusahaan(prisma: PrismaClient) {
             }
         }
 
-        await prisma.m_perusahaan.upsert({
+        const createdItem = await prisma.m_perusahaan.upsert({
             where: { id: item.id },
             update: {
                 m_sektor_industri_id: item.m_sektor_industri_id,
@@ -113,6 +115,7 @@ export async function seedPerusahaan(prisma: PrismaClient) {
                 logo_url: item.logo_url
             }
         });
+        await indexDocument(ELASTIC_INDICES.PERUSAHAAN, createdItem.id.toString(), createdItem);
     }
 
     // Update sequence to avoid conflicts on future inserts

@@ -41,7 +41,7 @@ interface KategoriBrandData {
   id: number;
   nama_kategori: string;
   deskripsi_kategori?: string;
-  createdAt: string;
+  dibuat_pada: string;
 }
 
 export function KategoriBrandTable() {

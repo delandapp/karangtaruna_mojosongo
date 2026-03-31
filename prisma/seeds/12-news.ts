@@ -1,4 +1,6 @@
 import { PrismaClient } from "@prisma/client";
+import { indexDocument } from "../../lib/elasticsearch";
+import { ELASTIC_INDICES } from "../../lib/constants/key";
 
 type KategoriSeed = {
   nama_kategori: string;
@@ -85,10 +87,18 @@ export async function seedNews(prisma: PrismaClient) {
   const kategoriBySlug = new Map<string, number>();
   for (const kat of KATEGORI_DATA) {
     const result = await prisma.m_kategori_berita.upsert({
-      where: { slug_kategori: kat.slug_kategori },
-      create: kat,
-      update: kat,
+      where: { slug: kat.slug_kategori },
+      create: {
+        nama: kat.nama_kategori,
+        slug: kat.slug_kategori,
+        deskripsi: kat.deskripsi || null,
+      },
+      update: {
+        nama: kat.nama_kategori,
+        deskripsi: kat.deskripsi || null,
+      },
     });
+    await indexDocument(ELASTIC_INDICES.KATEGORI_BERITA, result.id.toString(), result);
     kategoriBySlug.set(kat.slug_kategori, result.id);
     console.log(`  ✅ kategori: ${kat.nama_kategori} (${result.id})`);
   }
@@ -228,32 +238,67 @@ export async function seedNews(prisma: PrismaClient) {
     }
 
     const kontenHtml = toHtmlParagraphs(b.paragraphs);
-    await prisma.berita.upsert({
-      where: { slug: b.slug },
+    const statusMap: Record<string, any> = {
+      terbit: "PUBLISHED",
+      draft: "DRAFT",
+      review: "REVIEW",
+      arsip: "ARCHIVED",
+    };
+
+    const mappedStatus = statusMap[b.status] || "DRAFT";
+
+    const item = await prisma.c_berita.upsert({
+      where: { seo_slug: b.slug },
       create: {
-        penulis_id: penulis.id,
+        m_user_id: penulis.id,
+        penulis: penulis.username,
         m_kategori_berita_id: kategoriId,
         judul: b.judul,
-        slug: b.slug,
-        konten: kontenHtml,
-        thumbnail_url: b.thumbnailUrl,
-        status: b.status,
-        jumlah_tayang: b.jumlah_tayang,
-        diterbitkan_pada: b.publishedAt,
-        event_id: null,
+        seo_slug: b.slug,
+        konten_html: kontenHtml,
+        konten_plaintext: b.paragraphs.join("\n"),
+        konten_json: {},
+        status: mappedStatus as any,
+        total_views: b.jumlah_tayang,
+        published_at: b.publishedAt,
       },
       update: {
-        penulis_id: penulis.id,
+        m_user_id: penulis.id,
+        penulis: penulis.username,
         m_kategori_berita_id: kategoriId,
         judul: b.judul,
-        konten: kontenHtml,
-        thumbnail_url: b.thumbnailUrl,
-        status: b.status,
-        jumlah_tayang: b.jumlah_tayang,
-        diterbitkan_pada: b.publishedAt,
-        event_id: null,
+        konten_html: kontenHtml,
+        konten_plaintext: b.paragraphs.join("\n"),
+        status: mappedStatus as any,
+        total_views: b.jumlah_tayang,
+        published_at: b.publishedAt,
       },
     });
+
+    if (b.thumbnailUrl) {
+      await prisma.c_berita_cover.upsert({
+        where: {
+          c_berita_id_tipe: {
+            c_berita_id: item.id,
+            tipe: "LANDSCAPE_16_9",
+          },
+        },
+        create: {
+          c_berita_id: item.id,
+          tipe: "LANDSCAPE_16_9",
+          s3_key: `seed-cover-${b.slug}`,
+          s3_url: b.thumbnailUrl,
+          mime_type: "image/jpeg",
+          width: 800,
+          height: 450,
+          is_primary: true,
+        },
+        update: {
+          s3_url: b.thumbnailUrl,
+        },
+      });
+    }
+    await indexDocument(ELASTIC_INDICES.BERITA, item.id.toString(), item);
 
     console.log(`  ✅ berita: ${b.judul}`);
   }

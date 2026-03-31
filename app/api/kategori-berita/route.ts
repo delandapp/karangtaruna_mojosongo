@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
         { term: { is_aktif: true } },
         {
           size: 1000,
-          sort: [{ urutan: { order: "asc" } }, { nama: { order: "asc" } }],
+          sort: [{ urutan: { order: "asc" } }, { "nama.keyword": { order: "asc" } }],
           _source: ["id", "nama", "slug", "warna_hex", "icon_url"],
         },
       );
@@ -89,7 +89,7 @@ export async function GET(req: NextRequest) {
       {
         from: skip,
         size: limit,
-        sort: [{ urutan: { order: "asc" } }, { nama: { order: "asc" } }],
+        sort: [{ urutan: { order: "asc" } }, { "nama.keyword": { order: "asc" } }],
       },
     );
 

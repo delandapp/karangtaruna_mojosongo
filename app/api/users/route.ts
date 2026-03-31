@@ -197,7 +197,7 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: "desc" },
+        orderBy: { dibuat_pada: "desc" },
         select: {
           id: true,
           nama_lengkap: true,
@@ -209,7 +209,7 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
           jenis_kelamin: true,
           m_jabatan_id: true,
           m_level_id: true,
-          createdAt: true,
+          dibuat_pada: true,
           jabatan: { select: { nama_jabatan: true } },
           level: { select: { nama_level: true } },
         },

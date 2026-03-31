@@ -5,8 +5,8 @@ model m_level {
   users           m_user[]
   hak_akses_rules m_hak_akses_rule[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  dibuat_pada DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
 }
 
 model m_jabatan {
@@ -18,8 +18,8 @@ model m_jabatan {
   hak_akses_rules m_hak_akses_rule[]
   anggota_panitia anggota_panitia[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  dibuat_pada DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
 }
 
 model m_user {
@@ -75,8 +75,8 @@ model m_user {
   komentar_berita      c_komentar_berita[]
   interaksi_berita     r_user_interaksi_berita[]
 
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  dibuat_pada   DateTime      @default(now())
+  diperbarui_pada   DateTime      @updatedAt
   mEproposals m_eproposal[]
 
   // Optimasi Index untuk pencarian relasi agar lebih cepat saat JOIN

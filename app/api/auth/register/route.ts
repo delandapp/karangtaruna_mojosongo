@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
         nama_lengkap: true,
         username: true,
         no_handphone: true,
-        createdAt: true,
+        dibuat_pada: true,
         level: { select: { nama_level: true } },
         jabatan: { select: { nama_jabatan: true } },
       },

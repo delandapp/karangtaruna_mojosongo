@@ -44,7 +44,7 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
       const { hits } = await searchDocuments(ELASTIC_INDICES.KOTA, esQuery, {
         size: 10000,
         _source: ["id", "kode_wilayah", "nama", "m_provinsi_id"],
-        sort: [{ nama: { order: "asc" } }],
+        sort: [{ "nama.keyword": { order: "asc" } }],
       });
 
       await setCache(cacheKey, hits, DEFAULT_CACHE_TTL);
@@ -95,7 +95,7 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
       {
         from: skip,
         size: limit,
-        sort: [{ nama: { order: "asc" } }],
+        sort: [{ "nama.keyword": { order: "asc" } }],
       },
     );
 

@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import fs from "fs";
 import path from "path";
+import { indexDocument } from "../../lib/elasticsearch";
+import { ELASTIC_INDICES } from "../../lib/constants/key";
 
 export async function seedSektorIndustri(prisma: PrismaClient) {
   console.log("Seeding sektor industri...");
@@ -28,7 +30,7 @@ export async function seedSektorIndustri(prisma: PrismaClient) {
   }
 
   for (const item of sectors) {
-    await prisma.m_sektor_industri.upsert({
+    const createdItem = await prisma.m_sektor_industri.upsert({
       where: { nama_sektor: item.nama_sektor },
       update: {
         deskripsi_sektor: item.deskripsi_sektor,
@@ -38,5 +40,6 @@ export async function seedSektorIndustri(prisma: PrismaClient) {
         deskripsi_sektor: item.deskripsi_sektor,
       },
     });
+    await indexDocument(ELASTIC_INDICES.SEKTOR_INDUSTRI, createdItem.id.toString(), createdItem);
   }
 }

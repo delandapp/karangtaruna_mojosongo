@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import fs from "fs";
 import path from "path";
+import { indexDocument } from "../../lib/elasticsearch";
+import { ELASTIC_INDICES } from "../../lib/constants/key";
 
 interface KategoriBrandJson {
   company_categories: {
@@ -32,7 +34,7 @@ export async function seedKategoriBrand(prisma: PrismaClient) {
   for (const item of data.company_categories) {
     if (!item.category) continue;
 
-    await prisma.m_kategori_brand.upsert({
+    const createdItem = await prisma.m_kategori_brand.upsert({
       where: { nama_kategori: item.category },
       update: {},
       create: {
@@ -40,6 +42,7 @@ export async function seedKategoriBrand(prisma: PrismaClient) {
         deskripsi_kategori: item.description || null,
       },
     });
+    await indexDocument(ELASTIC_INDICES.KATEGORI_BRAND, createdItem.id.toString(), createdItem);
     count++;
   }
 

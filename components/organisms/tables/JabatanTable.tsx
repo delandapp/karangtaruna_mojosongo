@@ -41,7 +41,7 @@ interface JabatanData {
   id: number;
   nama_jabatan: string;
   deskripsi_jabatan?: string;
-  createdAt: string;
+  dibuat_pada: string;
 }
 
 export function JabatanTable() {

@@ -26,6 +26,14 @@ import path from "path";
 import readline from "readline";
 import dotenv from "dotenv";
 
+import { bulkIndex } from "../lib/elasticsearch";
+import { produceCacheInvalidate } from "../lib/kafka";
+import { ELASTIC_INDICES, REDIS_KEYS } from "../lib/constants/key";
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 dotenv.config({ path: ".env.development" });
 
 // ─── Konfigurasi ──────────────────────────────────────────────────────────────
@@ -317,6 +325,9 @@ async function main() {
     log("INFO", "Mulai proses insert kelurahan berdasarkan nama…\n");
 
     let processed = 0;
+    // Batch for ES indexing
+    let esBatch: Array<{ id: string | number; doc: any }> = [];
+
     for (const desa of desaCsv) {
       processed++;
       if (processed % 2000 === 0) {
@@ -324,6 +335,11 @@ async function main() {
           "INFO",
           `Progress: ${processed.toLocaleString()}/${desaCsv.length.toLocaleString()} — ✅${report.berhasil} ⚠️${report.duplikat} ❌${report.gagal} 🔍${report.kecamatan_tidak_ditemukan}`
         );
+        // Execute bulk index every 2000
+        if (esBatch.length > 0) {
+           await bulkIndex(ELASTIC_INDICES.KELURAHAN, esBatch);
+           esBatch = [];
+        }
       }
 
       const desaNama = desa.name.trim();
@@ -416,13 +432,16 @@ async function main() {
           // Insert dengan kode baru
         }
 
-        await prisma.m_kelurahan.create({
+        const created = await prisma.m_kelurahan.create({
           data: {
             kode_wilayah: kodeKelurahan,
             nama: desaNama,
             m_kecamatan_id: dbKecId,
           },
         });
+
+        // Add to ES Batch
+        esBatch.push({ id: created.id.toString(), doc: created });
 
         report.berhasil++;
         if (report.berhasil <= 5 || report.berhasil % 1000 === 0) {
@@ -437,12 +456,25 @@ async function main() {
         report.detail_gagal.push({ nama: desaNama, path: pathStr, alasan });
       }
     }
+    // Process remaining ES batch
+    if (esBatch.length > 0) {
+       await bulkIndex(ELASTIC_INDICES.KELURAHAN, esBatch);
+    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     log("ERROR", `Fatal error: ${msg}`);
     process.exitCode = 1;
   } finally {
     cetakLaporan(report);
+
+    try {
+      log("INFO", "Invalidasi Cache Redis via Kafka...");
+      await produceCacheInvalidate(REDIS_KEYS.KELURAHAN.ALL_PREFIX);
+      await delay(500); 
+    } catch (e) {
+      log("ERROR", "Gagal me-request invalidasi Cache.");
+    }
+
     await prisma.$disconnect();
     await pool.end();
   }

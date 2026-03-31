@@ -5,8 +5,8 @@ model m_kategori_brand {
 
   brands m_brand[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  dibuat_pada DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
 }
 
 model m_bidang_brand {
@@ -16,8 +16,8 @@ model m_bidang_brand {
 
   brands m_brand[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  dibuat_pada DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
 }
 
 model m_brand {
@@ -38,8 +38,8 @@ model m_brand {
   kategori m_kategori_brand? @relation(fields: [m_kategori_brand_id], references: [id], onDelete: SetNull)
   Sponsor  m_sponsor[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  dibuat_pada DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
 
   // Optimasi Index
   @@index([m_bidang_brand_id])

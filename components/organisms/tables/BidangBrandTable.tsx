@@ -41,7 +41,7 @@ interface BidangBrandData {
   id: number;
   nama_bidang: string;
   deskripsi_bidang?: string;
-  createdAt: string;
+  dibuat_pada: string;
 }
 
 export function BidangBrandTable() {

@@ -45,7 +45,7 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
         { match_all: {} },
         {
           size: 10000,
-          sort: [{ nama: { order: "asc" } }],
+          sort: [{ "nama.keyword": { order: "asc" } }],
           _source: ["id", "nama"],
         },
       );
@@ -83,7 +83,7 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
       {
         from: skip,
         size: limit,
-        sort: [{ nama: { order: "asc" } }],
+        sort: [{ "nama.keyword": { order: "asc" } }],
       },
     );
 

@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import fs from "fs";
 import path from "path";
+import { indexDocument } from "../../lib/elasticsearch";
+import { ELASTIC_INDICES } from "../../lib/constants/key";
 
 export async function seedKategoriSponsor(prisma: PrismaClient) {
   console.log("Seeding kategori sponsor (company categories)...");
@@ -27,7 +29,7 @@ export async function seedKategoriSponsor(prisma: PrismaClient) {
   }
 
   for (const item of parsedData) {
-    await prisma.m_kategori_sponsor.upsert({
+    const createdItem = await prisma.m_kategori_sponsor.upsert({
       where: { nama_kategori: item.nama_kategori },
       update: {
         deskripsi_kategori: item.deskripsi_kategori,
@@ -37,5 +39,6 @@ export async function seedKategoriSponsor(prisma: PrismaClient) {
         deskripsi_kategori: item.deskripsi_kategori,
       },
     });
+    await indexDocument(ELASTIC_INDICES.KATEGORI_SPONSOR, createdItem.id.toString(), createdItem);
   }
 }

@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import fs from "fs";
 import path from "path";
+import { indexDocument } from "../../lib/elasticsearch";
+import { ELASTIC_INDICES } from "../../lib/constants/key";
 
 interface BidangBrandJson {
   sponsorship_categories: {
@@ -32,7 +34,7 @@ export async function seedBidangBrand(prisma: PrismaClient) {
   for (const item of data.sponsorship_categories) {
     if (!item.category) continue;
 
-    await prisma.m_bidang_brand.upsert({
+    const createdItem = await prisma.m_bidang_brand.upsert({
       where: { nama_bidang: item.category },
       update: {},
       create: {
@@ -40,6 +42,7 @@ export async function seedBidangBrand(prisma: PrismaClient) {
         deskripsi_bidang: item.description || null,
       },
     });
+    await indexDocument(ELASTIC_INDICES.BIDANG_BRAND, createdItem.id.toString(), createdItem);
     count++;
   }
 

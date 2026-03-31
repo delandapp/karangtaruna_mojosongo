@@ -1,4 +1,6 @@
 import { PrismaClient } from "@prisma/client";
+import { indexDocument } from "../../lib/elasticsearch";
+import { ELASTIC_INDICES } from "../../lib/constants/key";
 
 export async function seedOrganisasi(prisma: PrismaClient) {
   console.log("Seeding organisasi...");
@@ -54,7 +56,7 @@ export async function seedOrganisasi(prisma: PrismaClient) {
   ];
 
   for (const org of orgs) {
-    await prisma.m_organisasi.upsert({
+    const createdItem = await prisma.m_organisasi.upsert({
       where: { id: org.id },
       update: {
         nama_org: org.nama_org,
@@ -80,6 +82,7 @@ export async function seedOrganisasi(prisma: PrismaClient) {
         kode_wilayah_induk_kelurahan: kelurahan.kode_wilayah,
       },
     });
+    await indexDocument(ELASTIC_INDICES.ORGANISASI, createdItem.id.toString(), createdItem);
   }
 
   // Reset sequence

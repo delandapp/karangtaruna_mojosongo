@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
+import { indexDocument } from "../../lib/elasticsearch";
+import { ELASTIC_INDICES } from "../../lib/constants/key";
 
 export async function seedUsers(prisma: PrismaClient) {
   console.log("Seeding users...");
@@ -80,7 +82,7 @@ export async function seedUsers(prisma: PrismaClient) {
     const uniqueHash = (hash * phoneCounter++).toString().substring(0, 8);
     const fakePhone = "08" + uniqueHash.padStart(9, "0");
     
-    await prisma.m_user.upsert({
+    const item = await prisma.m_user.upsert({
       where: { username },
       update: {
         no_handphone: fakePhone, // Update the fake phone just in case it had conflict previously
@@ -99,6 +101,7 @@ export async function seedUsers(prisma: PrismaClient) {
         m_jabatan_id: jabatanId,
       },
     });
+    await indexDocument(ELASTIC_INDICES.USERS, item.id.toString(), item);
   };
 
   // ── 1. Superuser (sistem) ─────────────────────────────────────────────────

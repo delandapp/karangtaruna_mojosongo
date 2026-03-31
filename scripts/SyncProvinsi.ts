@@ -17,6 +17,10 @@ dotenv.config({ path: ".env.development" });
 import fs from "fs";
 import path from "path";
 
+import { indexDocument } from "../lib/elasticsearch";
+import { produceCacheInvalidate } from "../lib/kafka";
+import { ELASTIC_INDICES, REDIS_KEYS } from "../lib/constants/key";
+
 // ─── Tipe data ─────────────────────────────────────────────────────────────────
 
 interface KemendikbudProvinsiItem {
@@ -160,6 +164,10 @@ async function main() {
           data: { kode_wilayah: kode, nama },
         });
         log("SUCCESS", `Tersimpan  — [${kode}] ${nama} (id=${created.id})`);
+        
+        // Sync ke Elasticsearch
+        await indexDocument(ELASTIC_INDICES.PROVINSI, String(created.id), created);
+
         report.berhasil++;
       } catch (err) {
         const alasan = err instanceof Error ? err.message : String(err);
@@ -174,6 +182,16 @@ async function main() {
     process.exitCode = 1;
   } finally {
     cetakLaporan(report);
+
+    try {
+      log("INFO", "Invalidasi Cache Redis via Kafka...");
+      await produceCacheInvalidate(REDIS_KEYS.PROVINSI.ALL_PREFIX);
+      // Wait a bit to ensure kafka message sends before pool end kills the process.
+      await delay(500); 
+    } catch (e) {
+      log("ERROR", "Gagal me-request invalidasi Cache.");
+    }
+
     await prisma.$disconnect();
     await pool.end();
   }

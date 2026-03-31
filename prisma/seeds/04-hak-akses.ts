@@ -1,4 +1,6 @@
 import { PrismaClient } from "@prisma/client";
+import { indexDocument, bulkIndex } from "../../lib/elasticsearch";
+import { ELASTIC_INDICES } from "../../lib/constants/key";
 
 export async function seedHakAkses(prisma: PrismaClient) {
   // 4. Seed Hak Akses & Rules Role-Based
@@ -50,6 +52,7 @@ export async function seedHakAkses(prisma: PrismaClient) {
         is_all_jabatan: false,
       },
     });
+    await indexDocument(ELASTIC_INDICES.HAK_AKSES, hak.id.toString(), hak);
 
     const rulesData: any[] = allowedLevelIds.map((levelId) => ({
       m_hak_akses_id: hak.id,
@@ -69,6 +72,12 @@ export async function seedHakAkses(prisma: PrismaClient) {
     await prisma.m_hak_akses_rule.createMany({
       data: rulesData,
     });
+    
+    // Index rules into ES
+    const createdRules = await prisma.m_hak_akses_rule.findMany({ where: { m_hak_akses_id: hak.id } });
+    if(createdRules.length > 0) {
+      await bulkIndex(ELASTIC_INDICES.HAK_AKSES_RULE, createdRules.map(r => ({ id: r.id.toString(), doc: r })));
+    }
   };
 
   // Level ID yang digunakan untuk CRUD standar

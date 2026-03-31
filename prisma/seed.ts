@@ -30,6 +30,13 @@ const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log("Seeding database...");
+
+  // ── Pre-seed: Clear all Elasticsearch documents ──────────────────
+  console.log("\nClearing all Elasticsearch indices...");
+  for (const index of ALL_ELASTIC_INDICES) {
+    await deleteAllDocuments(index);
+  }
+  console.log("All Elasticsearch indices cleared. Ready for seed indexing.");
   await seedLevels(prisma);
   await seedJabatans(prisma);
   await seedUsers(prisma);
@@ -44,12 +51,7 @@ async function main() {
   await seedOrganisasi(prisma);
   console.log("Seeding completed!");
 
-  // ── Post-seed: Clear all Elasticsearch documents ──────────────────
-  console.log("\nClearing all Elasticsearch indices...");
-  for (const index of ALL_ELASTIC_INDICES) {
-    await deleteAllDocuments(index);
-  }
-  console.log("All Elasticsearch indices cleared. CDC will re-index from WAL.");
+  // ES clearing was moved to the very start of the script
 
   // ── Post-seed: Invalidate all Redis cache via Kafka ───────────────
   console.log("\nPublishing cache revalidation via Kafka...");

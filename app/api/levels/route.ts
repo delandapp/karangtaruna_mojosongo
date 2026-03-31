@@ -78,7 +78,7 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
     const { hits, total } = await searchDocuments(
       ELASTIC_INDICES.LEVELS,
       esQuery,
-      { from: skip, size: limit, sort: [{ createdAt: { order: "desc" } }] },
+      { from: skip, size: limit, sort: [{ dibuat_pada: { order: "desc" } }] },
     );
 
     const totalPages = Math.ceil(total / limit);

@@ -41,7 +41,7 @@ import {
 interface LevelData {
   id: number;
   nama_level: string;
-  createdAt: string;
+  dibuat_pada: string;
 }
 
 export function LevelTable() {

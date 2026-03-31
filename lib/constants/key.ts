@@ -137,109 +137,109 @@ export const DEFAULT_CACHE_TTL = 3600;
 // Debezium Configuration
 // ============================================================================
 export const DEBEZIUM_CONFIG = {
-  SERVER_NAME: "localserver",
+  SERVER_NAME: "dbserver1",
   SCHEMA: "public",
   /** Generates a Debezium topic name: {server}.{schema}.{table} */
-  topicName: (table: string) => `localserver.public.${table}`,
+  topicName: (table: string) => `dbserver1.public.${table}`,
 };
 
 // ============================================================================
 // Kafka Topics (Debezium CDC)
-// Format: {server}.{schema}.{table} → localserver.public.{table}
+// Format: {server}.{schema}.{table} → dbserver1.public.{table}
 // ============================================================================
 export const KAFKA_TOPICS = {
   // ── User & Access Management ──────────────────────────────────────────
-  USERS_CDC: "localserver.public.m_user",
-  LEVELS_CDC: "localserver.public.m_level",
-  JABATANS_CDC: "localserver.public.m_jabatan",
-  HAK_AKSES_CDC: "localserver.public.m_hak_akses",
-  HAK_AKSES_RULE_CDC: "localserver.public.m_hak_akses_rule",
+  USERS_CDC: "dbserver1.public.m_user",
+  LEVELS_CDC: "dbserver1.public.m_level",
+  JABATANS_CDC: "dbserver1.public.m_jabatan",
+  HAK_AKSES_CDC: "dbserver1.public.m_hak_akses",
+  HAK_AKSES_RULE_CDC: "dbserver1.public.m_hak_akses_rule",
 
   // ── Organisasi ────────────────────────────────────────────────────────
-  ORGANISASI_CDC: "localserver.public.m_organisasi",
+  ORGANISASI_CDC: "dbserver1.public.m_organisasi",
 
   // ── Event Management ─────────────────────────────────────────────────
-  EVENTS_CDC: "localserver.public.event",
-  PANITIA_CDC: "localserver.public.anggota_panitia",
-  RUNDOWN_CDC: "localserver.public.rundown_acara",
-  TUGAS_CDC: "localserver.public.tugas_event",
-  RAPAT_CDC: "localserver.public.rapat",
+  EVENTS_CDC: "dbserver1.public.event",
+  PANITIA_CDC: "dbserver1.public.anggota_panitia",
+  RUNDOWN_CDC: "dbserver1.public.rundown_acara",
+  TUGAS_CDC: "dbserver1.public.tugas_event",
+  RAPAT_CDC: "dbserver1.public.rapat",
 
   // ── Keuangan ──────────────────────────────────────────────────────────
-  ANGGARAN_CDC: "localserver.public.anggaran",
-  ITEM_ANGGARAN_CDC: "localserver.public.item_anggaran",
-  TRANSAKSI_KEUANGAN_CDC: "localserver.public.transaksi_keuangan",
+  ANGGARAN_CDC: "dbserver1.public.anggaran",
+  ITEM_ANGGARAN_CDC: "dbserver1.public.item_anggaran",
+  TRANSAKSI_KEUANGAN_CDC: "dbserver1.public.transaksi_keuangan",
 
   // ── Wilayah ───────────────────────────────────────────────────────────
-  PROVINSI_CDC: "localserver.public.m_provinsi",
-  KOTA_CDC: "localserver.public.m_kota",
-  KECAMATAN_CDC: "localserver.public.m_kecamatan",
-  KELURAHAN_CDC: "localserver.public.m_kelurahan",
+  PROVINSI_CDC: "dbserver1.public.m_provinsi",
+  KOTA_CDC: "dbserver1.public.m_kota",
+  KECAMATAN_CDC: "dbserver1.public.m_kecamatan",
+  KELURAHAN_CDC: "dbserver1.public.m_kelurahan",
 
   // ── Sponsorship & Perusahaan ──────────────────────────────────────────
-  KATEGORI_BRAND_CDC: "localserver.public.m_kategori_brand",
-  BIDANG_BRAND_CDC: "localserver.public.m_bidang_brand",
-  BRAND_CDC: "localserver.public.m_brand",
-  SKALA_PERUSAHAAN_CDC: "localserver.public.m_skala_perusahaan",
-  SEKTOR_INDUSTRI_CDC: "localserver.public.m_sektor_industri",
-  PERUSAHAAN_CDC: "localserver.public.m_perusahaan",
-  KATEGORI_SPONSOR_CDC: "localserver.public.m_kategori_sponsor",
-  SPONSOR_CDC: "localserver.public.m_sponsor",
-  EVENT_SPONSOR_CDC: "localserver.public.event_sponsor",
-  PROPOSAL_SPONSOR_CDC: "localserver.public.proposal_sponsor",
+  KATEGORI_BRAND_CDC: "dbserver1.public.m_kategori_brand",
+  BIDANG_BRAND_CDC: "dbserver1.public.m_bidang_brand",
+  BRAND_CDC: "dbserver1.public.m_brand",
+  SKALA_PERUSAHAAN_CDC: "dbserver1.public.m_skala_perusahaan",
+  SEKTOR_INDUSTRI_CDC: "dbserver1.public.m_sektor_industri",
+  PERUSAHAAN_CDC: "dbserver1.public.m_perusahaan",
+  KATEGORI_SPONSOR_CDC: "dbserver1.public.m_kategori_sponsor",
+  SPONSOR_CDC: "dbserver1.public.m_sponsor",
+  EVENT_SPONSOR_CDC: "dbserver1.public.event_sponsor",
+  PROPOSAL_SPONSOR_CDC: "dbserver1.public.proposal_sponsor",
 
   // ── Logistik ──────────────────────────────────────────────────────────
-  VENDOR_CDC: "localserver.public.m_vendor",
-  VENUE_CDC: "localserver.public.m_venue",
-  INVENTARIS_CDC: "localserver.public.m_inventaris",
-  EVENT_VENDOR_CDC: "localserver.public.event_vendor",
-  EVENT_VENUE_CDC: "localserver.public.event_venue",
+  VENDOR_CDC: "dbserver1.public.m_vendor",
+  VENUE_CDC: "dbserver1.public.m_venue",
+  INVENTARIS_CDC: "dbserver1.public.m_inventaris",
+  EVENT_VENDOR_CDC: "dbserver1.public.event_vendor",
+  EVENT_VENUE_CDC: "dbserver1.public.event_venue",
 
   // ── Pendaftaran ───────────────────────────────────────────────────────
-  KATEGORI_PENDAFTARAN_CDC: "localserver.public.kategori_pendaftaran",
-  PENDAFTARAN_CDC: "localserver.public.pendaftaran",
-  HASIL_LOMBA_CDC: "localserver.public.hasil_lomba",
+  KATEGORI_PENDAFTARAN_CDC: "dbserver1.public.kategori_pendaftaran",
+  PENDAFTARAN_CDC: "dbserver1.public.pendaftaran",
+  HASIL_LOMBA_CDC: "dbserver1.public.hasil_lomba",
 
   // ── Promosi ───────────────────────────────────────────────────────────
-  KATEGORI_BERITA_CDC: "localserver.public.m_kategori_berita",
-  BERITA_CDC: "localserver.public.c_berita",
-  KALENDER_KONTEN_CDC: "localserver.public.kalender_konten",
+  KATEGORI_BERITA_CDC: "dbserver1.public.m_kategori_berita",
+  BERITA_CDC: "dbserver1.public.c_berita",
+  KALENDER_KONTEN_CDC: "dbserver1.public.kalender_konten",
 
   // ── Sistem ────────────────────────────────────────────────────────────
-  NOTIFIKASI_CDC: "localserver.public.notifikasi",
-  LOG_AUDIT_CDC: "localserver.public.log_audit",
+  NOTIFIKASI_CDC: "dbserver1.public.notifikasi",
+  LOG_AUDIT_CDC: "dbserver1.public.log_audit",
 
   // ── Feedback ──────────────────────────────────────────────────────────
-  SURVEI_KEPUASAN_CDC: "localserver.public.survei_kepuasan",
-  RESPON_SURVEI_CDC: "localserver.public.respon_survei",
-  SARAN_MASUKAN_CDC: "localserver.public.saran_masukan",
+  SURVEI_KEPUASAN_CDC: "dbserver1.public.survei_kepuasan",
+  RESPON_SURVEI_CDC: "dbserver1.public.respon_survei",
+  SARAN_MASUKAN_CDC: "dbserver1.public.saran_masukan",
 
   // ── Tiket ─────────────────────────────────────────────────────────────
-  JENIS_TIKET_CDC: "localserver.public.jenis_tiket",
-  TIKET_ORDER_CDC: "localserver.public.tiket_order",
-  TIKET_TERBIT_CDC: "localserver.public.tiket_terbit",
+  JENIS_TIKET_CDC: "dbserver1.public.jenis_tiket",
+  TIKET_ORDER_CDC: "dbserver1.public.tiket_order",
+  TIKET_TERBIT_CDC: "dbserver1.public.tiket_terbit",
 
   // ── Dokumen & Surat ───────────────────────────────────────────────────
-  JENIS_SURAT_CDC: "localserver.public.m_jenis_surat",
-  SURAT_CDC: "localserver.public.surat",
-  DOKUMEN_CDC: "localserver.public.dokumen",
-  LAPORAN_CDC: "localserver.public.laporan",
+  JENIS_SURAT_CDC: "dbserver1.public.m_jenis_surat",
+  SURAT_CDC: "dbserver1.public.surat",
+  DOKUMEN_CDC: "dbserver1.public.dokumen",
+  LAPORAN_CDC: "dbserver1.public.laporan",
 
   // ── Dokumentasi ───────────────────────────────────────────────────────
-  MEDIA_GALERI_CDC: "localserver.public.media_galeri",
+  MEDIA_GALERI_CDC: "dbserver1.public.media_galeri",
 
   // ── Sekolah ───────────────────────────────────────────────────────────
-  SEKOLAH_CDC: "localserver.public.m_sekolah",
-  SEKOLAH_DETAIL_CDC: "localserver.public.m_sekolah_detail",
-  SEKOLAH_FOTO_CDC: "localserver.public.m_sekolah_foto",
+  SEKOLAH_CDC: "dbserver1.public.m_sekolah",
+  SEKOLAH_DETAIL_CDC: "dbserver1.public.m_sekolah_detail",
+  SEKOLAH_FOTO_CDC: "dbserver1.public.m_sekolah_foto",
 
   // ── Jenjang ───────────────────────────────────────────────────────────
-  JENJANG_CDC: "localserver.public.m_jenjang",
+  JENJANG_CDC: "dbserver1.public.m_jenjang",
 
   // ── E-Proposal ────────────────────────────────────────────────────────
-  EPROPOSAL_CDC: "localserver.public.m_eproposal",
-  EPROPOSAL_PENGATURAN_CDC: "localserver.public.c_eproposal_pengaturan",
-  EPROPOSAL_DAFTAR_ISI_CDC: "localserver.public.c_eproposal_daftar_isi",
+  EPROPOSAL_CDC: "dbserver1.public.m_eproposal",
+  EPROPOSAL_PENGATURAN_CDC: "dbserver1.public.c_eproposal_pengaturan",
+  EPROPOSAL_DAFTAR_ISI_CDC: "dbserver1.public.c_eproposal_daftar_isi",
 
   // ── Cache Operations (non-CDC) ────────────────────────────────────────
   CACHE_SET: "karangtaruna.cache.set",

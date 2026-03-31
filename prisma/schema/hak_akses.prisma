@@ -10,8 +10,8 @@ model m_hak_akses {
 
   rules m_hak_akses_rule[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  dibuat_pada DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
 }
 
 model m_hak_akses_rule {

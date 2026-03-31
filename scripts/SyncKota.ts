@@ -24,6 +24,15 @@ dotenv.config({ path: ".env.development" });
 import fs from "fs";
 import path from "path";
 
+import { indexDocument } from "../lib/elasticsearch";
+import { produceCacheInvalidate } from "../lib/kafka";
+import { ELASTIC_INDICES, REDIS_KEYS } from "../lib/constants/key";
+
+// Helper delay (karena belum didefine di Kota)
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 // ─── Tipe data ─────────────────────────────────────────────────────────────────
 
 interface KemendikbudKotaItem {
@@ -239,6 +248,10 @@ async function main() {
               },
             });
             log("SUCCESS", `  Tersimpan — [${kode}] ${nama} (id=${created.id})`);
+            
+            // Sync ES
+            await indexDocument(ELASTIC_INDICES.KOTA, String(created.id), created);
+
             detail.berhasil++;
             report.kota_berhasil++;
           } catch (err) {
@@ -268,6 +281,15 @@ async function main() {
     process.exitCode = 1;
   } finally {
     cetakLaporan(report);
+
+    try {
+      log("INFO", "Invalidasi Cache Redis via Kafka...");
+      await produceCacheInvalidate(REDIS_KEYS.KOTA.ALL_PREFIX);
+      await delay(500); 
+    } catch (e) {
+      log("ERROR", "Gagal me-request invalidasi Cache.");
+    }
+
     await prisma.$disconnect();
     await pool.end();
   }

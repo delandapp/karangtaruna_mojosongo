@@ -258,3 +258,42 @@ html.transitioning *::after {
     @apply bg-background text-foreground;
   }
 }
+
+/* Landing Page Utilities */
+@layer utilities {
+  .text-gradient {
+    background-image: linear-gradient(135deg, var(--color-primary-500), var(--color-accent-500));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .bg-gradient-mesh {
+    background-image: radial-gradient(at 0% 0%, hsla(153, 100%, 37%, 0.15) 0px, transparent 50%),
+                      radial-gradient(at 100% 0%, hsla(28, 100%, 50%, 0.15) 0px, transparent 50%);
+    background-size: 200% 200%;
+    animation: gradientShift 15s ease infinite alternate;
+  }
+
+  .glass-card {
+    @apply bg-background/60 backdrop-blur-md border border-border/50 shadow-sm;
+  }
+
+  .hide-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 100%; }
+  100% { background-position: 0% 100%; }
+}
+
+html {
+  scroll-behavior: auto; /* Handled by GSAP ScrollToPlugin */
+}

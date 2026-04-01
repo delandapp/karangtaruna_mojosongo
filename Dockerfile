@@ -6,7 +6,7 @@
 #   docker build \
 #     --build-arg NEXT_PUBLIC_API_URL=https://ktimojosongo.my.id/api \
 #     --build-arg NEXT_PUBLIC_S3_API_URL=https://s3-api.mediatamaedu.com/api/v1 \
-#     --build-arg NEXT_PUBLIC_S3_API_KEY=55f95e7379805f3e2ccbea368cb683382f6275076557100b0532631eab7a6d59 \
+#     --build-arg NEXT_PUBLIC_S3_API_KEY=423c4122eb8748b0c8a9ed2d6abec519c7c19da945cc7412f2386ff8762d2e2b \
 #     -t delandapp/karang_taruna:latest .
 #
 # Push ke Docker Hub:
@@ -66,7 +66,7 @@ COPY . .
 # Default value = nilai production dari .env.production
 ARG NEXT_PUBLIC_API_URL=https://ktimojosongo.my.id/api
 ARG NEXT_PUBLIC_S3_API_URL=https://s3-api.mediatamaedu.com/api/v1
-ARG NEXT_PUBLIC_S3_API_KEY=55f95e7379805f3e2ccbea368cb683382f6275076557100b0532631eab7a6d59
+ARG NEXT_PUBLIC_S3_API_KEY=423c4122eb8748b0c8a9ed2d6abec519c7c19da945cc7412f2386ff8762d2e2b
 
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_S3_API_URL=$NEXT_PUBLIC_S3_API_URL
@@ -93,7 +93,7 @@ RUN apk add --no-cache libc6-compat
 # Buat user non-root SEBELUM COPY agar bisa pakai --chown langsung.
 # Menghindari "chown -R" yang sangat lambat pada ribuan file node_modules.
 RUN addgroup --system --gid 1001 nodejs \
- && adduser  --system --uid 1001 nextjs
+    && adduser  --system --uid 1001 nextjs
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -132,7 +132,7 @@ COPY --chown=nextjs:nodejs --from=builder /app/node_modules/.prisma ./node_modul
 COPY --chown=nextjs:nodejs docker-entrypoint.sh ./docker-entrypoint.sh
 # Hapus Windows-style CRLF (\r\n) agar sh di Alpine tidak error
 RUN sed -i 's/\r$//' ./docker-entrypoint.sh \
- && chmod +x ./docker-entrypoint.sh
+    && chmod +x ./docker-entrypoint.sh
 
 USER nextjs
 

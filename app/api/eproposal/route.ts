@@ -12,12 +12,14 @@ import { REDIS_KEYS } from "@/lib/constants";
 
 /** Ekstrak URL string dari field yang mungkin berupa object atau string */
 function extractUrl(value: unknown): string {
-  if (typeof value === "string") return value;
-  if (value && typeof value === "object") {
+  let url = "";
+  if (typeof value === "string") {
+    url = value;
+  } else if (value && typeof value === "object") {
     const obj = value as Record<string, any>;
-    return obj.file?.urlPublik || obj.url || "";
+    url = obj.file?.urlPublik || obj.url || "";
   }
-  return "";
+  return url.replace("http://shared-minio:9000", "https://storage.mediatamaedu.com");
 }
 
 /** Validasi ekstensi file berdasarkan whitelist */

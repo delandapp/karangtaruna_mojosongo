@@ -73,6 +73,17 @@ export const PUT = withAuth(
           "";
       }
 
+      // Pastikan URL minio diubah menjadi domain publik
+      if (typeof dataToUpdate.file_pdf_url === "string") {
+        dataToUpdate.file_pdf_url = dataToUpdate.file_pdf_url.replace("http://shared-minio:9000", "https://storage.mediatamaedu.com");
+      }
+      if (typeof dataToUpdate.cover_url === "string") {
+        dataToUpdate.cover_url = dataToUpdate.cover_url.replace("http://shared-minio:9000", "https://storage.mediatamaedu.com");
+      }
+      if (typeof pengaturan?.bg_music_url === "string") {
+        pengaturan.bg_music_url = pengaturan.bg_music_url.replace("http://shared-minio:9000", "https://storage.mediatamaedu.com");
+      }
+
       // Validasi format cover_url — hanya JPEG/PNG
       if (
         dataToUpdate.cover_url &&

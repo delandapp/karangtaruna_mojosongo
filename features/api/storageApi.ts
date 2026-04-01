@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
-const EXTERNAL_API_KEY = process.env.NEXT_PUBLIC_S3_API_KEY || 'ee85bc2458dd47f24b78f019add255280ee8689455cdead0f22e1bcdf73c8b07';
+const EXTERNAL_API_KEY = process.env.NEXT_PUBLIC_S3_API_KEY || '423c4122eb8748b0c8a9ed2d6abec519c7c19da945cc7412f2386ff8762d2e2b';
 
 export const storageApi = createApi({
   reducerPath: 'storageApi',

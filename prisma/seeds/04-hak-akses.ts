@@ -1,6 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-import { indexDocument, bulkIndex } from "../../lib/elasticsearch";
-import { ELASTIC_INDICES } from "../../lib/constants/key";
 
 export async function seedHakAkses(prisma: PrismaClient) {
   // 4. Seed Hak Akses & Rules Role-Based
@@ -52,8 +50,6 @@ export async function seedHakAkses(prisma: PrismaClient) {
         is_all_jabatan: false,
       },
     });
-    await indexDocument(ELASTIC_INDICES.HAK_AKSES, hak.id.toString(), hak);
-
     const rulesData: any[] = allowedLevelIds.map((levelId) => ({
       m_hak_akses_id: hak.id,
       m_level_id: levelId,
@@ -72,12 +68,6 @@ export async function seedHakAkses(prisma: PrismaClient) {
     await prisma.m_hak_akses_rule.createMany({
       data: rulesData,
     });
-    
-    // Index rules into ES
-    const createdRules = await prisma.m_hak_akses_rule.findMany({ where: { m_hak_akses_id: hak.id } });
-    if(createdRules.length > 0) {
-      await bulkIndex(ELASTIC_INDICES.HAK_AKSES_RULE, createdRules.map(r => ({ id: r.id.toString(), doc: r })));
-    }
   };
 
   // Level ID yang digunakan untuk CRUD standar
@@ -129,7 +119,13 @@ export async function seedHakAkses(prisma: PrismaClient) {
     { nama: "Delete Provinsi", tipe: "delete", method: "DELETE" },
   ];
   for (const item of apiWilayahProvinsi) {
-    await buatHakAkses(item.nama, item.tipe, "/api/wilayah/provinsi", item.method, crudLevelIds);
+    await buatHakAkses(
+      item.nama,
+      item.tipe,
+      "/api/wilayah/provinsi",
+      item.method,
+      crudLevelIds,
+    );
   }
 
   const apiWilayahKota = [
@@ -139,7 +135,13 @@ export async function seedHakAkses(prisma: PrismaClient) {
     { nama: "Delete Kota", tipe: "delete", method: "DELETE" },
   ];
   for (const item of apiWilayahKota) {
-    await buatHakAkses(item.nama, item.tipe, "/api/wilayah/kota", item.method, crudLevelIds);
+    await buatHakAkses(
+      item.nama,
+      item.tipe,
+      "/api/wilayah/kota",
+      item.method,
+      crudLevelIds,
+    );
   }
 
   const apiWilayahKecamatan = [
@@ -149,7 +151,13 @@ export async function seedHakAkses(prisma: PrismaClient) {
     { nama: "Delete Kecamatan", tipe: "delete", method: "DELETE" },
   ];
   for (const item of apiWilayahKecamatan) {
-    await buatHakAkses(item.nama, item.tipe, "/api/wilayah/kecamatan", item.method, crudLevelIds);
+    await buatHakAkses(
+      item.nama,
+      item.tipe,
+      "/api/wilayah/kecamatan",
+      item.method,
+      crudLevelIds,
+    );
   }
 
   const apiWilayahKelurahan = [
@@ -159,7 +167,13 @@ export async function seedHakAkses(prisma: PrismaClient) {
     { nama: "Delete Kelurahan", tipe: "delete", method: "DELETE" },
   ];
   for (const item of apiWilayahKelurahan) {
-    await buatHakAkses(item.nama, item.tipe, "/api/wilayah/kelurahan", item.method, crudLevelIds);
+    await buatHakAkses(
+      item.nama,
+      item.tipe,
+      "/api/wilayah/kelurahan",
+      item.method,
+      crudLevelIds,
+    );
   }
 
   // ── API: Users ──────────────────────────────────────────────────────────────
@@ -358,7 +372,14 @@ export async function seedHakAkses(prisma: PrismaClient) {
     { nama: "Delete Sektor Industri", tipe: "delete", method: "DELETE" },
   ];
   for (const item of apiSektor) {
-    await buatHakAkses(item.nama, item.tipe, "/api/sektor-industri", item.method, perusahaanLevelIds, humasRules);
+    await buatHakAkses(
+      item.nama,
+      item.tipe,
+      "/api/sektor-industri",
+      item.method,
+      perusahaanLevelIds,
+      humasRules,
+    );
   }
 
   // ── API: Sponsorship/Skala Perusahaan ────────────────────────────────────────────────
@@ -369,7 +390,14 @@ export async function seedHakAkses(prisma: PrismaClient) {
     { nama: "Delete Skala Perusahaan", tipe: "delete", method: "DELETE" },
   ];
   for (const item of apiSkala) {
-    await buatHakAkses(item.nama, item.tipe, "/api/skala-perusahaan", item.method, perusahaanLevelIds, humasRules);
+    await buatHakAkses(
+      item.nama,
+      item.tipe,
+      "/api/skala-perusahaan",
+      item.method,
+      perusahaanLevelIds,
+      humasRules,
+    );
   }
 
   // ── API: Sponsorship/Perusahaan ──────────────────────────────────────────────────────
@@ -380,7 +408,14 @@ export async function seedHakAkses(prisma: PrismaClient) {
     { nama: "Delete Perusahaan", tipe: "delete", method: "DELETE" },
   ];
   for (const item of apiPerusahaan) {
-    await buatHakAkses(item.nama, item.tipe, "/api/perusahaan", item.method, perusahaanLevelIds, humasRules);
+    await buatHakAkses(
+      item.nama,
+      item.tipe,
+      "/api/perusahaan",
+      item.method,
+      perusahaanLevelIds,
+      humasRules,
+    );
   }
 
   // ── API: Panitia ─────────────────────────────────────────────────────────────
@@ -393,7 +428,7 @@ export async function seedHakAkses(prisma: PrismaClient) {
   ].filter((id): id is number => id !== undefined);
 
   const apiPanitia = [
-    { nama: "Read Panitia",   tipe: "read",   method: "GET" },
+    { nama: "Read Panitia", tipe: "read", method: "GET" },
     { nama: "Create Panitia", tipe: "create", method: "POST" },
     { nama: "Update Panitia", tipe: "update", method: "PUT" },
     { nama: "Delete Panitia", tipe: "delete", method: "DELETE" },
@@ -411,7 +446,7 @@ export async function seedHakAkses(prisma: PrismaClient) {
   // ── API: Rundown ─────────────────────────────────────────────────────────────
   // superuser + admin + ketua + wakil ketua dapat melakukan CRUD rundown (sama spt panitia)
   const apiRundown = [
-    { nama: "Read Rundown",   tipe: "read",   method: "GET" },
+    { nama: "Read Rundown", tipe: "read", method: "GET" },
     { nama: "Create Rundown", tipe: "create", method: "POST" },
     { nama: "Update Rundown", tipe: "update", method: "PUT" },
     { nama: "Delete Rundown", tipe: "delete", method: "DELETE" },
@@ -443,4 +478,3 @@ export async function seedHakAkses(prisma: PrismaClient) {
     );
   }
 }
-

@@ -5,11 +5,10 @@ import {
   paginatedResponse,
 } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache } from "@/lib/redis";
+import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
 import { ELASTIC_INDICES, DEFAULT_CACHE_TTL } from "@/lib/constants";
-import { searchDocuments } from "@/lib/elasticsearch";
+import { searchDocuments, indexDocument, deleteDocument } from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-import { produceCacheInvalidate } from "@/lib/kafka";
 import { z } from "zod";
 
 const listQuerySchema = z.object({

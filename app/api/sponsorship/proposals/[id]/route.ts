@@ -1,8 +1,10 @@
+import { indexDocument, deleteDocument } from "@/lib/elasticsearch";
+import { invalidateCachePrefix } from "@/lib/redis";
 import { prisma } from "@/lib/prisma";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-import { produceCacheInvalidate } from "@/lib/kafka";
+
 import { proposalSponsorSchema } from "@/lib/validations/sponsorship.schema";
 
 type RouteProps = { params: Promise<{ id: string }> };
@@ -89,8 +91,8 @@ export const PUT = withAuth(
         },
       });
 
-      // Invalidate list cache via Kafka — CDC akan sync ke ES secara otomatis
-      await produceCacheInvalidate(CACHE_INVALIDATE_PREFIX);
+      // Invalidate cache
+      await invalidateCachePrefix(CACHE_INVALIDATE_PREFIX);
 
       return successResponse(updated, 200);
     } catch (error) {
@@ -123,8 +125,8 @@ export const DELETE = withAuth(
 
       await prisma.proposal_sponsor.delete({ where: { id: proposalId } });
 
-      // Invalidate list cache via Kafka
-      await produceCacheInvalidate(CACHE_INVALIDATE_PREFIX);
+      // Invalidate cache
+      await invalidateCachePrefix(CACHE_INVALIDATE_PREFIX);
 
       return successResponse({ message: "Proposal berhasil dihapus" }, 200);
     } catch (error) {

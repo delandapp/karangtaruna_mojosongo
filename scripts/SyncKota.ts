@@ -24,15 +24,6 @@ dotenv.config({ path: ".env.development" });
 import fs from "fs";
 import path from "path";
 
-import { indexDocument } from "../lib/elasticsearch";
-import { produceCacheInvalidate } from "../lib/kafka";
-import { ELASTIC_INDICES, REDIS_KEYS } from "../lib/constants/key";
-
-// Helper delay (karena belum didefine di Kota)
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 // ─── Tipe data ─────────────────────────────────────────────────────────────────
 
 interface KemendikbudKotaItem {
@@ -98,21 +89,20 @@ function cetakLaporan(report: SyncReport) {
   if (report.provinsi_gagal_fetch_list.length > 0) {
     console.log(`\n  Provinsi gagal fetch API:`);
     report.provinsi_gagal_fetch_list.forEach((p) =>
-      console.log(`    · [${p.kode.trim()}] ${p.nama} — ${p.alasan}`)
+      console.log(`    · [${p.kode.trim()}] ${p.nama} — ${p.alasan}`),
     );
   }
 
   console.log(`\n  Detail per Provinsi:`);
   for (const prov of report.per_provinsi) {
-    const status =
-      prov.gagal > 0 ? "❌" : prov.duplikat > 0 ? "⚠️ " : "✅";
+    const status = prov.gagal > 0 ? "❌" : prov.duplikat > 0 ? "⚠️ " : "✅";
     console.log(
       `    ${status} [${prov.kode_provinsi.trim()}] ${prov.nama_provinsi}: ` +
-        `total=${prov.total} berhasil=${prov.berhasil} duplikat=${prov.duplikat} gagal=${prov.gagal}`
+        `total=${prov.total} berhasil=${prov.berhasil} duplikat=${prov.duplikat} gagal=${prov.gagal}`,
     );
     if (prov.gagal_detail.length > 0) {
       prov.gagal_detail.forEach((d) =>
-        console.log(`        · [${d.kode.trim()}] ${d.nama} — ${d.alasan}`)
+        console.log(`        · [${d.kode.trim()}] ${d.nama} — ${d.alasan}`),
       );
     }
   }
@@ -142,7 +132,10 @@ async function main() {
   };
 
   try {
-    log("INFO", "Memulai sinkronisasi data Kota/Kabupaten dari Kemendikbud DAPO…");
+    log(
+      "INFO",
+      "Memulai sinkronisasi data Kota/Kabupaten dari Kemendikbud DAPO…",
+    );
 
     // 1. Ambil semua provinsi dari DB lokal
     const provinsiList = await prisma.m_provinsi.findMany({
@@ -151,11 +144,17 @@ async function main() {
     report.total_provinsi = provinsiList.length;
 
     if (provinsiList.length === 0) {
-      log("WARN", "Tidak ada data Provinsi di database. Jalankan SyncProvinsi.ts terlebih dahulu!");
+      log(
+        "WARN",
+        "Tidak ada data Provinsi di database. Jalankan SyncProvinsi.ts terlebih dahulu!",
+      );
       return;
     }
 
-    log("INFO", `Ditemukan ${provinsiList.length} provinsi di DB. Mulai proses kota per provinsi…`);
+    log(
+      "INFO",
+      `Ditemukan ${provinsiList.length} provinsi di DB. Mulai proses kota per provinsi…`,
+    );
 
     // 2. Iterasi per provinsi
     for (const prov of provinsiList) {
@@ -179,19 +178,24 @@ async function main() {
 
       try {
         // 1. Ambil data kota/kab dari CSV lokal
-        const csvPath = path.join(process.cwd(), "scripts", "dataset", "kabupaten.csv");
+        const csvPath = path.join(
+          process.cwd(),
+          "scripts",
+          "dataset",
+          "kabupaten.csv",
+        );
         const csvData = fs.readFileSync(csvPath, "utf-8");
-        const lines = csvData.split("\n").filter(line => line.trim() !== "");
+        const lines = csvData.split("\n").filter((line) => line.trim() !== "");
         // Hapus header
         if (lines[0].startsWith("code")) lines.shift();
 
         // Kode provinsi dari DB biasanya sudah komplit misal "050000", di CSV parent_code adalah "05" atau "11"
         // Kita perlu mencocokkan kode di CSV.
-        
+
         const paramKode = (prov.kode_wilayah ?? "").substring(0, 2);
 
         const dataKota: KemendikbudKotaItem[] = lines
-          .map(line => {
+          .map((line) => {
             const [code, parent_code, name] = line.split(",");
             return {
               kode_wilayah: code.trim() + "00", // pad to match 6 digit format "110100"
@@ -199,13 +203,16 @@ async function main() {
               mst_kode_wilayah: parent_code.trim(),
             };
           })
-          .filter(item => item.mst_kode_wilayah === paramKode);
+          .filter((item) => item.mst_kode_wilayah === paramKode);
 
         if (!dataKota || dataKota.length === 0) {
           log("WARN", `Data Kota kosong untuk provinsi ${prov.nama}. Skip.`);
           continue;
         }
-        log("INFO", `Ditemukan ${dataKota.length} data kota dari dataset untuk provinsi ${prov.nama}.`);
+        log(
+          "INFO",
+          `Ditemukan ${dataKota.length} data kota dari dataset untuk provinsi ${prov.nama}.`,
+        );
 
         detail.total = dataKota.length;
         report.total_kota += dataKota.length;
@@ -233,7 +240,10 @@ async function main() {
             });
 
             if (existing) {
-              log("WARN", `  Duplikat — [${kode}] ${nama} (id=${existing.id}), skip.`);
+              log(
+                "WARN",
+                `  Duplikat — [${kode}] ${nama} (id=${existing.id}), skip.`,
+              );
               detail.duplikat++;
               report.kota_duplikat++;
               continue;
@@ -247,10 +257,10 @@ async function main() {
                 m_provinsi_id: prov.id,
               },
             });
-            log("SUCCESS", `  Tersimpan — [${kode}] ${nama} (id=${created.id})`);
-            
-            // Sync ES
-            await indexDocument(ELASTIC_INDICES.KOTA, String(created.id), created);
+            log(
+              "SUCCESS",
+              `  Tersimpan — [${kode}] ${nama} (id=${created.id})`,
+            );
 
             detail.berhasil++;
             report.kota_berhasil++;
@@ -264,7 +274,10 @@ async function main() {
         }
       } catch (err) {
         const alasan = err instanceof Error ? err.message : String(err);
-        log("ERROR", `Gagal fetch kota untuk [${kodeProvinsi}] ${prov.nama}: ${alasan}`);
+        log(
+          "ERROR",
+          `Gagal fetch kota untuk [${kodeProvinsi}] ${prov.nama}: ${alasan}`,
+        );
         report.provinsi_gagal_fetch++;
         report.provinsi_gagal_fetch_list.push({
           nama: prov.nama,
@@ -281,15 +294,6 @@ async function main() {
     process.exitCode = 1;
   } finally {
     cetakLaporan(report);
-
-    try {
-      log("INFO", "Invalidasi Cache Redis via Kafka...");
-      await produceCacheInvalidate(REDIS_KEYS.KOTA.ALL_PREFIX);
-      await delay(500); 
-    } catch (e) {
-      log("ERROR", "Gagal me-request invalidasi Cache.");
-    }
-
     await prisma.$disconnect();
     await pool.end();
   }

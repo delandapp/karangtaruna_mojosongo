@@ -1,9 +1,11 @@
+import { indexDocument, deleteDocument } from "@/lib/elasticsearch";
+import { invalidateCachePrefix } from "@/lib/redis";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-import { produceCacheInvalidate } from "@/lib/kafka";
+
 import { eventSponsorSchema } from "@/lib/validations/sponsorship.schema";
 import { z } from "zod";
 
@@ -142,7 +144,7 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     });
 
     // Invalidate list cache untuk event ini
-    await produceCacheInvalidate(cacheKeyList(validatedData.event_id));
+    await invalidateCachePrefix(cacheKeyList(validatedData.event_id));
 
     return successResponse(newPipeline, 201);
   } catch (error) {

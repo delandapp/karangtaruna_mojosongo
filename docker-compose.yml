@@ -1,0 +1,89 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# docker-compose.yml — Karang Taruna Mojosongo
+# ──────────────────────────────────────────────────────────────────────────────
+# Deploy di server:
+#   sudo docker compose -f docker-compose.yml --env-file .env.production pull
+#   sudo docker compose -f docker-compose.yml --env-file .env.production up -d
+#
+# CATATAN JARINGAN:
+#   • shared_postgres & shared_pgbouncer  → Docker container di network "shared-backend-services"
+#   • Redis & Elasticsearch menggunakan "127.0.0.1" di .env.production
+#     Jika Redis/ES berjalan sebagai Docker container di network "shared-backend-services",
+#     ganti REDIS_URL dan ELASTIC_NODE di .env.production dengan nama container
+#     yang sesuai (contoh: redis://..., http://elasticsearch:9200)
+#     Jika Redis/ES berjalan langsung di host server (bukan Docker),
+#     gunakan network_mode: host atau sesuaikan konfigurasi jaringan.
+# ══════════════════════════════════════════════════════════════════════════════
+
+services:
+  karangtaruna:
+    image: ${IMAGE_NAME:-delandapp/karang_taruna}:${IMAGE_TAG:-latest}
+    container_name: karangtaruna_app
+    restart: unless-stopped
+
+    ports:
+      - "${PORT:-4070}:${PORT:-4070}"
+
+    environment:
+      NODE_ENV: production
+
+      # ── Port ──────────────────────────────────────────────────────────────
+      PORT: ${PORT:-4070}
+
+      # ── Database (PostgreSQL via PgBouncer — untuk runtime app) ───────────
+      DATABASE_URL: ${DATABASE_URL:-postgresql://deland:Mojosongo2026@shared_pgbouncer:6432/db_karangtaruna?schema=public&pgbouncer=true}
+
+      # ── Database (Direct PostgreSQL — untuk Prisma migrate & seed) ────────
+      DIRECT_URL: ${DIRECT_URL:-postgresql://delandapp:delandapp@Maheswari124@@shared_postgres:5432/db_karangtaruna?schema=public}
+
+      # ── Redis ─────────────────────────────────────────────────────────────
+      REDIS_HOST: ${REDIS_HOST:-127.0.0.1}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-delandapp@Maheswari124@}
+      REDIS_URL: ${REDIS_URL:-redis://:DelandAppMaheswari124Secure@127.0.0.1:6379}
+
+      # ── Elasticsearch ─────────────────────────────────────────────────────
+      ELASTIC_NODE: ${ELASTIC_NODE:-http://127.0.0.1:9200}
+      ELASTIC_USERNAME: ${ELASTIC_USERNAME:-elastic}
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-elasticsearch@Maheswari124@Secure}
+
+      # ── Next.js Public (di-bake saat build, tetap di-pass saat runtime) ───
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://ktimojosongo.my.id/api}
+      NEXT_PUBLIC_S3_API_URL: ${NEXT_PUBLIC_S3_API_URL:-https://s3-api.mediatamaedu.com/api/v1}
+      NEXT_PUBLIC_S3_API_KEY: ${NEXT_PUBLIC_S3_API_KEY:-55f95e7379805f3e2ccbea368cb683382f6275076557100b0532631eab7a6d59}
+
+    networks:
+      - services-net
+
+    # Izinkan container mengakses service di host (untuk Redis/ES yang berjalan
+    # langsung di host server, bukan sebagai Docker container)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1:${PORT:-4070}/api/health || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+# ── Networks ──────────────────────────────────────────────────────────────────
+# "shared-backend-services" adalah network eksternal yang sudah dibuat di server,
+# tempat shared_postgres, shared_pgbouncer, Redis, dan Elasticsearch berada.
+#
+# Jika network belum ada, buat dulu di server:
+#   sudo docker network create shared-backend-services
+networks:
+  services-net:
+    name: shared-backend-services
+    external: true

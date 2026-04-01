@@ -17,10 +17,6 @@ dotenv.config({ path: ".env.development" });
 import fs from "fs";
 import path from "path";
 
-import { indexDocument } from "../lib/elasticsearch";
-import { produceCacheInvalidate } from "../lib/kafka";
-import { ELASTIC_INDICES, REDIS_KEYS } from "../lib/constants/key";
-
 // ─── Tipe data ─────────────────────────────────────────────────────────────────
 
 interface KemendikbudProvinsiItem {
@@ -45,18 +41,14 @@ interface SyncReport {
 
 function log(level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string) {
   const warna = {
-    INFO: "\x1b[36m",    // cyan
+    INFO: "\x1b[36m", // cyan
     SUCCESS: "\x1b[32m", // green
-    WARN: "\x1b[33m",    // yellow
-    ERROR: "\x1b[31m",   // red
+    WARN: "\x1b[33m", // yellow
+    ERROR: "\x1b[31m", // red
   };
   const reset = "\x1b[0m";
   const ts = new Date().toISOString();
   console.log(`${warna[level]}[${level}]${reset} ${ts} — ${msg}`);
-}
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function cetakLaporan(report: SyncReport) {
@@ -72,14 +64,14 @@ function cetakLaporan(report: SyncReport) {
   if (report.detail_duplikat.length > 0) {
     console.log(`\n  Duplikat (sudah ada di DB):`);
     report.detail_duplikat.forEach((d) =>
-      console.log(`    · [${d.kode.trim()}] ${d.nama}`)
+      console.log(`    · [${d.kode.trim()}] ${d.nama}`),
     );
   }
 
   if (report.detail_gagal.length > 0) {
     console.log(`\n  Gagal diproses:`);
     report.detail_gagal.forEach((d) =>
-      console.log(`    · [${d.kode.trim()}] ${d.nama} — ${d.alasan}`)
+      console.log(`    · [${d.kode.trim()}] ${d.nama} — ${d.alasan}`),
     );
   }
 
@@ -108,28 +100,33 @@ async function main() {
     log("INFO", "Memulai sinkronisasi data Provinsi dari dataset lokal…");
 
     // 1. Baca data dari CSV lokal
-    const csvPath = path.join(process.cwd(), "scripts", "dataset", "provinsi.csv");
+    const csvPath = path.join(
+      process.cwd(),
+      "scripts",
+      "dataset",
+      "provinsi.csv",
+    );
     log("INFO", `Membaca: ${csvPath}`);
 
     const csvData = fs.readFileSync(csvPath, "utf-8");
-    const lines = csvData.split("\n").filter(line => line.trim() !== "");
+    const lines = csvData.split("\n").filter((line) => line.trim() !== "");
     // Hapus header
     lines.shift();
 
-    const data: KemendikbudProvinsiItem[] = lines.map(line => {
+    const data: KemendikbudProvinsiItem[] = lines.map((line) => {
       const [code, parent_code, name] = line.split(",");
       return {
-        kode_wilayah: code.trim() + "0000", // pad to match 6 digit format "050000" or similar, wait actually let's see how DB wants it. Our old fetch returned 6 chars padding spaces. Let's just use the code padding with 0s to 6 chars, or just the raw code 
+        kode_wilayah: code.trim() + "0000", // pad to match 6 digit format "050000" or similar, wait actually let's see how DB wants it. Our old fetch returned 6 chars padding spaces. Let's just use the code padding with 0s to 6 chars, or just the raw code
         nama: name.trim().toUpperCase(),
         id_level_wilayah: 1,
       };
     });
 
     // Sesuaikan padding kode to format '110000'
-    data.forEach(d => {
-       d.kode_wilayah = d.kode_wilayah.padEnd(6, "0");
+    data.forEach((d) => {
+      d.kode_wilayah = d.kode_wilayah.padEnd(6, "0");
     });
-    
+
     report.total = data.length;
     log("INFO", `Diterima ${report.total} data provinsi dari dataset.`);
 
@@ -153,7 +150,10 @@ async function main() {
         });
 
         if (existing) {
-          log("WARN", `Duplikat — [${kode}] ${nama} sudah ada (id=${existing.id}), skip.`);
+          log(
+            "WARN",
+            `Duplikat — [${kode}] ${nama} sudah ada (id=${existing.id}), skip.`,
+          );
           report.duplikat++;
           report.detail_duplikat.push({ nama, kode });
           continue;
@@ -164,9 +164,6 @@ async function main() {
           data: { kode_wilayah: kode, nama },
         });
         log("SUCCESS", `Tersimpan  — [${kode}] ${nama} (id=${created.id})`);
-        
-        // Sync ke Elasticsearch
-        await indexDocument(ELASTIC_INDICES.PROVINSI, String(created.id), created);
 
         report.berhasil++;
       } catch (err) {
@@ -182,16 +179,6 @@ async function main() {
     process.exitCode = 1;
   } finally {
     cetakLaporan(report);
-
-    try {
-      log("INFO", "Invalidasi Cache Redis via Kafka...");
-      await produceCacheInvalidate(REDIS_KEYS.PROVINSI.ALL_PREFIX);
-      // Wait a bit to ensure kafka message sends before pool end kills the process.
-      await delay(500); 
-    } catch (e) {
-      log("ERROR", "Gagal me-request invalidasi Cache.");
-    }
-
     await prisma.$disconnect();
     await pool.end();
   }

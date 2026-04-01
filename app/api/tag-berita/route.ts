@@ -1,3 +1,4 @@
+import { indexDocument, deleteDocument } from "@/lib/elasticsearch";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import {
@@ -6,9 +7,9 @@ import {
 } from "@/lib/validations/berita.schema";
 import { successResponse, paginatedResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache } from "@/lib/redis";
-import { produceCacheInvalidate } from "@/lib/kafka";
-import { REDIS_KEYS } from "@/lib/constants";
+import { getCache, setCache , invalidateCachePrefix } from "@/lib/redis";
+
+import { REDIS_KEYS, ELASTIC_INDICES } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
 /**
@@ -118,8 +119,8 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     });
 
     // Invalidate semua cache listing tag
-    await produceCacheInvalidate(REDIS_KEYS.TAG_BERITA.ALL_PREFIX);
-
+    await indexDocument(ELASTIC_INDICES.TAG_BERITA, String(tag.id), tag);
+    await invalidateCachePrefix(REDIS_KEYS.TAG_BERITA.ALL_PREFIX);
     return successResponse(tag, 201);
   } catch (error) {
     return handleApiError(error);

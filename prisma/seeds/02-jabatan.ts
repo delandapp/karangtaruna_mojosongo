@@ -1,6 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-import { indexDocument } from "../../lib/elasticsearch";
-import { ELASTIC_INDICES } from "../../lib/constants/key";
 
 export async function seedJabatans(prisma: PrismaClient) {
   // 2. Seed Jabatan
@@ -23,11 +21,10 @@ export async function seedJabatans(prisma: PrismaClient) {
 
   console.log("Seeding jabatans...");
   for (const jabatanName of jabatans) {
-    const item = await prisma.m_jabatan.upsert({
+    await prisma.m_jabatan.upsert({
       where: { nama_jabatan: jabatanName },
       update: {},
       create: { nama_jabatan: jabatanName },
     });
-    await indexDocument(ELASTIC_INDICES.JABATANS, item.id.toString(), item);
   }
 }

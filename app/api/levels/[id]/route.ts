@@ -2,15 +2,18 @@ import { prisma } from "@/lib/prisma";
 import { updateLevelSchema } from "@/lib/validations/level.schema";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache } from "@/lib/redis";
+import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
 import {
   REDIS_KEYS,
   ELASTIC_INDICES,
   DEFAULT_CACHE_TTL,
 } from "@/lib/constants";
-import { getDocument } from "@/lib/elasticsearch";
+import {
+  getDocument,
+  indexDocument,
+  deleteDocument,
+} from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-import { produceCacheInvalidate } from "@/lib/kafka";
 
 type RouteProps = { params: Promise<{ id: string }> };
 
@@ -54,8 +57,8 @@ export const GET = withAuth(
 
 /**
  * PUT /api/levels/[id]
- * Update data level. CDC otomatis sync ke ES.
- * Invalidate cache single item + list prefix via Kafka.
+ * Update data level. ES sync dilakukan langsung.
+ * Invalidate cache.
  */
 export const PUT = withAuth(
   async (req: AuthenticatedRequest, { params }: RouteProps) => {
@@ -80,10 +83,10 @@ export const PUT = withAuth(
         data: { nama_level: validatedData.nama_level },
       });
 
-      // Invalidate cache via Kafka
-      await produceCacheInvalidate(REDIS_KEYS.LEVELS.SINGLE(levelId));
-      await produceCacheInvalidate(REDIS_KEYS.LEVELS.ALL_PREFIX);
-
+      // Invalidate cache
+      await invalidateCachePrefix(REDIS_KEYS.LEVELS.SINGLE(levelId));
+      await indexDocument(ELASTIC_INDICES.LEVELS, String(updated.id), updated);
+      await invalidateCachePrefix(REDIS_KEYS.LEVELS.ALL_PREFIX);
       return successResponse(updated, 200);
     } catch (error) {
       return handleApiError(error);
@@ -93,8 +96,8 @@ export const PUT = withAuth(
 
 /**
  * DELETE /api/levels/[id]
- * Hapus level. CDC otomatis remove dari ES.
- * Invalidate cache single item + list prefix via Kafka.
+ * Hapus level.
+ * Invalidate cache.
  */
 export const DELETE = withAuth(
   async (_req: AuthenticatedRequest, { params }: RouteProps) => {
@@ -113,10 +116,10 @@ export const DELETE = withAuth(
 
       await prisma.m_level.delete({ where: { id: levelId } });
 
-      // Invalidate cache via Kafka
-      await produceCacheInvalidate(REDIS_KEYS.LEVELS.SINGLE(levelId));
-      await produceCacheInvalidate(REDIS_KEYS.LEVELS.ALL_PREFIX);
-
+      // Invalidate cache
+      await invalidateCachePrefix(REDIS_KEYS.LEVELS.SINGLE(levelId));
+      await deleteDocument(ELASTIC_INDICES.LEVELS, String(id));
+      await invalidateCachePrefix(REDIS_KEYS.LEVELS.ALL_PREFIX);
       return successResponse(null, 200);
     } catch (error) {
       return handleApiError(error);

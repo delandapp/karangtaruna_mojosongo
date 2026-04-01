@@ -26,14 +26,6 @@ import path from "path";
 import readline from "readline";
 import dotenv from "dotenv";
 
-import { bulkIndex } from "../lib/elasticsearch";
-import { produceCacheInvalidate } from "../lib/kafka";
-import { ELASTIC_INDICES, REDIS_KEYS } from "../lib/constants/key";
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 dotenv.config({ path: ".env.development" });
 
 // ─── Konfigurasi ──────────────────────────────────────────────────────────────
@@ -52,7 +44,7 @@ interface CsvRow {
 interface DesaHierarchy {
   desaName: string;
   kecamatanName: string;
-  kotaName: string;      // nama kabupaten/kota dari CSV
+  kotaName: string; // nama kabupaten/kota dari CSV
   provinsiName: string;
   kecamatanCode: string; // 7 digit dari CSV
 }
@@ -93,34 +85,60 @@ function cetakLaporan(report: SyncReport) {
   console.log(`\n${sep}`);
   console.log("  📊  LAPORAN SINKRONISASI KELURAHAN / DESA");
   console.log(sep);
-  console.log(`  Total baris CSV         : ${report.total_csv.toLocaleString()}`);
-  console.log(`  ✅ Berhasil disimpan    : ${report.berhasil.toLocaleString()}`);
-  console.log(`  ⚠️  Duplikat (skip)     : ${report.duplikat.toLocaleString()}`);
-  console.log(`  🔸 Hierarchy tdk lengkap: ${report.hierarchy_tidak_lengkap.toLocaleString()}`);
-  console.log(`  🔍 Provinsi tdk match   : ${report.provinsi_tidak_ditemukan.toLocaleString()}`);
-  console.log(`  🔍 Kota/Kab tdk match  : ${report.kota_tidak_ditemukan.toLocaleString()}`);
-  console.log(`  🔍 Kecamatan tdk match : ${report.kecamatan_tidak_ditemukan.toLocaleString()}`);
+  console.log(
+    `  Total baris CSV         : ${report.total_csv.toLocaleString()}`,
+  );
+  console.log(
+    `  ✅ Berhasil disimpan    : ${report.berhasil.toLocaleString()}`,
+  );
+  console.log(
+    `  ⚠️  Duplikat (skip)     : ${report.duplikat.toLocaleString()}`,
+  );
+  console.log(
+    `  🔸 Hierarchy tdk lengkap: ${report.hierarchy_tidak_lengkap.toLocaleString()}`,
+  );
+  console.log(
+    `  🔍 Provinsi tdk match   : ${report.provinsi_tidak_ditemukan.toLocaleString()}`,
+  );
+  console.log(
+    `  🔍 Kota/Kab tdk match  : ${report.kota_tidak_ditemukan.toLocaleString()}`,
+  );
+  console.log(
+    `  🔍 Kecamatan tdk match : ${report.kecamatan_tidak_ditemukan.toLocaleString()}`,
+  );
   console.log(`  ❌ Gagal insert         : ${report.gagal.toLocaleString()}`);
 
   if (report.provinsi_miss.size > 0) {
-    console.log(`\n  Nama provinsi dari CSV yang tidak match di DB (${report.provinsi_miss.size}):`);
-    [...report.provinsi_miss].slice(0, 20).forEach((n) => console.log(`    · "${n}"`));
+    console.log(
+      `\n  Nama provinsi dari CSV yang tidak match di DB (${report.provinsi_miss.size}):`,
+    );
+    [...report.provinsi_miss]
+      .slice(0, 20)
+      .forEach((n) => console.log(`    · "${n}"`));
   }
   if (report.kota_miss.size > 0) {
-    console.log(`\n  Nama kab/kota dari CSV yang tidak match di DB (${report.kota_miss.size}):`);
-    [...report.kota_miss].slice(0, 20).forEach((n) => console.log(`    · "${n}"`));
+    console.log(
+      `\n  Nama kab/kota dari CSV yang tidak match di DB (${report.kota_miss.size}):`,
+    );
+    [...report.kota_miss]
+      .slice(0, 20)
+      .forEach((n) => console.log(`    · "${n}"`));
   }
   if (report.kecamatan_miss.size > 0) {
-    console.log(`\n  Nama kecamatan dari CSV yang tidak match di DB (${report.kecamatan_miss.size}):`);
-    [...report.kecamatan_miss].slice(0, 30).forEach((n) => console.log(`    · "${n}"`));
+    console.log(
+      `\n  Nama kecamatan dari CSV yang tidak match di DB (${report.kecamatan_miss.size}):`,
+    );
+    [...report.kecamatan_miss]
+      .slice(0, 30)
+      .forEach((n) => console.log(`    · "${n}"`));
     if (report.kecamatan_miss.size > 30)
       console.log(`    ... dan ${report.kecamatan_miss.size - 30} lainnya.`);
   }
   if (report.detail_gagal.length > 0) {
     console.log(`\n  Gagal insert (${report.detail_gagal.length}):`);
-    report.detail_gagal.slice(0, 20).forEach((d) =>
-      console.log(`    · [${d.path}] ${d.nama} — ${d.alasan}`)
-    );
+    report.detail_gagal
+      .slice(0, 20)
+      .forEach((d) => console.log(`    · [${d.path}] ${d.nama} — ${d.alasan}`));
   }
 
   console.log(`${sep}\n`);
@@ -135,7 +153,10 @@ function cetakLaporan(report: SyncReport) {
 function normalisasi(nama: string): string {
   return nama
     .toUpperCase()
-    .replace(/^(PROV\.|PROVINSI|KAB\.|KABUPATEN|KOTA|KO\.|KEC\.|KECAMATAN)\s+/i, "")
+    .replace(
+      /^(PROV\.|PROVINSI|KAB\.|KABUPATEN|KOTA|KO\.|KEC\.|KECAMATAN)\s+/i,
+      "",
+    )
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -152,7 +173,10 @@ async function parseCsv(filePath: string): Promise<CsvRow[]> {
     });
     let isHeader = true;
     rl.on("line", (line) => {
-      if (isHeader) { isHeader = false; return; }
+      if (isHeader) {
+        isHeader = false;
+        return;
+      }
       const trimmed = line.trim();
       if (!trimmed) return;
       const idx = trimmed.indexOf(",");
@@ -196,13 +220,17 @@ async function main() {
 
     // ── 1. Baca 4 file CSV ────────────────────────────────────────────────────
     log("INFO", "Membaca file CSV…");
-    const [provinsiCsv, kabupatenCsv, kecamatanCsv, desaCsv] = await Promise.all([
-      parseCsv(path.join(DATASET_DIR, "provinsi.csv")),
-      parseCsv(path.join(DATASET_DIR, "kabupaten.csv")),
-      parseCsv(path.join(DATASET_DIR, "kecamatan.csv")),
-      parseCsv(path.join(DATASET_DIR, "desa.csv")),
-    ]);
-    log("INFO", `CSV: provinsi=${provinsiCsv.length} · kab=${kabupatenCsv.length} · kec=${kecamatanCsv.length} · desa=${desaCsv.length.toLocaleString()}`);
+    const [provinsiCsv, kabupatenCsv, kecamatanCsv, desaCsv] =
+      await Promise.all([
+        parseCsv(path.join(DATASET_DIR, "provinsi.csv")),
+        parseCsv(path.join(DATASET_DIR, "kabupaten.csv")),
+        parseCsv(path.join(DATASET_DIR, "kecamatan.csv")),
+        parseCsv(path.join(DATASET_DIR, "desa.csv")),
+      ]);
+    log(
+      "INFO",
+      `CSV: provinsi=${provinsiCsv.length} · kab=${kabupatenCsv.length} · kec=${kecamatanCsv.length} · desa=${desaCsv.length.toLocaleString()}`,
+    );
     report.total_csv = desaCsv.length;
 
     // ── 2. Build lookup maps dari CSV ─────────────────────────────────────────
@@ -211,21 +239,30 @@ async function main() {
     provinsiCsv.forEach((r) => provinsiCsvMap.set(r.code, r.name));
 
     const kabupatenCsvMap = new Map<string, { name: string; parent: string }>();
-    kabupatenCsv.forEach((r) => kabupatenCsvMap.set(r.code, { name: r.name, parent: r.parent_code }));
+    kabupatenCsv.forEach((r) =>
+      kabupatenCsvMap.set(r.code, { name: r.name, parent: r.parent_code }),
+    );
 
     const kecamatanCsvMap = new Map<string, { name: string; parent: string }>();
-    kecamatanCsv.forEach((r) => kecamatanCsvMap.set(r.code, { name: r.name, parent: r.parent_code }));
+    kecamatanCsv.forEach((r) =>
+      kecamatanCsvMap.set(r.code, { name: r.name, parent: r.parent_code }),
+    );
 
     // ── 3. Load semua data DB ke memory ───────────────────────────────────────
     log("INFO", "Memuat data wilayah dari database…");
 
     const dbProvinsiList = await prisma.m_provinsi.findMany();
-    const dbKotaList = await prisma.m_kota.findMany({ include: { m_provinsi: true } });
+    const dbKotaList = await prisma.m_kota.findMany({
+      include: { m_provinsi: true },
+    });
     const dbKecamatanList = await prisma.m_kecamatan.findMany({
       include: { m_kota: { include: { m_provinsi: true } } },
     });
 
-    log("INFO", `DB: provinsi=${dbProvinsiList.length} · kota=${dbKotaList.length} · kecamatan=${dbKecamatanList.length}`);
+    log(
+      "INFO",
+      `DB: provinsi=${dbProvinsiList.length} · kota=${dbKotaList.length} · kecamatan=${dbKecamatanList.length}`,
+    );
 
     // Map DB: normalisasi(nama) → id
     // Provinsi: normNama → { id }
@@ -280,7 +317,7 @@ async function main() {
     const kecamatanPrefixMap = new Map<string, string>();
     // Urutkan provinsi berdasarkan id
     const sortedProvinsiDB = [...dbProvinsiList].sort((a, b) =>
-      a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+      a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
     );
     const kotaByProvinsi = new Map<string, typeof dbKotaList>();
     dbKotaList.forEach((k) => {
@@ -298,14 +335,14 @@ async function main() {
     let provIdx = 0;
     for (const prov of sortedProvinsiDB) {
       provIdx++;
-      const kotaList = (kotaByProvinsi.get(prov.id.toString()) ?? []).sort((a, b) =>
-        a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+      const kotaList = (kotaByProvinsi.get(prov.id.toString()) ?? []).sort(
+        (a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
       );
       let kotaIdx = 0;
       for (const kota of kotaList) {
         kotaIdx++;
-        const kecList = (kecamatanByKota.get(kota.id.toString()) ?? []).sort((a, b) =>
-          a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+        const kecList = (kecamatanByKota.get(kota.id.toString()) ?? []).sort(
+          (a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
         );
         let kecIdx = 0;
         for (const kec of kecList) {
@@ -319,27 +356,23 @@ async function main() {
       }
     }
 
-    log("INFO", `Prefix kode dibangun untuk ${kecamatanPrefixMap.size} kecamatan.`);
+    log(
+      "INFO",
+      `Prefix kode dibangun untuk ${kecamatanPrefixMap.size} kecamatan.`,
+    );
 
     // ── 5. Proses setiap desa ─────────────────────────────────────────────────
     log("INFO", "Mulai proses insert kelurahan berdasarkan nama…\n");
 
     let processed = 0;
-    // Batch for ES indexing
-    let esBatch: Array<{ id: string | number; doc: any }> = [];
 
     for (const desa of desaCsv) {
       processed++;
       if (processed % 2000 === 0) {
         log(
           "INFO",
-          `Progress: ${processed.toLocaleString()}/${desaCsv.length.toLocaleString()} — ✅${report.berhasil} ⚠️${report.duplikat} ❌${report.gagal} 🔍${report.kecamatan_tidak_ditemukan}`
+          `Progress: ${processed.toLocaleString()}/${desaCsv.length.toLocaleString()} — ✅${report.berhasil} ⚠️${report.duplikat} ❌${report.gagal} 🔍${report.kecamatan_tidak_ditemukan}`,
         );
-        // Execute bulk index every 2000
-        if (esBatch.length > 0) {
-           await bulkIndex(ELASTIC_INDICES.KELURAHAN, esBatch);
-           esBatch = [];
-        }
       }
 
       const desaNama = desa.name.trim();
@@ -379,16 +412,22 @@ async function main() {
       const dbKotaId = dbKotaMap.get(`${dbProvId.toString()}__${normKota}`);
       if (!dbKotaId) {
         report.kota_tidak_ditemukan++;
-        report.kota_miss.add(`${kotaNamaCsv} in ${provNamaCsv} (norm: ${normKota})`);
+        report.kota_miss.add(
+          `${kotaNamaCsv} in ${provNamaCsv} (norm: ${normKota})`,
+        );
         continue;
       }
 
       // Match ke DB — Kecamatan
       const normKec = normalisasi(kecNamaCsv);
-      const dbKecData = dbKecamatanMap.get(`${dbKotaId.toString()}__${normKec}`);
+      const dbKecData = dbKecamatanMap.get(
+        `${dbKotaId.toString()}__${normKec}`,
+      );
       if (!dbKecData) {
         report.kecamatan_tidak_ditemukan++;
-        report.kecamatan_miss.add(`${kecNamaCsv} in ${kotaNamaCsv} (norm: ${normKec})`);
+        report.kecamatan_miss.add(
+          `${kecNamaCsv} in ${kotaNamaCsv} (norm: ${normKec})`,
+        );
         continue;
       }
 
@@ -414,7 +453,10 @@ async function main() {
         if (existingByNama) {
           report.duplikat++;
           if (report.duplikat <= 5) {
-            log("WARN", `Duplikat — "${desaNama}" di kecamatan id=${dbKecId}, skip.`);
+            log(
+              "WARN",
+              `Duplikat — "${desaNama}" di kecamatan id=${dbKecId}, skip.`,
+            );
           }
           // Rollback counter karena tidak jadi dipakai
           counterPerKecamatan.set(kecIdStr, urutan - 1);
@@ -440,9 +482,6 @@ async function main() {
           },
         });
 
-        // Add to ES Batch
-        esBatch.push({ id: created.id.toString(), doc: created });
-
         report.berhasil++;
         if (report.berhasil <= 5 || report.berhasil % 1000 === 0) {
           log("SUCCESS", `[${kodeKelurahan}] ${desaNama} → ${pathStr}`);
@@ -456,24 +495,12 @@ async function main() {
         report.detail_gagal.push({ nama: desaNama, path: pathStr, alasan });
       }
     }
-    // Process remaining ES batch
-    if (esBatch.length > 0) {
-       await bulkIndex(ELASTIC_INDICES.KELURAHAN, esBatch);
-    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     log("ERROR", `Fatal error: ${msg}`);
     process.exitCode = 1;
   } finally {
     cetakLaporan(report);
-
-    try {
-      log("INFO", "Invalidasi Cache Redis via Kafka...");
-      await produceCacheInvalidate(REDIS_KEYS.KELURAHAN.ALL_PREFIX);
-      await delay(500); 
-    } catch (e) {
-      log("ERROR", "Gagal me-request invalidasi Cache.");
-    }
 
     await prisma.$disconnect();
     await pool.end();

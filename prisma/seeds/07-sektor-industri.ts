@@ -1,8 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import fs from "fs";
 import path from "path";
-import { indexDocument } from "../../lib/elasticsearch";
-import { ELASTIC_INDICES } from "../../lib/constants/key";
 
 export async function seedSektorIndustri(prisma: PrismaClient) {
   console.log("Seeding sektor industri...");
@@ -10,12 +8,12 @@ export async function seedSektorIndustri(prisma: PrismaClient) {
   // Baca file JSON
   const jsonPath = path.join(
     __dirname,
-    "../../documentation/data_json/sektor_industri.json"
+    "../../documentation/data_json/sektor_industri.json",
   );
 
   if (!fs.existsSync(jsonPath)) {
     console.warn(
-      "File sektor_industri.json tidak ditemukan, melewati proses seeding."
+      "File sektor_industri.json tidak ditemukan, melewati proses seeding.",
     );
     return;
   }
@@ -30,7 +28,7 @@ export async function seedSektorIndustri(prisma: PrismaClient) {
   }
 
   for (const item of sectors) {
-    const createdItem = await prisma.m_sektor_industri.upsert({
+    await prisma.m_sektor_industri.upsert({
       where: { nama_sektor: item.nama_sektor },
       update: {
         deskripsi_sektor: item.deskripsi_sektor,
@@ -40,6 +38,5 @@ export async function seedSektorIndustri(prisma: PrismaClient) {
         deskripsi_sektor: item.deskripsi_sektor,
       },
     });
-    await indexDocument(ELASTIC_INDICES.SEKTOR_INDUSTRI, createdItem.id.toString(), createdItem);
   }
 }

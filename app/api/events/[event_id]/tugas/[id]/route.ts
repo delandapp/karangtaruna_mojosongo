@@ -1,11 +1,11 @@
+import { indexDocument, deleteDocument } from "@/lib/elasticsearch";
 import { prisma } from "@/lib/prisma";
 import { updateTugasSchema } from "@/lib/validations/tugas.schema";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache } from "@/lib/redis";
+import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
 import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-import { produceCacheInvalidate } from "@/lib/kafka";
 
 type RouteProps = { params: Promise<{ event_id: string; id: string }> };
 
@@ -99,9 +99,9 @@ export const PUT = withAuth(
         },
       });
 
-      // Invalidate cache via Kafka — CDC akan sync ke ES secara otomatis
-      await produceCacheInvalidate(REDIS_KEYS.TUGAS.SINGLE(eventId, tugasId));
-      await produceCacheInvalidate(REDIS_KEYS.TUGAS.ALL_PREFIX(eventId));
+      // Invalidate cache
+      await invalidateCachePrefix(REDIS_KEYS.TUGAS.SINGLE(eventId, tugasId));
+      await invalidateCachePrefix(REDIS_KEYS.TUGAS.ALL_PREFIX(eventId));
 
       return successResponse(updated, 200);
     } catch (error) {
@@ -132,9 +132,9 @@ export const DELETE = withAuth(
 
       await prisma.tugas_event.delete({ where: { id: tugasId } });
 
-      // Invalidate cache via Kafka
-      await produceCacheInvalidate(REDIS_KEYS.TUGAS.SINGLE(eventId, tugasId));
-      await produceCacheInvalidate(REDIS_KEYS.TUGAS.ALL_PREFIX(eventId));
+      // Invalidate cache
+      await invalidateCachePrefix(REDIS_KEYS.TUGAS.SINGLE(eventId, tugasId));
+      await invalidateCachePrefix(REDIS_KEYS.TUGAS.ALL_PREFIX(eventId));
 
       return successResponse(null, 200);
     } catch (error) {

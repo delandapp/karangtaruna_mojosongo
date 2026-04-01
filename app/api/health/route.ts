@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
 import { checkElasticHealth } from "@/lib/elasticsearch";
 import { redis } from "@/lib/redis";
-import { getCdcConsumerStatus } from "@/lib/cdc-consumer";
 
 /**
  * GET /api/health
  *
  * Health check endpoint untuk memonitor status semua service:
- * - PostgreSQL (via Prisma)
  * - Redis
  * - Elasticsearch
- * - CDC Consumer (Kafka)
  */
 export async function GET() {
   const checks: Record<string, { status: string; detail?: string }> = {};
@@ -33,21 +30,8 @@ export async function GET() {
     checks.elasticsearch = { status: "unhealthy", detail: error.message };
   }
 
-  // 3. CDC Consumer status
-  try {
-    const cdcStatus = getCdcConsumerStatus();
-    checks.cdc_consumer = {
-      status: cdcStatus.isRunning ? "running" : "stopped",
-      detail: `${cdcStatus.topicCount} topics registered`,
-    };
-  } catch (error: any) {
-    checks.cdc_consumer = { status: "unknown", detail: error.message };
-  }
-
   // Overall status
-  const allHealthy = Object.values(checks).every(
-    (c) => c.status === "healthy" || c.status === "running",
-  );
+  const allHealthy = Object.values(checks).every((c) => c.status === "healthy");
 
   return NextResponse.json(
     {

@@ -1,9 +1,11 @@
+import { indexDocument, deleteDocument } from "@/lib/elasticsearch";
+import { invalidateCachePrefix } from "@/lib/redis";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-import { produceCacheInvalidate } from "@/lib/kafka";
+
 import { REDIS_KEYS } from "@/lib/constants";
 
 type RouteProps = { params: Promise<{ id: string }> };
@@ -147,9 +149,9 @@ export const PUT = withAuth(
         },
       });
 
-      // Invalidate cache — CDC akan sync ke ES secara otomatis
-      await produceCacheInvalidate(REDIS_KEYS.E_PROPOSAL.SINGLE(0, id));
-      await produceCacheInvalidate(
+      // Invalidate cache
+      await invalidateCachePrefix(REDIS_KEYS.E_PROPOSAL.SINGLE(0, id));
+      await invalidateCachePrefix(
         REDIS_KEYS.E_PROPOSAL.SINGLE_BY_SLUG(updated.slug ?? ""),
       );
 
@@ -185,15 +187,15 @@ export const DELETE = withAuth(
       await prisma.m_eproposal.delete({ where: { id } });
 
       // Invalidate cache
-      await produceCacheInvalidate(
+      await invalidateCachePrefix(
         REDIS_KEYS.E_PROPOSAL.SINGLE(existing.event_id ?? 0, id),
       );
       if (existing.slug) {
-        await produceCacheInvalidate(
+        await invalidateCachePrefix(
           REDIS_KEYS.E_PROPOSAL.SINGLE_BY_SLUG(existing.slug),
         );
       }
-      await produceCacheInvalidate(
+      await invalidateCachePrefix(
         REDIS_KEYS.E_PROPOSAL.ALL_PREFIX(existing.event_id ?? 0),
       );
 

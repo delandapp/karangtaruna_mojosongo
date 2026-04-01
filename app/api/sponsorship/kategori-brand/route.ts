@@ -1,3 +1,4 @@
+import { indexDocument, deleteDocument } from "@/lib/elasticsearch";
 import { prisma } from "@/lib/prisma";
 import { createKategoriBrandSchema } from "@/lib/validations/sponsorship.schema";
 import {
@@ -6,10 +7,10 @@ import {
   paginatedResponse,
 } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache } from "@/lib/redis";
+import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
 import { DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-import { produceCacheInvalidate } from "@/lib/kafka";
+
 import { z } from "zod";
 
 // ─── Cache Keys ───────────────────────────────────────────────────────────────
@@ -114,9 +115,9 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
       data: validatedData,
     });
 
-    // Invalidate list + dropdown cache via Kafka
-    await produceCacheInvalidate(CACHE_LIST_PREFIX);
-    await produceCacheInvalidate(CACHE_DROPDOWN);
+    // Invalidate cache
+    await invalidateCachePrefix(CACHE_LIST_PREFIX);
+    await invalidateCachePrefix(CACHE_DROPDOWN);
 
     return successResponse(newItem, 201);
   } catch (error) {

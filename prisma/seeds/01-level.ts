@@ -1,6 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-import { indexDocument } from "../../lib/elasticsearch";
-import { ELASTIC_INDICES } from "../../lib/constants/key";
 
 export async function seedLevels(prisma: PrismaClient) {
   // 1. Seed Tingkatan Level
@@ -22,6 +20,5 @@ export async function seedLevels(prisma: PrismaClient) {
       update: {},
       create: { nama_level: levelName },
     });
-    await indexDocument(ELASTIC_INDICES.LEVELS, item.id.toString(), item);
   }
 }

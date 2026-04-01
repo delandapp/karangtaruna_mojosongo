@@ -1,3 +1,4 @@
+import { indexDocument, deleteDocument } from "@/lib/elasticsearch";
 import { prisma } from "@/lib/prisma";
 import { createPanitiaSchema } from "@/lib/validations/panitia.schema";
 import {
@@ -6,10 +7,10 @@ import {
   paginatedResponse,
 } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache } from "@/lib/redis";
+import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
 import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-import { produceCacheInvalidate } from "@/lib/kafka";
+
 import { z } from "zod";
 
 type RouteProps = { params: Promise<{ event_id: string }> };
@@ -154,8 +155,8 @@ export const POST = withAuth(
         },
       });
 
-      // Invalidate list cache — CDC akan sync ke ES secara otomatis
-      await produceCacheInvalidate(REDIS_KEYS.PANITIA.ALL_PREFIX(eventId));
+      // Invalidate cache
+      await invalidateCachePrefix(REDIS_KEYS.PANITIA.ALL_PREFIX(eventId));
 
       return successResponse(panitia, 201);
     } catch (error) {

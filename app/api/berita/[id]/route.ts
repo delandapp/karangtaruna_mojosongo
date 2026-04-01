@@ -1,10 +1,12 @@
+import { indexDocument, deleteDocument } from "@/lib/elasticsearch";
+import { invalidateCachePrefix } from "@/lib/redis";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { updateBeritaSchema } from "@/lib/validations/berita.schema";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-import { produceCacheInvalidate } from "@/lib/kafka";
+
 import { REDIS_KEYS } from "@/lib/constants";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -112,13 +114,13 @@ export const PATCH = withAuth(
       });
 
       // Invalidate Redis cache
-      await produceCacheInvalidate(REDIS_KEYS.BERITA.SINGLE(beritaId));
-      await produceCacheInvalidate(
+      await invalidateCachePrefix(REDIS_KEYS.BERITA.SINGLE(beritaId));
+      await invalidateCachePrefix(
         REDIS_KEYS.BERITA.SINGLE_BY_SLUG(updated.seo_slug),
       );
       // Slug lama juga perlu diinvalidate jika slug berubah
       if (existing.seo_slug !== updated.seo_slug) {
-        await produceCacheInvalidate(
+        await invalidateCachePrefix(
           REDIS_KEYS.BERITA.SINGLE_BY_SLUG(existing.seo_slug),
         );
       }
@@ -163,13 +165,13 @@ export const DELETE = withAuth(
       });
 
       // Invalidate semua cache terkait
-      await produceCacheInvalidate(REDIS_KEYS.BERITA.SINGLE(beritaId));
-      await produceCacheInvalidate(
+      await invalidateCachePrefix(REDIS_KEYS.BERITA.SINGLE(beritaId));
+      await invalidateCachePrefix(
         REDIS_KEYS.BERITA.SINGLE_BY_SLUG(berita.seo_slug),
       );
-      await produceCacheInvalidate(REDIS_KEYS.BERITA.ALL_PREFIX);
-      await produceCacheInvalidate(REDIS_KEYS.BERITA.TRENDING);
-      await produceCacheInvalidate(REDIS_KEYS.BERITA.TOP);
+      await invalidateCachePrefix(REDIS_KEYS.BERITA.ALL_PREFIX);
+      await invalidateCachePrefix(REDIS_KEYS.BERITA.TRENDING);
+      await invalidateCachePrefix(REDIS_KEYS.BERITA.TOP);
 
       return successResponse(
         { message: "Berita berhasil dihapus" },

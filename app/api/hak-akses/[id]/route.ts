@@ -1,9 +1,11 @@
+import { indexDocument, deleteDocument } from "@/lib/elasticsearch";
+import { invalidateCachePrefix } from "@/lib/redis";
 import { prisma } from "@/lib/prisma";
 import { updateHakAksesSchema } from "@/lib/validations/hak-akses.schema";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { REDIS_KEYS } from "@/lib/constants";
-import { produceCacheInvalidate } from "@/lib/kafka";
+import { REDIS_KEYS, ELASTIC_INDICES } from "@/lib/constants";
+
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
 interface Context {
@@ -67,10 +69,10 @@ export const PUT = withAuth(
         });
       });
 
-      // Invalidate cache via Kafka — CDC akan sync ke ES otomatis
-      await produceCacheInvalidate(REDIS_KEYS.HAK_AKSES.SINGLE(id));
-      await produceCacheInvalidate(REDIS_KEYS.HAK_AKSES.ALL_PREFIX);
-
+      // Invalidate cache
+      await invalidateCachePrefix(REDIS_KEYS.HAK_AKSES.SINGLE(id));
+      // ES index update removed
+      await invalidateCachePrefix(REDIS_KEYS.HAK_AKSES.ALL_PREFIX);
       return successResponse(updated, 200);
     } catch (error) {
       return handleApiError(error);
@@ -102,10 +104,10 @@ export const DELETE = withAuth(
       // Prisma cascade deletion menghapus rules otomatis
       await prisma.m_hak_akses.delete({ where: { id } });
 
-      // Invalidate cache via Kafka
-      await produceCacheInvalidate(REDIS_KEYS.HAK_AKSES.SINGLE(id));
-      await produceCacheInvalidate(REDIS_KEYS.HAK_AKSES.ALL_PREFIX);
-
+      // Invalidate cache
+      await invalidateCachePrefix(REDIS_KEYS.HAK_AKSES.SINGLE(id));
+      // ES index update removed
+      await invalidateCachePrefix(REDIS_KEYS.HAK_AKSES.ALL_PREFIX);
       return successResponse({ deleted: true }, 200);
     } catch (error) {
       return handleApiError(error);

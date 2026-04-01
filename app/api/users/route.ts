@@ -9,14 +9,17 @@ import {
 import { handleApiError } from "@/lib/error-handler";
 import bcrypt from "bcrypt";
 import { z } from "zod";
-import { getCache, setCache } from "@/lib/redis";
+import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
 import {
   REDIS_KEYS,
   DEFAULT_CACHE_TTL,
   ELASTIC_INDICES,
 } from "@/lib/constants";
-import { searchDocuments } from "@/lib/elasticsearch";
-import { produceCacheInvalidate } from "@/lib/kafka";
+import {
+  searchDocuments,
+  indexDocument,
+  deleteDocument,
+} from "@/lib/elasticsearch";
 
 // ─── Validation Schemas ───────────────────────────────────────────────────────
 
@@ -297,9 +300,9 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
       },
     });
 
-    // Invalidate list cache — CDC akan sync ke ES secara otomatis
-    await produceCacheInvalidate(REDIS_KEYS.USERS.ALL_PREFIX);
-
+    // Invalidate cache
+    await indexDocument(ELASTIC_INDICES.USERS, String(newUser.id), newUser);
+    await invalidateCachePrefix(REDIS_KEYS.USERS.ALL_PREFIX);
     return successResponse(newUser, 201);
   } catch (error) {
     return handleApiError(error);

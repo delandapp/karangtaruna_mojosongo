@@ -1,11 +1,11 @@
+import { indexDocument, deleteDocument } from "@/lib/elasticsearch";
 import { prisma } from "@/lib/prisma";
 import { updateItemAnggaranSchema } from "@/lib/validations/keuangan.schema";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache } from "@/lib/redis";
+import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
 import { DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-import { produceCacheInvalidate } from "@/lib/kafka";
 
 type RouteProps = {
   params: Promise<{ event_id: string; anggaran_id: string; id: string }>;
@@ -114,11 +114,9 @@ export const PUT = withAuth(
         },
       });
 
-      // Invalidate cache via Kafka — CDC akan sync ke ES secara otomatis
-      await produceCacheInvalidate(CACHE_KEY(itemId));
-      await produceCacheInvalidate(
-        CACHE_INVALIDATE_PREFIX(eventId, anggaranId),
-      );
+      // Invalidate cache
+      await invalidateCachePrefix(CACHE_KEY(itemId));
+      await invalidateCachePrefix(CACHE_INVALIDATE_PREFIX(eventId, anggaranId));
 
       return successResponse(updated, 200);
     } catch (error) {
@@ -148,11 +146,9 @@ export const DELETE = withAuth(
 
       await prisma.item_anggaran.delete({ where: { id: itemId } });
 
-      // Invalidate cache via Kafka — CDC akan remove dari ES secara otomatis
-      await produceCacheInvalidate(CACHE_KEY(itemId));
-      await produceCacheInvalidate(
-        CACHE_INVALIDATE_PREFIX(eventId, anggaranId),
-      );
+      // Invalidate cache
+      await invalidateCachePrefix(CACHE_KEY(itemId));
+      await invalidateCachePrefix(CACHE_INVALIDATE_PREFIX(eventId, anggaranId));
 
       return successResponse(null, 200);
     } catch (error) {

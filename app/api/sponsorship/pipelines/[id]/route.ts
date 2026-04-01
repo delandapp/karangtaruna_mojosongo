@@ -1,8 +1,10 @@
+import { indexDocument, deleteDocument } from "@/lib/elasticsearch";
+import { invalidateCachePrefix } from "@/lib/redis";
 import { prisma } from "@/lib/prisma";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-import { produceCacheInvalidate } from "@/lib/kafka";
+
 import { eventSponsorSchema } from "@/lib/validations/sponsorship.schema";
 
 type RouteProps = { params: Promise<{ id: string }> };
@@ -123,8 +125,8 @@ export const PUT = withAuth(
         },
       });
 
-      // Invalidate cache via Kafka
-      await produceCacheInvalidate(CACHE_INVALIDATE_PREFIX);
+      // Invalidate cache
+      await invalidateCachePrefix(CACHE_INVALIDATE_PREFIX);
 
       return successResponse(updated, 200);
     } catch (error) {
@@ -157,8 +159,8 @@ export const DELETE = withAuth(
 
       await prisma.event_sponsor.delete({ where: { id: pipelineId } });
 
-      // Invalidate cache via Kafka
-      await produceCacheInvalidate(CACHE_INVALIDATE_PREFIX);
+      // Invalidate cache
+      await invalidateCachePrefix(CACHE_INVALIDATE_PREFIX);
 
       return successResponse(
         { message: "Data pipeline berhasil dihapus" },

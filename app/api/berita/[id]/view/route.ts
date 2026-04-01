@@ -6,7 +6,7 @@ import {
   checkAndMarkView,
   VIEW_CERT_COOKIE_OPTIONS,
 } from "@/lib/news/view-cert.service";
-import { produceNewsViewed } from "@/lib/news/news-kafka";
+import { bufferView } from "@/lib/news/view-counter.consumer";
 
 /**
  * POST /api/berita/[id]/view
@@ -16,7 +16,8 @@ import { produceNewsViewed } from "@/lib/news/news-kafka";
  * Flow:
  *  1. Cek cookie 'view_cert' — jika tidak ada, buat sertifikat baru (JWT HS256)
  *  2. Verifikasi JWT + cek Redis debounce via SET NX (TTL 4 jam per berita per cert)
- *  3. Jika view baru → produce event ke Kafka 'news.viewed' → counted: true
+ *  3. Jika view baru → bufferView(beritaId) → counted: true
+ *     (buffer di-flush ke DB + ES setiap 10 detik oleh view-counter worker)
  *  4. Jika sudah dihitung dalam window → skip → counted: false
  *
  * Request Headers (opsional, digunakan saat membuat cert baru):
@@ -39,8 +40,7 @@ export async function POST(
     let needSetCookie = false;
 
     if (!certJwt) {
-      const fingerprint =
-        req.headers.get("X-Device-Fingerprint") ?? "unknown";
+      const fingerprint = req.headers.get("X-Device-Fingerprint") ?? "unknown";
       certJwt = await createViewCertificate(fingerprint);
       needSetCookie = true;
     }
@@ -48,9 +48,10 @@ export async function POST(
     // ── 2. Cek debounce + tandai view (atomic Redis SET NX) ──────────────
     const isCounted = await checkAndMarkView(certJwt, beritaId);
 
-    // ── 3. Produce ke Kafka jika ini view baru ───────────────────────────
+    // ── 3. Buffer view count jika ini view baru ──────────────────────────
+    // Flush ke DB + Elasticsearch dilakukan setiap 10 detik oleh view-counter worker
     if (isCounted) {
-      await produceNewsViewed(beritaId);
+      bufferView(beritaId);
     }
 
     // ── 4. Build response + set cookie jika cert baru dibuat ─────────────
@@ -59,13 +60,13 @@ export async function POST(
 
     if (needSetCookie) {
       response.cookies.set({
-        name:     VIEW_CERT_COOKIE_OPTIONS.name,
-        value:    certJwt,
+        name: VIEW_CERT_COOKIE_OPTIONS.name,
+        value: certJwt,
         httpOnly: VIEW_CERT_COOKIE_OPTIONS.httpOnly,
-        secure:   VIEW_CERT_COOKIE_OPTIONS.secure,
+        secure: VIEW_CERT_COOKIE_OPTIONS.secure,
         sameSite: VIEW_CERT_COOKIE_OPTIONS.sameSite,
-        maxAge:   VIEW_CERT_COOKIE_OPTIONS.maxAge,
-        path:     VIEW_CERT_COOKIE_OPTIONS.path,
+        maxAge: VIEW_CERT_COOKIE_OPTIONS.maxAge,
+        path: VIEW_CERT_COOKIE_OPTIONS.path,
       });
     }
 

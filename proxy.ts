@@ -20,7 +20,7 @@ const AUTH_ROUTES = ["/login", "/register"];
 // Route yang hanya bisa diakses saat SUDAH login
 const PROTECTED_ROUTES = ["/dashboard"];
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
     const { pathname } = req.nextUrl;
     
     // Bypass middleware sepenuhnya untuk request internal Next.js (RSC/prefetch/static)

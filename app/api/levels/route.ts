@@ -10,15 +10,18 @@ import {
   paginatedResponse,
 } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache } from "@/lib/redis";
+import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
 import {
   REDIS_KEYS,
   ELASTIC_INDICES,
   DEFAULT_CACHE_TTL,
 } from "@/lib/constants";
-import { searchDocuments } from "@/lib/elasticsearch";
+import {
+  searchDocuments,
+  indexDocument,
+  deleteDocument,
+} from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-import { produceCacheInvalidate } from "@/lib/kafka";
 
 // ──────────────────────────────────────────────────────────
 // GET /api/levels — List dengan Pagination, Search & Dropdown
@@ -107,9 +110,9 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
       data: { nama_level: validatedData.nama_level },
     });
 
-    // Invalidate list cache via Kafka (CDC akan sync ke ES otomatis)
-    await produceCacheInvalidate(REDIS_KEYS.LEVELS.ALL_PREFIX);
-
+    // Invalidate cache
+    await indexDocument(ELASTIC_INDICES.LEVELS, String(newLevel.id), newLevel);
+    await invalidateCachePrefix(REDIS_KEYS.LEVELS.ALL_PREFIX);
     return successResponse(newLevel, 201);
   } catch (error) {
     return handleApiError(error);

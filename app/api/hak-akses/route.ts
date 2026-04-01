@@ -9,15 +9,19 @@ import {
   paginatedResponse,
 } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache } from "@/lib/redis";
+import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
 import {
   REDIS_KEYS,
   ELASTIC_INDICES,
   DEFAULT_CACHE_TTL,
 } from "@/lib/constants";
-import { searchDocuments } from "@/lib/elasticsearch";
+import {
+  searchDocuments,
+  indexDocument,
+  deleteDocument,
+} from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-import { produceCacheInvalidate } from "@/lib/kafka";
+
 import { z } from "zod";
 
 const listQuerySchema = z.object({
@@ -131,9 +135,9 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
       }),
     );
 
-    // Invalidate list cache — CDC akan sync ke ES secara otomatis
-    await produceCacheInvalidate(REDIS_KEYS.HAK_AKSES.ALL_PREFIX);
-
+    // Invalidate cache
+    // ES index update removed
+    await invalidateCachePrefix(REDIS_KEYS.HAK_AKSES.ALL_PREFIX);
     return successResponse(insertedRecords, 201);
   } catch (error) {
     return handleApiError(error);

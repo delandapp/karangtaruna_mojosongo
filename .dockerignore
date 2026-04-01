@@ -1,0 +1,44 @@
+# ── Version control ────────────────────────────────────────────
+.git
+.gitignore
+
+# ── Dependencies (re-installed inside Docker) ──────────────────
+node_modules
+.npm-cache
+
+# ── Next.js build output (re-built inside Docker) ──────────────
+.next
+out
+build
+
+# ── Environment files (injected via --env-file / ARG) ──────────
+.env
+.env.*
+
+# ── Test & coverage ────────────────────────────────────────────
+coverage
+tests
+vitest.config.ts
+
+# ── Dev tooling ────────────────────────────────────────────────
+.vscode
+.idea
+*.tsbuildinfo
+
+# ── Documentation & misc ───────────────────────────────────────
+# Exclude seluruh documentation kecuali data_json (dibutuhkan oleh seed files)
+documentation/**
+!documentation/data_json
+!documentation/data_json/**
+*.md
+*.html
+tmp
+
+# ── OS artifacts ───────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Docker files themselves (no need to copy into image) ───────
+Dockerfile
+docker-compose.yml
+# docker-entrypoint.sh TIDAK di-exclude — harus di-COPY ke dalam image

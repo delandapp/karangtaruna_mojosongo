@@ -2,14 +2,18 @@ import { prisma } from "@/lib/prisma";
 import { updateSektorIndustriSchema } from "@/lib/validations/perusahaan.schema";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache } from "@/lib/redis";
+import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
 import {
   REDIS_KEYS,
   ELASTIC_INDICES,
   DEFAULT_CACHE_TTL,
 } from "@/lib/constants";
-import { getDocument } from "@/lib/elasticsearch";
-import { produceCacheInvalidate } from "@/lib/kafka";
+import {
+  getDocument,
+  indexDocument,
+  deleteDocument,
+} from "@/lib/elasticsearch";
+
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
 type RouteProps = { params: Promise<{ id: string }> };
@@ -110,10 +114,14 @@ export const PUT = withAuth(
         data: validatedData,
       });
 
-      // Invalidate cache — CDC akan sync ke ES secara otomatis
-      await produceCacheInvalidate(REDIS_KEYS.SEKTOR_INDUSTRI.SINGLE(itemId));
-      await produceCacheInvalidate(REDIS_KEYS.SEKTOR_INDUSTRI.ALL_PREFIX);
-
+      // Invalidate cache
+      await invalidateCachePrefix(REDIS_KEYS.SEKTOR_INDUSTRI.SINGLE(itemId));
+      await indexDocument(
+        ELASTIC_INDICES.SEKTOR_INDUSTRI,
+        String(updated.id),
+        updated,
+      );
+      await invalidateCachePrefix(REDIS_KEYS.SEKTOR_INDUSTRI.ALL_PREFIX);
       return successResponse(updated, 200);
     } catch (error) {
       return handleApiError(error);
@@ -149,10 +157,10 @@ export const DELETE = withAuth(
 
       await prisma.m_sektor_industri.delete({ where: { id: itemId } });
 
-      // Invalidate cache — CDC akan remove dari ES secara otomatis
-      await produceCacheInvalidate(REDIS_KEYS.SEKTOR_INDUSTRI.SINGLE(itemId));
-      await produceCacheInvalidate(REDIS_KEYS.SEKTOR_INDUSTRI.ALL_PREFIX);
-
+      // Invalidate cache
+      await invalidateCachePrefix(REDIS_KEYS.SEKTOR_INDUSTRI.SINGLE(itemId));
+      await deleteDocument(ELASTIC_INDICES.SEKTOR_INDUSTRI, String(id));
+      await invalidateCachePrefix(REDIS_KEYS.SEKTOR_INDUSTRI.ALL_PREFIX);
       return successResponse(null, 200);
     } catch (error) {
       return handleApiError(error);

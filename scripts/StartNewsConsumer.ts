@@ -1,23 +1,33 @@
 /**
- * News Consumer Startup Script
- *
+ * ============================================================
+ * News Worker Startup Script
+ * (Kafka telah dihapus — hanya menjalankan background workers)
+ * ============================================================
  * Jalankan sebagai process terpisah dari Next.js server:
  *   npx dotenv-cli -e .env.development -- npx tsx scripts/StartNewsConsumer.ts
  *
- * Services yang dijalankan:
- *  1. News Published Consumer  → terima event NEWS_PUBLISHED → index dokumen kaya ke ES
- *  2. View Counter Consumer    → terima event NEWS_VIEWED → batch flush ke DB + ES setiap 10 detik
- *  3. Trending Worker          → recalculate trending_score setiap 15 menit
+ * Workers yang dijalankan:
+ *  1. View Counter Worker  → flush in-memory view buffer ke DB + ES setiap 10 detik
+ *  2. Trending Worker      → recalculate trending_score setiap 15 menit
+ * ============================================================
  */
 
-import { startNewsPublishedConsumer, stopNewsPublishedConsumer } from "../lib/news/news-published.consumer";
-import { startViewCounterConsumer, stopViewCounterConsumer } from "../lib/news/view-counter.consumer";
-import { startTrendingWorker, stopTrendingWorker } from "../lib/news/trending-worker";
+import dotenv from "dotenv";
+dotenv.config({ path: ".env.development" });
+
+import {
+  startViewCounterWorker,
+  stopViewCounterWorker,
+} from "../lib/news/view-counter.consumer";
+import {
+  startTrendingWorker,
+  stopTrendingWorker,
+} from "../lib/news/trending-worker";
 
 async function main() {
   console.log("═══════════════════════════════════════════════════════════");
-  console.log("  News Consumer — Karang Taruna Mojosongo");
-  console.log("  Kafka → Elasticsearch + PostgreSQL (view counter + trending)");
+  console.log("  News Workers — Karang Taruna Mojosongo");
+  console.log("  View Counter Buffer + Trending Score Recalculator");
   console.log("═══════════════════════════════════════════════════════════\n");
 
   // ── Graceful Shutdown ────────────────────────────────────────────────────
@@ -26,9 +36,8 @@ async function main() {
 
     try {
       stopTrendingWorker();
-      await stopViewCounterConsumer();
-      await stopNewsPublishedConsumer();
-      console.log("[NEWS] All services stopped. Bye!\n");
+      await stopViewCounterWorker();
+      console.log("[NEWS] All workers stopped. Bye!\n");
     } catch (error) {
       console.error("[NEWS] Error during shutdown:", error);
     } finally {
@@ -36,26 +45,22 @@ async function main() {
     }
   };
 
-  process.on("SIGINT",  () => shutdown("SIGINT"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
   process.on("SIGTERM", () => shutdown("SIGTERM"));
 
-  // ── Start Services ───────────────────────────────────────────────────────
+  // ── Start Workers ────────────────────────────────────────────────────────
   try {
-    // 1. News Published Consumer — index rich ES document
-    await startNewsPublishedConsumer();
-    console.log("[NEWS] ✓ News Published Consumer running.");
+    // 1. View Counter Worker — flush in-memory view buffer ke DB + ES setiap 10 detik
+    startViewCounterWorker();
+    console.log("[NEWS] ✓ View Counter Worker running (flush every 10s).");
 
-    // 2. View Counter Consumer — batching view events ke DB + ES
-    await startViewCounterConsumer();
-    console.log("[NEWS] ✓ View Counter Consumer running.");
-
-    // 3. Trending Worker — recalculate score setiap 15 menit
+    // 2. Trending Worker — recalculate score setiap 15 menit
     startTrendingWorker();
     console.log("[NEWS] ✓ Trending Worker running (every 15 min).");
 
-    console.log("\n[NEWS] All services running. Press Ctrl+C to stop.\n");
+    console.log("\n[NEWS] All workers running. Press Ctrl+C to stop.\n");
   } catch (error) {
-    console.error("[NEWS] Fatal error starting services:", error);
+    console.error("[NEWS] Fatal error starting workers:", error);
     process.exit(1);
   }
 }

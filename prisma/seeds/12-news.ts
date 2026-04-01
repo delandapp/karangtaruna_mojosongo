@@ -1,6 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-import { indexDocument } from "../../lib/elasticsearch";
-import { ELASTIC_INDICES } from "../../lib/constants/key";
 
 type KategoriSeed = {
   nama_kategori: string;
@@ -98,7 +96,7 @@ export async function seedNews(prisma: PrismaClient) {
         deskripsi: kat.deskripsi || null,
       },
     });
-    await indexDocument(ELASTIC_INDICES.KATEGORI_BERITA, result.id.toString(), result);
+
     kategoriBySlug.set(kat.slug_kategori, result.id);
     console.log(`  ✅ kategori: ${kat.nama_kategori} (${result.id})`);
   }
@@ -298,7 +296,6 @@ export async function seedNews(prisma: PrismaClient) {
         },
       });
     }
-    await indexDocument(ELASTIC_INDICES.BERITA, item.id.toString(), item);
 
     console.log(`  ✅ berita: ${b.judul}`);
   }

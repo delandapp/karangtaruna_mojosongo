@@ -1,3 +1,4 @@
+import { indexDocument, deleteDocument } from "@/lib/elasticsearch";
 import { prisma } from "@/lib/prisma";
 import {
   successResponse,
@@ -5,10 +6,10 @@ import {
   paginatedResponse,
 } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache } from "@/lib/redis";
+import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
 import { DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-import { produceCacheInvalidate } from "@/lib/kafka";
+
 import { proposalSponsorSchema } from "@/lib/validations/sponsorship.schema";
 import { z } from "zod";
 
@@ -130,8 +131,8 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
       },
     });
 
-    // Invalidate list cache — CDC akan sync ke ES secara otomatis
-    await produceCacheInvalidate(CACHE_INVALIDATE_PREFIX);
+    // Invalidate cache
+    await invalidateCachePrefix(CACHE_INVALIDATE_PREFIX);
 
     return successResponse(newProposal, 201);
   } catch (error) {

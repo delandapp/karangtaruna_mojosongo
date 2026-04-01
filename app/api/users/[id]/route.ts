@@ -1,9 +1,11 @@
+import { indexDocument, deleteDocument } from "@/lib/elasticsearch";
+import { invalidateCachePrefix } from "@/lib/redis";
 import { prisma } from "@/lib/prisma";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { produceCacheInvalidate } from "@/lib/kafka";
-import { REDIS_KEYS } from "@/lib/constants";
+
+import { REDIS_KEYS, ELASTIC_INDICES } from "@/lib/constants";
 import bcrypt from "bcrypt";
 import { z } from "zod";
 
@@ -149,10 +151,10 @@ export const PUT = withAuth(
         },
       });
 
-      // Invalidate cache via Kafka — CDC akan sync ke ES secara otomatis
-      await produceCacheInvalidate(REDIS_KEYS.USERS.SINGLE(userId));
-      await produceCacheInvalidate(REDIS_KEYS.USERS.ALL_PREFIX);
-
+      // Invalidate cache
+      await invalidateCachePrefix(REDIS_KEYS.USERS.SINGLE(userId));
+      await indexDocument(ELASTIC_INDICES.USERS, String(updated.id), updated);
+      await invalidateCachePrefix(REDIS_KEYS.USERS.ALL_PREFIX);
       return successResponse(updated, 200);
     } catch (error) {
       return handleApiError(error);
@@ -211,10 +213,10 @@ export const DELETE = withAuth(
 
       await prisma.m_user.delete({ where: { id: userId } });
 
-      // Invalidate cache via Kafka
-      await produceCacheInvalidate(REDIS_KEYS.USERS.SINGLE(userId));
-      await produceCacheInvalidate(REDIS_KEYS.USERS.ALL_PREFIX);
-
+      // Invalidate cache
+      await invalidateCachePrefix(REDIS_KEYS.USERS.SINGLE(userId));
+      await deleteDocument(ELASTIC_INDICES.USERS, userId);
+      await invalidateCachePrefix(REDIS_KEYS.USERS.ALL_PREFIX);
       return successResponse(null, 200);
     } catch (error) {
       return handleApiError(error);

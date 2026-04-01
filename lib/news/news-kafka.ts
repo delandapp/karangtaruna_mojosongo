@@ -1,42 +1,11 @@
 /**
- * News Domain Kafka Producers
- *
- * Domain events diproduce manual dari API (bukan CDC otomatis Debezium).
- *
- * Topics:
- *  - karangtaruna.news.published → trigger ES indexing dengan payload kaya (join)
- *  - karangtaruna.news.viewed    → dikonsumsi view-counter consumer (batching)
+ * ============================================================
+ * News Domain — Event Types & Direct Helpers
+ * (Kafka telah dihapus — semua operasi dilakukan langsung)
+ * ============================================================
  */
-import { createProducer } from "@/lib/kafka";
-import { KAFKA_TOPICS } from "@/lib/constants";
-import type { Producer } from "kafkajs";
 
-// ─── Singleton producer untuk news domain ────────────────────────────────────
-
-let newsProducer: Producer | null = null;
-let isConnecting = false;
-
-async function getNewsProducer(): Promise<Producer> {
-  if (newsProducer) return newsProducer;
-
-  if (isConnecting) {
-    while (isConnecting) await new Promise((r) => setTimeout(r, 100));
-    if (newsProducer) return newsProducer;
-  }
-
-  isConnecting = true;
-  try {
-    const producer = createProducer();
-    await producer.connect();
-    newsProducer = producer;
-    console.log("[NEWS_KAFKA] Producer connected");
-    return producer;
-  } finally {
-    isConnecting = false;
-  }
-}
-
-// ─── Payload Types ────────────────────────────────────────────────────────────
+// ─── Payload Types (masih digunakan oleh consumer files) ─────────────────────
 
 export interface NewsPublishedPayload {
   id: number;
@@ -60,78 +29,36 @@ export interface NewsViewedPayload {
   timestamp: number;
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const bigIntReplacer = (_k: string, v: unknown) =>
-  typeof v === "bigint" ? Number(v) : v;
-
-// ─── Producers ────────────────────────────────────────────────────────────────
+// ─── Stub producers (Kafka dihapus — fungsi ini adalah no-op) ────────────────
 
 /**
- * Produce event saat berita dipublish atau diupdate.
- * Consumer (news-published.consumer.ts) akan mengindex dokumen kaya ke Elasticsearch.
+ * Stub: produceNewsPublished
+ * Sebelumnya memproduce event ke Kafka. Sekarang menjadi no-op.
+ * Indexing ke Elasticsearch dilakukan langsung dari API route.
  */
 export async function produceNewsPublished(
-  payload: NewsPublishedPayload,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _payload: NewsPublishedPayload,
 ): Promise<void> {
-  try {
-    const producer = await getNewsProducer();
-    await producer.send({
-      topic: KAFKA_TOPICS.NEWS_PUBLISHED,
-      messages: [
-        {
-          key: String(payload.id),
-          value: JSON.stringify(
-            {
-              event: "NEWS_PUBLISHED",
-              timestamp: new Date().toISOString(),
-              payload,
-            },
-            bigIntReplacer,
-          ),
-        },
-      ],
-    });
-  } catch (error) {
-    console.error("[NEWS_KAFKA] produceNewsPublished error:", error);
-  }
+  // No-op: Kafka telah dihapus dari project ini.
+  // ES indexing dilakukan langsung di API route berita.
 }
 
 /**
- * Produce event saat user melihat berita.
- * Dikonsumsi oleh view-counter.consumer.ts dengan batching setiap 10 detik.
+ * Stub: produceNewsViewed
+ * Sebelumnya memproduce event ke Kafka. Sekarang menjadi no-op.
+ * View counting dilakukan langsung via bufferView() di view-counter.consumer.ts.
  */
-export async function produceNewsViewed(beritaId: number): Promise<void> {
-  try {
-    const producer = await getNewsProducer();
-    await producer.send({
-      topic: KAFKA_TOPICS.NEWS_VIEWED,
-      messages: [
-        {
-          key: String(beritaId),
-          value: JSON.stringify({
-            berita_id: beritaId,
-            timestamp: Date.now(),
-          } satisfies NewsViewedPayload),
-        },
-      ],
-    });
-  } catch (error) {
-    console.error("[NEWS_KAFKA] produceNewsViewed error:", error);
-  }
+export async function produceNewsViewed(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _beritaId: number,
+): Promise<void> {
+  // No-op: Kafka telah dihapus dari project ini.
 }
 
 /**
- * Disconnect news producer gracefully (panggil saat shutdown).
+ * Stub: disconnectNewsProducer
  */
 export async function disconnectNewsProducer(): Promise<void> {
-  if (newsProducer) {
-    try {
-      await newsProducer.disconnect();
-      newsProducer = null;
-      console.log("[NEWS_KAFKA] Producer disconnected");
-    } catch (error) {
-      console.error("[NEWS_KAFKA] Disconnect error:", error);
-    }
-  }
+  // No-op
 }

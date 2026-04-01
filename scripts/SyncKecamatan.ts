@@ -24,15 +24,6 @@ dotenv.config({ path: ".env.development" });
 import fs from "fs";
 import path from "path";
 
-import { indexDocument } from "../lib/elasticsearch";
-import { produceCacheInvalidate } from "../lib/kafka";
-import { ELASTIC_INDICES, REDIS_KEYS } from "../lib/constants/key";
-
-// Helper delay
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 // ─── Konfigurasi ──────────────────────────────────────────────────────────────
 
 // id_level_wilayah: 2 = Kabupaten/Kota → menghasilkan data kecamatan di kota tsb
@@ -189,16 +180,21 @@ async function main() {
 
       try {
         // Ambil data kecamatan dari CSV lokal
-        const csvPath = path.join(process.cwd(), "scripts", "dataset", "kecamatan.csv");
+        const csvPath = path.join(
+          process.cwd(),
+          "scripts",
+          "dataset",
+          "kecamatan.csv",
+        );
         const csvData = fs.readFileSync(csvPath, "utf-8");
-        const lines = csvData.split("\n").filter(line => line.trim() !== "");
+        const lines = csvData.split("\n").filter((line) => line.trim() !== "");
         if (lines[0].startsWith("code")) lines.shift();
 
         // Kode kota "110100", ambil 4 digit pertama "1101"
-        const paramKode = kodeKota.substring(0, 4); 
+        const paramKode = kodeKota.substring(0, 4);
 
         const dataKecamatan: KemendikbudKecamatanItem[] = lines
-          .map(line => {
+          .map((line) => {
             const [code, parent_code, name] = line.split(",");
             return {
               kode_wilayah: code.trim(), // kecamatan code is usually 6 digits or 7, e.g. "1101010", tapi we keep as is, or we can just keep code.trim()
@@ -206,7 +202,7 @@ async function main() {
               mst_kode_wilayah: parent_code.trim(),
             };
           })
-          .filter(item => item.mst_kode_wilayah === paramKode);
+          .filter((item) => item.mst_kode_wilayah === paramKode);
 
         if (!dataKecamatan || dataKecamatan.length === 0) {
           log("WARN", `Data Kecamatan kosong untuk kota ${kota.nama}. Skip.`);
@@ -247,9 +243,14 @@ async function main() {
 
             if (upserted) {
               // Check if it was an update or create
-              const isNew = upserted.dibuat_pada.getTime() === upserted.diperbarui_pada.getTime();
+              const isNew =
+                upserted.dibuat_pada.getTime() ===
+                upserted.diperbarui_pada.getTime();
               if (isNew) {
-                log("SUCCESS", `  Baru — [${kode}] ${nama} (id=${upserted.id})`);
+                log(
+                  "SUCCESS",
+                  `  Baru — [${kode}] ${nama} (id=${upserted.id})`,
+                );
                 detail.baru++;
                 report.kec_baru++;
               } else {
@@ -257,9 +258,6 @@ async function main() {
                 detail.update++;
                 report.kec_update++;
               }
-              
-              // Sync ke ES
-              await indexDocument(ELASTIC_INDICES.KECAMATAN, String(upserted.id), upserted);
             }
           } catch (err: any) {
             const alasan = err instanceof Error ? err.message : String(err);
@@ -269,12 +267,14 @@ async function main() {
           }
         }
       } catch (err: any) {
-        log("ERROR", `Gagal memproses kecamatan untuk kota ${kota.nama}: ${err.message}`);
+        log(
+          "ERROR",
+          `Gagal memproses kecamatan untuk kota ${kota.nama}: ${err.message}`,
+        );
         report.kota_gagal++;
       }
 
       report.per_kota.push(detail);
-
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -282,14 +282,6 @@ async function main() {
     process.exitCode = 1;
   } finally {
     cetakLaporan(report);
-
-    try {
-      log("INFO", "Invalidasi Cache Redis via Kafka...");
-      await produceCacheInvalidate(REDIS_KEYS.KECAMATAN.ALL_PREFIX);
-      await delay(500); 
-    } catch (e) {
-      log("ERROR", "Gagal me-request invalidasi Cache.");
-    }
 
     await prisma.$disconnect();
     await pool.end();

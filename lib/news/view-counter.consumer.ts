@@ -1,33 +1,29 @@
 /**
- * View Counter Consumer
- *
- * Subscribe ke topic 'karangtaruna.news.viewed' dan mengumpulkan view events
- * dalam buffer di-memory, lalu flush ke PostgreSQL + Elasticsearch setiap 10 detik.
- *
- * Kenapa batching?
- *  - Artikel populer bisa menerima ratusan view/detik
- *  - Tanpa batching → ratusan UPDATE query/detik → DB overload
- *  - Dengan batching → max 1 UPDATE per artikel per 10 detik
+ * ============================================================
+ * View Counter — In-Memory Buffer + Direct DB/ES Flush
+ * ============================================================
+ * Kafka telah dihapus. View counting sekarang menggunakan:
+ *  1. In-memory buffer (Map<beritaId, count>)
+ *  2. Interval flush setiap 10 detik → langsung UPDATE ke DB + ES
+ *  3. bufferView() dipanggil langsung dari API route view
  *
  * Pattern: Eventual Consistency
- *  Counter di DB mungkin lag ~10 detik dari realtime, tapi acceptable untuk portal berita.
+ *  Counter di DB mungkin lag ~10 detik dari realtime, tapi acceptable
+ *  untuk portal berita.
+ * ============================================================
  */
-import type { Consumer, EachMessagePayload } from "kafkajs";
-import { createConsumer, produceCacheInvalidate } from "@/lib/kafka";
+
 import { prisma } from "@/lib/prisma";
 import { elasticClient } from "@/lib/elasticsearch";
-import { KAFKA_TOPICS, ELASTIC_INDICES, REDIS_KEYS } from "@/lib/constants";
-import type { NewsViewedPayload } from "./news-kafka";
+import { invalidateCachePrefix } from "@/lib/redis";
+import { ELASTIC_INDICES, REDIS_KEYS } from "@/lib/constants";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const FLUSH_INTERVAL_MS = 10_000; // 10 detik
-const GROUP_ID =
-  process.env.KAFKA_VIEW_COUNTER_GROUP_ID ?? "karangtaruna-view-counter";
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
-let consumer: Consumer | null = null;
 let isRunning = false;
 let flushTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -36,7 +32,11 @@ const viewBuffer = new Map<number, number>();
 
 // ─── Buffer Operations ────────────────────────────────────────────────────────
 
-function bufferView(beritaId: number): void {
+/**
+ * Tambahkan 1 view ke buffer untuk berita tertentu.
+ * Dipanggil langsung dari POST /api/berita/[id]/view saat isCounted = true.
+ */
+export function bufferView(beritaId: number): void {
   viewBuffer.set(beritaId, (viewBuffer.get(beritaId) ?? 0) + 1);
 }
 
@@ -44,20 +44,22 @@ function bufferView(beritaId: number): void {
  * Snapshot buffer → clear → batch update DB + ES.
  * Snapshot dilakukan di awal agar view yang masuk saat flush tidak hilang.
  */
-async function flushToDatabase(): Promise<void> {
+export async function flushToDatabase(): Promise<void> {
   if (viewBuffer.size === 0) return;
 
   const updates = Array.from(viewBuffer.entries());
   viewBuffer.clear();
 
-  console.log(`[VIEW_COUNTER] Flushing ${updates.length} berita view counts...`);
+  console.log(
+    `[VIEW_COUNTER] Flushing ${updates.length} berita view counts...`,
+  );
 
-  // ── 1. Batch UPDATE ke PostgreSQL ──────────────────────────────────────
+  // ── 1. Batch UPDATE ke PostgreSQL ─────────────────────────────────────────
   for (const [beritaId, count] of updates) {
     try {
       await prisma.$executeRaw`
         UPDATE c_berita
-        SET total_views      = total_views + ${count},
+        SET total_views       = total_views + ${count},
             "diperbarui_pada" = NOW()
         WHERE id              = ${beritaId}
           AND "dihapus_pada" IS NULL
@@ -70,7 +72,7 @@ async function flushToDatabase(): Promise<void> {
     }
   }
 
-  // ── 2. Bulk UPDATE ke Elasticsearch (script update) ────────────────────
+  // ── 2. Bulk UPDATE ke Elasticsearch (script update) ───────────────────────
   try {
     const body = updates.flatMap(([id, count]) => [
       { update: { _index: ELASTIC_INDICES.BERITA, _id: String(id) } },
@@ -79,6 +81,7 @@ async function flushToDatabase(): Promise<void> {
           source: "ctx._source.total_views += params.count",
           params: { count },
         },
+        upsert: { total_views: count },
       },
     ]);
 
@@ -89,69 +92,60 @@ async function flushToDatabase(): Promise<void> {
     console.error("[VIEW_COUNTER] ES bulk update failed:", error);
   }
 
-  // ── 3. Invalidate Redis cache untuk setiap berita yang diupdate ─────────
+  // ── 3. Invalidasi Redis cache untuk setiap berita yang diupdate ───────────
   for (const [beritaId] of updates) {
-    await produceCacheInvalidate(REDIS_KEYS.BERITA.SINGLE(beritaId));
+    try {
+      await invalidateCachePrefix(REDIS_KEYS.BERITA.SINGLE(beritaId));
+    } catch (error) {
+      console.error(
+        `[VIEW_COUNTER] Redis invalidate failed for berita ${beritaId}:`,
+        error,
+      );
+    }
   }
 
-  // Invalidate trending & top — score / ranking bisa berubah
-  await produceCacheInvalidate(REDIS_KEYS.BERITA.TRENDING);
-  await produceCacheInvalidate(REDIS_KEYS.BERITA.TOP);
+  // Invalidate trending & top — ranking bisa berubah
+  try {
+    await invalidateCachePrefix(REDIS_KEYS.BERITA.TRENDING);
+    await invalidateCachePrefix(REDIS_KEYS.BERITA.TOP);
+  } catch (error) {
+    console.error(
+      "[VIEW_COUNTER] Redis invalidate trending/top failed:",
+      error,
+    );
+  }
 
   console.log("[VIEW_COUNTER] Flush complete.");
 }
 
-// ─── Consumer Lifecycle ───────────────────────────────────────────────────────
+// ─── Worker Lifecycle ─────────────────────────────────────────────────────────
 
 /**
- * Mulai view counter consumer.
+ * Mulai view counter worker (interval flush).
  * Dipanggil dari scripts/StartNewsConsumer.ts
  */
-export async function startViewCounterConsumer(): Promise<void> {
+export function startViewCounterWorker(): void {
   if (isRunning) {
     console.log("[VIEW_COUNTER] Already running, skipping...");
     return;
   }
 
-  try {
-    consumer = createConsumer(GROUP_ID);
-    await consumer.connect();
-    console.log("[VIEW_COUNTER] Connected to Kafka");
+  flushTimer = setInterval(() => {
+    flushToDatabase().catch((err) =>
+      console.error("[VIEW_COUNTER] Flush error:", err),
+    );
+  }, FLUSH_INTERVAL_MS);
 
-    await consumer.subscribe({
-      topics: [KAFKA_TOPICS.NEWS_VIEWED],
-      fromBeginning: false,
-    });
-
-    // Mulai flush interval
-    flushTimer = setInterval(flushToDatabase, FLUSH_INTERVAL_MS);
-
-    await consumer.run({
-      eachMessage: async ({ message }: EachMessagePayload) => {
-        if (!message.value) return;
-        try {
-          const data = JSON.parse(
-            message.value.toString(),
-          ) as NewsViewedPayload;
-          bufferView(data.berita_id);
-        } catch (error) {
-          console.error("[VIEW_COUNTER] Parse error:", error);
-        }
-      },
-    });
-
-    isRunning = true;
-    console.log("[VIEW_COUNTER] Running and buffering view events...");
-  } catch (error) {
-    console.error("[VIEW_COUNTER] Failed to start:", error);
-    throw error;
-  }
+  isRunning = true;
+  console.log(
+    `[VIEW_COUNTER] Started. Flushing every ${FLUSH_INTERVAL_MS / 1000}s.`,
+  );
 }
 
 /**
- * Stop consumer — flush sisa buffer sebelum disconnect.
+ * Stop worker — flush sisa buffer sebelum berhenti.
  */
-export async function stopViewCounterConsumer(): Promise<void> {
+export async function stopViewCounterWorker(): Promise<void> {
   if (flushTimer) {
     clearInterval(flushTimer);
     flushTimer = null;
@@ -160,16 +154,8 @@ export async function stopViewCounterConsumer(): Promise<void> {
   // Pastikan semua view ter-flush sebelum shutdown
   await flushToDatabase();
 
-  if (consumer) {
-    try {
-      await consumer.disconnect();
-      consumer = null;
-      isRunning = false;
-      console.log("[VIEW_COUNTER] Disconnected gracefully");
-    } catch (error) {
-      console.error("[VIEW_COUNTER] Disconnect error:", error);
-    }
-  }
+  isRunning = false;
+  console.log("[VIEW_COUNTER] Stopped gracefully.");
 }
 
 export function getViewCounterStatus(): {
@@ -178,3 +164,11 @@ export function getViewCounterStatus(): {
 } {
   return { isRunning, bufferSize: viewBuffer.size };
 }
+
+// ─── Legacy aliases (backward compat dengan StartNewsConsumer.ts) ─────────────
+
+/** @deprecated Gunakan startViewCounterWorker() */
+export const startViewCounterConsumer = startViewCounterWorker;
+
+/** @deprecated Gunakan stopViewCounterWorker() */
+export const stopViewCounterConsumer = stopViewCounterWorker;

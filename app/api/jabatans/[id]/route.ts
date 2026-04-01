@@ -2,14 +2,18 @@ import { prisma } from "@/lib/prisma";
 import { updateJabatanSchema } from "@/lib/validations/jabatan.schema";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache } from "@/lib/redis";
+import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
 import {
   REDIS_KEYS,
   ELASTIC_INDICES,
   DEFAULT_CACHE_TTL,
 } from "@/lib/constants";
-import { getDocument } from "@/lib/elasticsearch";
-import { produceCacheInvalidate } from "@/lib/kafka";
+import {
+  getDocument,
+  indexDocument,
+  deleteDocument,
+} from "@/lib/elasticsearch";
+
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
 interface RouteProps {
@@ -82,10 +86,14 @@ export const PUT = withAuth(
         },
       });
 
-      // Invalidate cache — CDC akan sync ke ES secara otomatis
-      await produceCacheInvalidate(REDIS_KEYS.JABATANS.SINGLE(jabatanId));
-      await produceCacheInvalidate(REDIS_KEYS.JABATANS.ALL_PREFIX);
-
+      // Invalidate cache
+      await invalidateCachePrefix(REDIS_KEYS.JABATANS.SINGLE(jabatanId));
+      await indexDocument(
+        ELASTIC_INDICES.JABATANS,
+        String(updated.id),
+        updated,
+      );
+      await invalidateCachePrefix(REDIS_KEYS.JABATANS.ALL_PREFIX);
       return successResponse(updated, 200);
     } catch (error) {
       return handleApiError(error);
@@ -117,9 +125,9 @@ export const DELETE = withAuth(
       await prisma.m_jabatan.delete({ where: { id: jabatanId } });
 
       // Invalidate cache
-      await produceCacheInvalidate(REDIS_KEYS.JABATANS.SINGLE(jabatanId));
-      await produceCacheInvalidate(REDIS_KEYS.JABATANS.ALL_PREFIX);
-
+      await invalidateCachePrefix(REDIS_KEYS.JABATANS.SINGLE(jabatanId));
+      await deleteDocument(ELASTIC_INDICES.JABATANS, String(id));
+      await invalidateCachePrefix(REDIS_KEYS.JABATANS.ALL_PREFIX);
       return successResponse(null, 200);
     } catch (error) {
       return handleApiError(error);

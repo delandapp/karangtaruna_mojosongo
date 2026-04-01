@@ -1,9 +1,11 @@
+import { indexDocument, deleteDocument } from "@/lib/elasticsearch";
+import { invalidateCachePrefix } from "@/lib/redis";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-import { produceCacheInvalidate } from "@/lib/kafka";
+
 import { REDIS_KEYS } from "@/lib/constants";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -97,8 +99,8 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
       },
     });
 
-    // Invalidate cache — CDC akan sync ke ES secara otomatis
-    await produceCacheInvalidate(REDIS_KEYS.E_PROPOSAL.ALL_PREFIX(event_id));
+    // Invalidate cache
+    await invalidateCachePrefix(REDIS_KEYS.E_PROPOSAL.ALL_PREFIX(event_id));
 
     return successResponse(newProposal, 201);
   } catch (error) {

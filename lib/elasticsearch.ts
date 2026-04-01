@@ -273,6 +273,7 @@ export async function deleteAllDocuments(indexName: string): Promise<void> {
   try {
     await elasticClient.deleteByQuery({
       index: indexName,
+      conflicts: "proceed", // Abaikan version conflict jika ada concurrent write
       body: {
         query: { match_all: {} },
       },

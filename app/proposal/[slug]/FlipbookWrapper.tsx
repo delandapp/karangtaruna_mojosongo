@@ -1,14 +1,16 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef } from 'react';
-import dynamic from 'next/dynamic';
-import Logo from '@/components/atoms/Logo';
-import BlurText from '@/components/ui/text-blur';
-import SplashCursor from '@/components/ui/splash-cursor';
-import { motion, AnimatePresence } from 'framer-motion';
-import type { EProposal } from '@/features/api/eproposalApi';
+import { useState, useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
+import Logo from "@/components/atoms/Logo";
+import BlurText from "@/components/ui/text-blur";
+import SplashCursor from "@/components/ui/splash-cursor";
+import { motion, AnimatePresence } from "framer-motion";
+import type { EProposal } from "@/features/api/eproposalApi";
 
-const ClientFlipbook = dynamic(() => import('./ClientFlipbook'), { ssr: false });
+const ClientFlipbook = dynamic(() => import("./ClientFlipbook"), {
+  ssr: false,
+});
 
 const MIN_LOADING_MS = 5000;
 
@@ -22,7 +24,7 @@ function useAutoSplash(active: boolean) {
     let frame: number;
     let startTime = 0;
     let lastDispatch = 0;
-    const DISPATCH_INTERVAL = 16; 
+    const DISPATCH_INTERVAL = 16;
     const DURATION = 2000; // 2 seconds for a single sweep
 
     const tick = (now: number) => {
@@ -42,7 +44,7 @@ function useAutoSplash(active: boolean) {
       // cubic ease-out
       const progress = elapsed / DURATION;
       const t = 1 - Math.pow(1 - progress, 3);
-      
+
       const w = window.innerWidth;
       const h = window.innerHeight;
 
@@ -54,7 +56,7 @@ function useAutoSplash(active: boolean) {
       const x = sx + (ex - sx) * t;
 
       document.body.dispatchEvent(
-        new MouseEvent('mousemove', { clientX: x, clientY: y, bubbles: true }),
+        new MouseEvent("mousemove", { clientX: x, clientY: y, bubbles: true }),
       );
 
       frame = requestAnimationFrame(tick);
@@ -63,13 +65,13 @@ function useAutoSplash(active: boolean) {
     // Initial click to kick off the fluid
     const kickTimer = setTimeout(() => {
       document.body.dispatchEvent(
-        new MouseEvent('mousedown', {
+        new MouseEvent("mousedown", {
           clientX: window.innerWidth * 0.1,
           clientY: window.innerHeight * 0.5,
           bubbles: true,
         }),
       );
-      
+
       frame = requestAnimationFrame(tick);
     }, 300);
 
@@ -104,8 +106,8 @@ export default function FlipbookWrapper({ proposal }: { proposal: EProposal }) {
       <div
         style={{
           opacity: showFlipbook ? 1 : 0,
-          transition: 'opacity 0.6s ease-in-out',
-          pointerEvents: showFlipbook ? 'auto' : 'none',
+          transition: "opacity 0.6s ease-in-out",
+          pointerEvents: showFlipbook ? "auto" : "none",
         }}
         className="absolute inset-0"
       >
@@ -119,7 +121,7 @@ export default function FlipbookWrapper({ proposal }: { proposal: EProposal }) {
             key="loader"
             className="absolute inset-0 z-50 bg-[#0a0b10] overflow-hidden"
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.8, ease: 'easeInOut' }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
           >
             {/* SplashCursor — lower resolution for performance */}
             <SplashCursor
@@ -141,11 +143,19 @@ export default function FlipbookWrapper({ proposal }: { proposal: EProposal }) {
               className="absolute top-10 left-1/2 z-20 -translate-x-1/2"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              transition={{
+                duration: 0.8,
+                delay: 0.2,
+                ease: [0.16, 1, 0.3, 1],
+              }}
             >
               <motion.div
                 animate={{ y: [0, -4, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                transition={{
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
               >
                 <Logo variant="with-text" theme="dark" size={50} />
               </motion.div>
@@ -186,14 +196,25 @@ export default function FlipbookWrapper({ proposal }: { proposal: EProposal }) {
                   <motion.div
                     className="h-full rounded-full"
                     style={{
-                      background: 'linear-gradient(90deg, #6366f1, #06b6d4, #6366f1)',
-                      backgroundSize: '200% 100%',
+                      background:
+                        "linear-gradient(90deg, #6366f1, #06b6d4, #6366f1)",
+                      backgroundSize: "200% 100%",
                     }}
-                    initial={{ width: '0%' }}
-                    animate={{ width: '100%', backgroundPosition: ['0% 0%', '200% 0%'] }}
+                    initial={{ width: "0%" }}
+                    animate={{
+                      width: "100%",
+                      backgroundPosition: ["0% 0%", "200% 0%"],
+                    }}
                     transition={{
-                      width: { duration: MIN_LOADING_MS / 1000, ease: 'easeInOut' },
-                      backgroundPosition: { duration: 1.5, repeat: Infinity, ease: 'linear' },
+                      width: {
+                        duration: MIN_LOADING_MS / 1000,
+                        ease: "easeInOut",
+                      },
+                      backgroundPosition: {
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "linear",
+                      },
                     }}
                   />
                 </div>
@@ -201,12 +222,20 @@ export default function FlipbookWrapper({ proposal }: { proposal: EProposal }) {
                   Menyiapkan E-Proposal
                 </p>
                 <div className="flex gap-1 mt-2">
-                  {[0, 1, 2].map(i => (
+                  {[0, 1, 2].map((i) => (
                     <motion.div
                       key={i}
                       className="w-1 h-1 rounded-full bg-indigo-400/40"
-                      animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.3, 0.8] }}
-                      transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2, ease: 'easeInOut' }}
+                      animate={{
+                        opacity: [0.3, 1, 0.3],
+                        scale: [0.8, 1.3, 0.8],
+                      }}
+                      transition={{
+                        duration: 1.2,
+                        repeat: Infinity,
+                        delay: i * 0.2,
+                        ease: "easeInOut",
+                      }}
                     />
                   ))}
                 </div>

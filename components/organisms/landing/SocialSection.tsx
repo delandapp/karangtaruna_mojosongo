@@ -1,12 +1,16 @@
 "use client";
 
-import React from "react";
+import React, { useRef } from "react";
 import { SocialCard } from "@/components/molecules/SocialCard";
 import { AnimatedText } from "@/components/atoms/AnimatedText";
 import { AiFillInstagram, AiFillYoutube, AiOutlineWhatsApp } from "react-icons/ai";
-import { FaTiktok } from "react-icons/Fa";
+import { FaTiktok } from "react-icons/fa";
+import { useGsapScrubText } from "@/lib/hooks/useGsapAnimation";
 
 export function SocialSection() {
+  const textRef = useRef<HTMLHeadingElement>(null);
+  useGsapScrubText(textRef, { start: "top 80%", end: "bottom 60%" });
+
   const socials = [
     {
       platform: "Instagram",
@@ -43,13 +47,17 @@ export function SocialSection() {
       <div className="container mx-auto px-6">
         
         <div className="flex flex-col items-center text-center mb-16">
-          <AnimatedText as="h2" text="IKUTI KAMI" className="text-4xl md:text-6xl font-title font-bold text-foreground" />
-          <h2 className="text-4xl md:text-6xl font-title font-bold text-transparent mt-[-10px]" style={{ WebkitTextStroke: '1px var(--color-foreground)' }}>
+          <AnimatedText as="h2" text="IKUTI KAMI" variant="clip" className="text-5xl md:text-7xl font-title font-bold text-foreground" />
+          <h2 ref={textRef} className="text-5xl md:text-7xl font-title font-bold text-transparent mt-[-10px]" style={{ WebkitTextStroke: '2px var(--color-foreground)' }}>
             DI SOSIAL MEDIA
           </h2>
-          <p className="mt-6 text-muted-foreground font-body max-w-xl">
-            Ikuti perjalanan kami, dapatkan update terbaru, dan saksikan keseruan aksi pemuda Mojosongo.
-          </p>
+          <AnimatedText 
+            as="p"
+            variant="slide-up"
+            text="Ikuti perjalanan kami, dapatkan update terbaru, dan saksikan keseruan aksi pemuda Mojosongo."
+            className="mt-6 text-muted-foreground font-body max-w-xl"
+            delay={0.2}
+          />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

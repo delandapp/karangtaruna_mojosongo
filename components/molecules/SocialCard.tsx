@@ -3,7 +3,7 @@
 import React, { useRef } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { useGsapReveal, useGsapMagnetic } from "@/lib/hooks/useGsapAnimation";
+import { useGsapReveal, useGsapCardTilt } from "@/lib/hooks/useGsapAnimation";
 
 interface SocialCardProps {
   platform: string;
@@ -23,10 +23,9 @@ export function SocialCard({
   index,
 }: SocialCardProps) {
   const cardRef = useRef<HTMLAnchorElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
 
-  useGsapReveal(cardRef, { delay: index * 0.1, y: 60 });
-  useGsapMagnetic(contentRef, 0.15); // Subtle magnetic effect on hover
+  useGsapReveal(cardRef, { delay: index * 0.1, y: 60, ease: "back.out(1.5)" });
+  useGsapCardTilt(cardRef, 15);
 
   return (
     <Link
@@ -40,10 +39,10 @@ export function SocialCard({
       )}
     >
       {/* Expanding background ripple effect */}
-      <span className="absolute inset-0 rounded-3xl bg-white/10 scale-0 origin-center transition-transform duration-500 group-hover:scale-[2.5] rounded-full" />
+      <span className="absolute inset-0 rounded-3xl bg-white/10 scale-0 origin-center transition-transform duration-500 group-hover:scale-[2.5]" />
       
-      <div ref={contentRef} className="relative z-10 flex flex-col h-full justify-between items-center text-center">
-        <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-sm shadow-sm group-hover:bg-white/20 transition-colors duration-300">
+      <div className="relative z-10 flex flex-col h-full justify-between items-center text-center">
+        <div className="p-4 rounded-2xl bg-white/20 backdrop-blur-sm shadow-sm transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110">
           <div className="w-10 h-10 md:w-16 md:h-16 flex items-center justify-center">
              {icon}
           </div>

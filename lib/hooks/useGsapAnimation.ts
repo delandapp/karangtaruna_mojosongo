@@ -166,14 +166,13 @@ export function useGsapHorizontalScroll(
 
     if (scrollAmount <= 0) return; // No need to scroll horizontally
 
-    gsap.to(sections, {
-      xPercent: -100 * (sections.length - 1),
+    gsap.to(contentRef.current, {
+      x: () => -scrollAmount,
       ease: "none",
       scrollTrigger: {
         trigger: containerRef.current,
         pin: true,
-        scrub: 1, // Add slight delay for smoothness
-        snap: isMobile ? 0 : 1 / (sections.length - 1),
+        scrub: 1, 
         end: () => `+=${scrollAmount}`, 
       }
     });
@@ -181,10 +180,139 @@ export function useGsapHorizontalScroll(
 }
 
 // ----------------------------------------------------------------------
-// 5. Magnetic Hover Effect 
+// 6. Scrub Text Reveal (Clip path along scroll)
+// ----------------------------------------------------------------------
+export function useGsapScrubText(
+  ref: RefObject<HTMLElement | null>,
+  options: { start?: string; end?: string; direction?: "left-to-right" | "bottom-to-top" } = {}
+) {
+  useGSAP(() => {
+    if (!ref.current) return;
+    const { start = "top 90%", end = "bottom 60%", direction = "left-to-right" } = options;
+
+    const clipPathStart = direction === "left-to-right" ? "polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%)" : "polygon(0% 100%, 100% 100%, 100% 100%, 0% 100%)";
+    const clipPathEnd = "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)";
+
+    gsap.fromTo(
+      ref.current,
+      { clipPath: clipPathStart },
+      {
+        clipPath: clipPathEnd,
+        ease: "none",
+        scrollTrigger: {
+          trigger: ref.current,
+          start,
+          end,
+          scrub: 1,
+        },
+      }
+    );
+  }, { scope: ref });
+}
+
+// ----------------------------------------------------------------------
+// 7. Pin Section with Progress
+// ----------------------------------------------------------------------
+export function useGsapPinSection(
+  ref: RefObject<HTMLElement | null>,
+  options: { end?: string } = {}
+) {
+  useGSAP(() => {
+    if (!ref.current) return;
+    const { end = "+=100%" } = options;
+    ScrollTrigger.create({
+      trigger: ref.current,
+      start: "top top",
+      end,
+      pin: true,
+      pinSpacing: true,
+    });
+  }, { scope: ref });
+}
+
+// ----------------------------------------------------------------------
+// 8. Count Up Number
+// ----------------------------------------------------------------------
+export function useGsapCountUp(
+  ref: RefObject<HTMLElement | null>,
+  target: number,
+  options: { duration?: number; suffix?: string } = {}
+) {
+  useGSAP(() => {
+    if (!ref.current) return;
+    const { duration = 2, suffix = "" } = options;
+    const obj = { val: 0 };
+    
+    gsap.to(obj, {
+      val: target,
+      duration,
+      ease: "power2.out",
+      scrollTrigger: {
+        trigger: ref.current,
+        start: "top 85%",
+        toggleActions: "play none none none"
+      },
+      onUpdate: () => {
+        if (ref.current) {
+          ref.current.innerText = Math.floor(obj.val) + suffix;
+        }
+      }
+    });
+  }, { scope: ref });
+}
+
+// ----------------------------------------------------------------------
+// 9. Card 3D Tilt
+// ----------------------------------------------------------------------
+export function useGsapCardTilt(ref: RefObject<HTMLElement | null>, amount = 15) {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  
+  useGSAP(() => {
+    if (!ref.current || isMobile) return;
+    
+    const card = ref.current;
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left; 
+      const y = e.clientY - rect.top; 
+      
+      const xPct = x / rect.width - 0.5;
+      const yPct = y / rect.height - 0.5;
+      
+      gsap.to(card, {
+        rotateY: xPct * amount,
+        rotateX: -yPct * amount,
+        transformPerspective: 1000,
+        ease: "power2.out",
+        duration: 0.5
+      });
+    };
+    
+    const handleMouseLeave = () => {
+      gsap.to(card, {
+        rotateY: 0,
+        rotateX: 0,
+        ease: "power2.out",
+        duration: 0.5
+      });
+    };
+    
+    card.addEventListener("mousemove", handleMouseMove);
+    card.addEventListener("mouseleave", handleMouseLeave);
+    
+    return () => {
+      card.removeEventListener("mousemove", handleMouseMove);
+      card.removeEventListener("mouseleave", handleMouseLeave);
+    };
+  }, { scope: ref, dependencies: [isMobile] });
+}
+
+// ----------------------------------------------------------------------
+// 10. Magnetic Hover Effect
 // ----------------------------------------------------------------------
 export function useGsapMagnetic(
-  ref: RefObject<HTMLElement | null>, 
+  ref: React.RefObject<HTMLElement | null>, 
   intensity: number = 0.3
 ) {
   useGSAP(() => {

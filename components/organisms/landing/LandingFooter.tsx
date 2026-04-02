@@ -3,17 +3,18 @@
 import React, { useRef } from "react";
 import Link from "next/link";
 import Logo from "@/components/atoms/Logo";
-import { useGsapReveal, useGsapMagnetic } from "@/lib/hooks/useGsapAnimation";
+import { useGsapReveal, useGsapScrubText } from "@/lib/hooks/useGsapAnimation";
 import { useSmoothScroll } from "@/lib/hooks/useSmoothScroll";
 import { ArrowUp } from "lucide-react";
 
 export function LandingFooter() {
   const footerRef = useRef<HTMLElement>(null);
   const backToTopRef = useRef<HTMLButtonElement>(null);
+  const hugeTextRef = useRef<HTMLHeadingElement>(null);
   const { scrollToTop } = useSmoothScroll();
 
   useGsapReveal(footerRef as React.RefObject<HTMLElement>, { y: 100, triggerStart: "top 95%" });
-  useGsapMagnetic(backToTopRef, 0.5);
+  useGsapScrubText(hugeTextRef, { start: "top bottom", end: "bottom bottom", direction: "bottom-to-top" });
 
   return (
     <footer ref={footerRef} className="w-full bg-card text-card-foreground border-t border-border pt-20 pb-10 relative z-30">
@@ -21,7 +22,7 @@ export function LandingFooter() {
         
         {/* Top Huge Text */}
         <div className="w-full flex justify-center mb-20 overflow-hidden">
-          <h2 className="text-6xl md:text-[8rem] lg:text-[11rem] font-title font-black text-transparent opacity-20 tracking-tighter" style={{ WebkitTextStroke: '2px currentColor' }}>
+          <h2 ref={hugeTextRef} className="text-6xl md:text-[8rem] lg:text-[11rem] font-title font-black text-transparent opacity-20 tracking-tighter" style={{ WebkitTextStroke: '2px currentColor' }}>
             BERSATU.
           </h2>
         </div>

@@ -279,12 +279,16 @@ html.transitioning *::after {
     @apply bg-background/60 backdrop-blur-md border border-border/50 shadow-sm;
   }
 
-  .hide-scrollbar {
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
+  .animate-blob {
+    animation: blob 7s infinite;
   }
-  .hide-scrollbar::-webkit-scrollbar {
-    display: none; /* Chrome, Safari and Opera */
+  
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+  
+  .animation-delay-4000 {
+    animation-delay: 4s;
   }
 }
 
@@ -294,6 +298,60 @@ html.transitioning *::after {
   100% { background-position: 0% 100%; }
 }
 
-html {
-  scroll-behavior: auto; /* Handled by GSAP ScrollToPlugin */
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+/* Lenis smooth scroll */
+html.lenis, html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+
+/* Custom Cursor global style */
+@media (min-width: 768px) {
+  body {
+    cursor: none; 
+  }
+  a, button, input, select, textarea, [role="button"], [class*="cursor-"] {
+    cursor: none !important;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary-500);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Utilities for GSAP advance */
+.clip-text {
+  clip-path: polygon(0 100%, 100% 100%, 100% 100%, 0 100%);
+}
+.pin-spacer-override {
+  padding-bottom: 0 !important;
 }

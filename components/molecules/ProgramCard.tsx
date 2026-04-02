@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { ArrowUpRight } from "lucide-react";
-import { useGsapReveal, useGsapMagnetic } from "@/lib/hooks/useGsapAnimation";
+import { useGsapReveal } from "@/lib/hooks/useGsapAnimation";
 
 interface ProgramCardProps {
   title: string;
@@ -31,7 +31,6 @@ export function ProgramCard({
 
   // Stagger reveal based on index
   useGsapReveal(cardRef, { delay: index * 0.2, y: 100 });
-  useGsapMagnetic(buttonRef, 0.4);
 
   const bgColorClass = color === "primary" ? "bg-primary/90" : "bg-accent/90";
 

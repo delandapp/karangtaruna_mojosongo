@@ -59,7 +59,8 @@ export function useGsapReveal(
         scrollTrigger: {
           trigger: ref.current,
           start: triggerStart,
-          toggleActions: "play none none reverse",
+          toggleActions: "play none none none",
+          once: true
         },
       }
     );
@@ -137,7 +138,8 @@ export function useGsapStagger(
         scrollTrigger: {
           trigger: containerRef.current,
           start: triggerStart,
-          toggleActions: "play none none reverse",
+          toggleActions: "play none none none",
+          once: true
         },
       }
     );
@@ -250,7 +252,8 @@ export function useGsapCountUp(
       scrollTrigger: {
         trigger: ref.current,
         start: "top 85%",
-        toggleActions: "play none none none"
+        toggleActions: "play none none none",
+        once: true
       },
       onUpdate: () => {
         if (ref.current) {

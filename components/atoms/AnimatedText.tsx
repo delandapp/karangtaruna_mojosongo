@@ -52,6 +52,8 @@ export function AnimatedText({
           scrollTrigger: {
             trigger: containerRef.current,
             start: "top 90%",
+            toggleActions: "play none none none",
+            once: true
           },
         }
       );
@@ -68,6 +70,8 @@ export function AnimatedText({
           scrollTrigger: {
             trigger: containerRef.current,
             start: "top 90%",
+            toggleActions: "play none none none",
+            once: true
           },
         }
       );
@@ -83,6 +87,8 @@ export function AnimatedText({
         scrollTrigger: {
           trigger: containerRef.current,
           start: "top 90%",
+          toggleActions: "play none none none",
+          once: true
         },
       });
     }

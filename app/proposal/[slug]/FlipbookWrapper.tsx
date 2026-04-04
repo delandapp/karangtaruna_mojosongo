@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import Logo from "@/components/atoms/Logo";
-import BlurText from "@/components/ui/text-blur";
-import SplashCursor from "@/components/ui/splash-cursor";
+import BlurText from "@/components/react-bits/text-blur";
+import SplashCursor from "@/components/react-bits/splash-cursor";
 import { motion, AnimatePresence } from "framer-motion";
 import type { EProposal } from "@/features/api/eproposalApi";
 

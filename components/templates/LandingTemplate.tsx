@@ -3,17 +3,6 @@
 import React, { useEffect } from "react";
 import CardNav from "@/components/organisms/cards/NavCard";
 import { HeroSection } from "@/components/organisms/landing/HeroSection";
-import { VisionMissionSection } from "@/components/organisms/landing/VisionMissionSection";
-import { StatsSection } from "@/components/organisms/landing/StatsSection";
-import { ProgramSection } from "@/components/organisms/landing/ProgramSection";
-import { YouthSection } from "@/components/organisms/landing/YouthSection";
-import { GallerySection } from "@/components/organisms/landing/GallerySection";
-import { TestimoniSection } from "@/components/organisms/landing/TestimoniSection";
-import { NewsSection } from "@/components/organisms/landing/NewsSection";
-import { CTASection } from "@/components/organisms/landing/CTASection";
-import { PartnersSection } from "@/components/organisms/landing/PartnersSection";
-import { SocialSection } from "@/components/organisms/landing/SocialSection";
-import { LandingFooter } from "@/components/organisms/landing/LandingFooter";
 import { SectionIndicator } from "@/components/atoms/SectionIndicator";
 import { trackPageView } from "@/lib/analytics";
 import { useLenis } from "@/lib/hooks/useLenis";
@@ -22,14 +11,6 @@ import { CustomCursor } from "@/components/atoms/CustomCursor";
 
 const LANDING_SECTIONS = [
   { id: "hero", label: "Beranda" },
-  { id: "visi-misi", label: "Visi Misi" },
-  { id: "stats", label: "Statistik" },
-  { id: "program", label: "Program" },
-  { id: "pengurus", label: "Pemuda" },
-  { id: "galeri", label: "Galeri" },
-  { id: "testimoni", label: "Testimoni" },
-  { id: "berita", label: "Berita" },
-  { id: "cta", label: "Bergabung" },
 ];
 
 export function LandingTemplate() {
@@ -86,19 +67,8 @@ export function LandingTemplate() {
       
       <main className="flex flex-col w-full">
         <HeroSection />
-        <VisionMissionSection />
-        <StatsSection />
-        <ProgramSection />
-        <YouthSection />
-        <GallerySection />
-        <TestimoniSection />
-        <NewsSection />
-        <CTASection />
-        <PartnersSection />
-        <SocialSection />
       </main>
 
-      <LandingFooter />
     </div>
   );
 }

@@ -7,7 +7,6 @@ import { SectionIndicator } from "@/components/atoms/SectionIndicator";
 import { trackPageView } from "@/lib/analytics";
 import { useLenis } from "@/lib/hooks/useLenis";
 import { useSmoothScroll } from "@/lib/hooks/useSmoothScroll";
-import { CustomCursor } from "@/components/atoms/CustomCursor";
 
 const LANDING_SECTIONS = [
   { id: "hero", label: "Beranda" },
@@ -51,7 +50,6 @@ export function LandingTemplate() {
 
   return (
     <div className="relative w-full min-h-screen bg-background text-foreground">
-      <CustomCursor />
       <SectionIndicator sections={LANDING_SECTIONS} />
       
       <CardNav 

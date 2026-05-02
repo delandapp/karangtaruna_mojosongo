@@ -322,15 +322,7 @@ html.lenis, html.lenis body {
   pointer-events: none;
 }
 
-/* Custom Cursor global style */
-@media (min-width: 768px) {
-  body {
-    cursor: none; 
-  }
-  a, button, input, select, textarea, [role="button"], [class*="cursor-"] {
-    cursor: none !important;
-  }
-}
+
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {

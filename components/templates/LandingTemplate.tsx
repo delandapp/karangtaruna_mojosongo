@@ -3,6 +3,9 @@
 import React, { useEffect } from "react";
 import CardNav from "@/components/organisms/cards/NavCard";
 import { HeroSection } from "@/components/organisms/landing/HeroSection";
+import { GallerySection } from "@/components/organisms/landing/GallerySection";
+import { FeatureSection } from "@/components/organisms/landing/FeatureSection";
+import { CtaSection } from "@/components/organisms/landing/CtaSection";
 import { SectionIndicator } from "@/components/atoms/SectionIndicator";
 import { trackPageView } from "@/lib/analytics";
 import { useLenis } from "@/lib/hooks/useLenis";
@@ -65,6 +68,9 @@ export function LandingTemplate() {
       
       <main className="flex flex-col w-full">
         <HeroSection />
+        <GallerySection />
+        <FeatureSection />
+        <CtaSection />
       </main>
 
     </div>

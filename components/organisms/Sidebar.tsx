@@ -23,6 +23,7 @@ import {
   Handshake,
   ShieldCheck,
   Calendar,
+  CalendarClock,
   Building2,
   MapPin,
 } from "lucide-react";
@@ -64,6 +65,15 @@ const TOOLS_NAV = [
     subItems: [
       { href: "/dashboard/keuangan/anggaran", label: "Anggaran" },
       { href: "/dashboard/keuangan/transaksi", label: "Transaksi" },
+    ],
+  },
+  {
+    href: "/dashboard/rapat",
+    icon: CalendarClock,
+    label: "Rapat & Notulen",
+    subItems: [
+      { href: "/dashboard/rapat", label: "Rapat" },
+      { href: "/dashboard/notulen", label: "Notulen" },
     ],
   },
 ];

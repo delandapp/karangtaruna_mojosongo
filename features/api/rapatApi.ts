@@ -1,49 +1,93 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-export type StatusRapat = "dijadwalkan" | "berlangsung" | "selesai" | "dibatalkan";
+export type StatusRapat = "TERJADWAL" | "BERLANGSUNG" | "SELESAI" | "DIBATALKAN" | "DITUNDA";
+export type JenisRapat = "INTERNAL" | "EKSTERNAL" | "KOORDINASI" | "EVALUASI" | "DARURAT" | "LAINNYA";
+export type StatusKehadiran = "DIUNDANG" | "HADIR" | "TIDAK_HADIR" | "IZIN" | "TERLAMBAT";
 
 export interface AgendaItem {
-  nomor: number;
-  topik: string;
-  durasi_menit?: number;
-  pic?: string;
+  id?: number;
+  urutan: number;
+  judul_agenda: string;
+  deskripsi?: string | null;
+  durasi_menit?: number | null;
+  m_user_id?: number | null;
 }
 
-export interface ActionItem {
-  tugas: string;
-  pic?: string;
-  deadline?: string;
+export interface PesertaItem {
+  id?: number;
+  m_user_id?: number | null;
+  nama_peserta: string;
+  jabatan_peserta?: string | null;
+  instansi?: string | null;
+  email?: string | null;
+  no_handphone?: string | null;
+  status_kehadiran: StatusKehadiran;
+  is_moderator: boolean;
+  is_notulis: boolean;
 }
 
 export interface Rapat {
   id: number;
+  m_kategori_rapat_id?: number | null;
   event_id?: number | null;
-  dibuat_oleh_id: number;
-  judul: string;
-  tanggal_rapat: string;
+  m_user_id: number; // pembuat
+  judul_rapat: string;
+  jenis_rapat: JenisRapat;
+  status_rapat: StatusRapat;
+  deskripsi?: string | null;
+  tanggal_mulai: string;
+  tanggal_selesai?: string | null;
   lokasi?: string | null;
-  notulensi?: string | null;
-  agenda?: AgendaItem[] | null;
-  action_items?: ActionItem[] | null;
-  status: StatusRapat;
+  link_online?: string | null;
+  is_online: boolean;
+  nomor_rapat?: string | null;
+  is_recurring: boolean;
+  dibuat_pada: string;
+  diperbarui_pada: string;
+  kategori?: { id: number; nama_kategori: string; warna_hex?: string | null } | null;
   event?: { id: number; nama_event: string; kode_event: string } | null;
-  dibuat_oleh?: { id: number; nama_lengkap: string };
+  dibuat_oleh?: { id: number; nama_lengkap: string } | null;
+  agendas?: AgendaItem[] | null;
+  peserta?: PesertaItem[] | null;
+  notulen?: { id: number; nomor_notulen: string; status: string } | null;
 }
 
-interface ListMeta { page: number; limit: number; total: number; totalPages: number; }
-interface ListResponse<T> { success: boolean; data: T[]; meta: ListMeta; }
-interface SingleResponse<T> { success: boolean; data: T; }
+interface ListMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
 
-export type CreateRapatPayload = {
+interface ListResponse<T> {
+  success: boolean;
+  data: T[];
+  meta: ListMeta;
+}
+
+interface SingleResponse<T> {
+  success: boolean;
+  data: T;
+}
+
+export interface CreateRapatPayload {
+  m_kategori_rapat_id?: number | null;
   event_id?: number | null;
-  judul: string;
-  tanggal_rapat: string;
+  judul_rapat: string;
+  jenis_rapat: JenisRapat;
+  status_rapat: StatusRapat;
+  deskripsi?: string | null;
+  tanggal_mulai: string;
+  tanggal_selesai?: string | null;
   lokasi?: string | null;
-  notulensi?: string | null;
-  agenda?: AgendaItem[] | null;
-  action_items?: ActionItem[] | null;
-  status?: StatusRapat;
-};
+  link_online?: string | null;
+  is_online: boolean;
+  nomor_rapat?: string | null;
+  is_recurring: boolean;
+  agendas?: AgendaItem[] | null;
+  peserta?: PesertaItem[] | null;
+}
+
 export type UpdateRapatPayload = Partial<CreateRapatPayload>;
 
 export interface GetRapatParams {

@@ -9,14 +9,8 @@ import { handleApiError } from "@/lib/error-handler";
 import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
 import {
   REDIS_KEYS,
-  ELASTIC_INDICES,
   DEFAULT_CACHE_TTL,
 } from "@/lib/constants";
-import {
-  searchDocuments,
-  indexDocument,
-  deleteDocument,
-} from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
 import { z } from "zod";
@@ -52,41 +46,32 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
         return paginatedResponse(cached.data as any[], cached.meta as any, 200);
     }
 
-    // Build Elasticsearch query
-    const must: Record<string, unknown>[] = [];
-    const filter: Record<string, unknown>[] = [];
-
+    const where: any = {};
+    if (event_id) where.event_id = event_id;
+    if (status) where.status_rapat = status.toUpperCase();
     if (search) {
-      must.push({
-        multi_match: {
-          query: search,
-          fields: ["judul", "lokasi", "notulensi"],
-          fuzziness: "AUTO",
-        },
-      });
+      where.OR = [
+        { judul_rapat: { contains: search, mode: "insensitive" } },
+        { lokasi: { contains: search, mode: "insensitive" } },
+        { deskripsi: { contains: search, mode: "insensitive" } },
+      ];
     }
-    if (event_id) filter.push({ term: { event_id } });
-    if (status) filter.push({ term: { status } });
 
-    const esQuery =
-      must.length > 0 || filter.length > 0
-        ? {
-            bool: {
-              must: must.length > 0 ? must : [{ match_all: {} }],
-              filter,
-            },
-          }
-        : { match_all: {} };
-
-    const { hits, total } = await searchDocuments(
-      ELASTIC_INDICES.RAPAT,
-      esQuery,
-      {
-        from: skip,
-        size: limit,
-        sort: [{ tanggal_rapat: { order: "desc" } }],
+    const total = await prisma.m_rapat.count({ where });
+    const hits = await prisma.m_rapat.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { tanggal_mulai: "desc" },
+      include: {
+        kategori: true,
+        event: { select: { id: true, nama_event: true, kode_event: true } },
+        dibuat_oleh: { select: { id: true, nama_lengkap: true } },
+        agendas: true,
+        peserta: true,
+        notulen: true,
       },
-    );
+    });
 
     const totalPages = Math.ceil(total / limit);
     const meta = { page, limit, total, totalPages };
@@ -120,26 +105,56 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
         return errorResponse(404, "Event tidak ditemukan", "NOT_FOUND");
     }
 
-    const rapat = await prisma.rapat.create({
+    const rapat = await prisma.m_rapat.create({
       data: {
-        dibuat_oleh_id: userId,
+        m_user_id: userId,
+        m_kategori_rapat_id: data.m_kategori_rapat_id,
         event_id: data.event_id,
-        judul: data.judul,
-        tanggal_rapat: data.tanggal_rapat,
+        judul_rapat: data.judul_rapat,
+        jenis_rapat: data.jenis_rapat,
+        status_rapat: data.status_rapat,
+        deskripsi: data.deskripsi,
+        tanggal_mulai: data.tanggal_mulai,
+        tanggal_selesai: data.tanggal_selesai,
         lokasi: data.lokasi,
-        notulensi: data.notulensi,
-        status: data.status,
-        agenda: data.agenda as any,
-        action_items: data.action_items as any,
+        link_online: data.link_online,
+        is_online: data.is_online,
+        nomor_rapat: data.nomor_rapat,
+        is_recurring: data.is_recurring,
+        agendas: data.agendas ? {
+          create: data.agendas.map((a) => ({
+            urutan: a.urutan,
+            judul_agenda: a.judul_agenda,
+            deskripsi: a.deskripsi,
+            durasi_menit: a.durasi_menit,
+            m_user_id: a.m_user_id,
+          }))
+        } : undefined,
+        peserta: data.peserta ? {
+          create: data.peserta.map((p) => ({
+            m_user_id: p.m_user_id,
+            nama_peserta: p.nama_peserta,
+            jabatan_peserta: p.jabatan_peserta,
+            instansi: p.instansi,
+            email: p.email,
+            no_handphone: p.no_handphone,
+            status_kehadiran: p.status_kehadiran,
+            is_moderator: p.is_moderator,
+            is_notulis: p.is_notulis,
+          }))
+        } : undefined,
       },
       include: {
+        kategori: true,
         event: { select: { id: true, nama_event: true, kode_event: true } },
         dibuat_oleh: { select: { id: true, nama_lengkap: true } },
+        agendas: true,
+        peserta: true,
+        notulen: true,
       },
     });
 
     // Invalidate cache
-    await indexDocument(ELASTIC_INDICES.RAPAT, String(rapat.id), rapat);
     await invalidateCachePrefix(REDIS_KEYS.RAPAT.ALL_PREFIX);
     return successResponse(rapat, 201);
   } catch (error) {

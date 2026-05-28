@@ -33,7 +33,7 @@ model event {
   tugas_event      tugas_event[]
   jenis_tiket      jenis_tiket[]
   kategori_daftar  kategori_pendaftaran[]
-  rapat            rapat[]
+  rapat            m_rapat[]
   anggaran         anggaran[]
   event_sponsor    event_sponsor[]
   proposal_sponsor proposal_sponsor[]
@@ -144,31 +144,4 @@ model tugas_event {
   @@index([dibuat_oleh_id])
   @@index([parent_tugas_id])
   @@index([status])
-}
-
-// -----------------------------------------------------------------------------
-// RAPAT / PERTEMUAN
-// Bisa terikat event tertentu atau rapat umum organisasi
-// -----------------------------------------------------------------------------
-model rapat {
-  id             Int  @id @default(autoincrement())
-  event_id       Int?
-  dibuat_oleh_id Int
-
-  judul         String
-  agenda        Json? // array { nomor, topik, durasi_menit, pic }
-  tanggal_rapat DateTime
-  lokasi        String?
-  notulensi     String?  @db.Text
-  action_items  Json? // array { tugas, pic, deadline }
-  status        String   @default("dijadwalkan")
-  // "dijadwalkan" | "berlangsung" | "selesai" | "dibatalkan"
-
-  // Relasi
-  event       event? @relation(fields: [event_id], references: [id], onDelete: SetNull)
-  dibuat_oleh m_user @relation(fields: [dibuat_oleh_id], references: [id])
-
-  @@index([event_id])
-  @@index([dibuat_oleh_id])
-  @@index([tanggal_rapat])
 }

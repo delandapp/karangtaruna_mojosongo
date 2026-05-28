@@ -50,3 +50,44 @@ enum TierProposal {
 
   @@map("tier_proposal")
 }
+
+enum StatusRapat {
+  TERJADWAL
+  BERLANGSUNG
+  SELESAI
+  DIBATALKAN
+  DITUNDA
+}
+
+enum StatusNotulen {
+  DRAFT
+  REVIEW
+  DISETUJUI
+  FINAL
+  DITOLAK
+}
+
+enum StatusTindakLanjut {
+  BELUM_MULAI
+  DALAM_PROSES
+  SELESAI
+  TERLAMBAT
+  DIBATALKAN
+}
+
+enum JenisRapat {
+  INTERNAL
+  EKSTERNAL
+  KOORDINASI
+  EVALUASI
+  DARURAT
+  LAINNYA
+}
+
+enum StatusKehadiran {
+  DIUNDANG
+  HADIR
+  TIDAK_HADIR
+  IZIN
+  TERLAMBAT
+}

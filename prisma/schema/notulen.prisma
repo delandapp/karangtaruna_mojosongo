@@ -1,0 +1,225 @@
+// ============================================================
+// FILE: notulen.prisma
+// Deskripsi: Schema untuk Manajemen Notulen Rapat
+// Konvensi: m_ = master, c_ = child, foreign key = m_table_id
+// ============================================================
+
+// ----------------------------------------------------------
+// MASTER: Notulen Rapat (satu notulen per rapat)
+// ----------------------------------------------------------
+model m_notulen {
+  id            Int  @id @default(autoincrement())
+  m_rapat_id    Int  @unique
+  m_user_id     Int  // Notulis (pembuat notulen)
+  m_approver_id Int? // Penyetuju notulen
+
+  nomor_notulen   String?       @unique // Nomor dokumen notulen
+  status          StatusNotulen @default(DRAFT)
+
+  pembukaan       String? @db.Text // Kata pembuka notulen
+  penutupan       String? @db.Text // Kata penutup notulen
+  kesimpulan_umum String? @db.Text // Ringkasan keseluruhan
+
+  // Waktu approval
+  diajukan_pada DateTime? // Tanggal diajukan ke reviewer
+  disetujui_pada DateTime? // Tanggal disetujui
+
+  catatan_penolakan String? @db.Text // Alasan jika ditolak
+
+  // Relasi
+  rapat          m_rapat              @relation(fields: [m_rapat_id], references: [id], onDelete: Cascade)
+  notulis        m_user               @relation("notulen_dibuat", fields: [m_user_id], references: [id])
+  approver       m_user?              @relation("notulen_disetujui", fields: [m_approver_id], references: [id], onDelete: SetNull)
+  poin_bahasan   c_poin_bahasan[]
+  keputusan      c_keputusan_rapat[]
+  tindak_lanjut  c_tindak_lanjut[]
+  lampiran       c_lampiran_notulen[]
+  komentar       c_komentar_notulen[]
+  riwayat_revisi c_revisi_notulen[]
+
+  dibuat_pada     DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
+
+  @@index([m_user_id])
+  @@index([m_approver_id])
+  @@index([status])
+}
+
+// ----------------------------------------------------------
+// CHILD: Poin Bahasan (hasil diskusi per agenda)
+// ----------------------------------------------------------
+model c_poin_bahasan {
+  id                Int  @id @default(autoincrement())
+  m_notulen_id      Int
+  c_agenda_rapat_id Int? // Relasi ke agenda (opsional)
+
+  urutan      Int
+  isi_bahasan String  @db.Text
+  pembicara   String? // Nama yang menyampaikan
+
+  // Relasi
+  notulen m_notulen       @relation(fields: [m_notulen_id], references: [id], onDelete: Cascade)
+  agenda  c_agenda_rapat? @relation(fields: [c_agenda_rapat_id], references: [id], onDelete: SetNull)
+
+  dibuat_pada     DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
+
+  @@index([m_notulen_id])
+  @@index([c_agenda_rapat_id])
+}
+
+// ----------------------------------------------------------
+// CHILD: Keputusan Rapat
+// ----------------------------------------------------------
+model c_keputusan_rapat {
+  id           Int @id @default(autoincrement())
+  m_notulen_id Int
+
+  urutan          Int
+  isi_keputusan   String  @db.Text
+  dasar_keputusan String? @db.Text // Landasan/alasan keputusan
+  is_konsensus    Boolean @default(true) // true = mufakat, false = voting
+
+  // Relasi
+  notulen       m_notulen        @relation(fields: [m_notulen_id], references: [id], onDelete: Cascade)
+  tindak_lanjut c_tindak_lanjut[] // Tindak lanjut yang timbul dari keputusan ini
+
+  dibuat_pada     DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
+
+  @@index([m_notulen_id])
+}
+
+// ----------------------------------------------------------
+// CHILD: Tindak Lanjut / Action Items
+// ----------------------------------------------------------
+model c_tindak_lanjut {
+  id                   Int  @id @default(autoincrement())
+  m_notulen_id         Int
+  c_keputusan_rapat_id Int? // Dari keputusan mana (opsional)
+  m_user_id_pic        Int? // PIC utama
+  m_user_id_pembuat    Int  // Yang membuat tindak lanjut
+
+  judul       String
+  deskripsi   String?            @db.Text
+  deadline    DateTime?
+  prioritas   String             @default("SEDANG") // TINGGI, SEDANG, RENDAH
+  status      StatusTindakLanjut @default(BELUM_MULAI)
+
+  // Update progres
+  progres_persen    Int       @default(0) // 0-100
+  catatan_progres   String?   @db.Text
+  diselesaikan_pada DateTime?
+
+  // Relasi
+  notulen       m_notulen              @relation(fields: [m_notulen_id], references: [id], onDelete: Cascade)
+  keputusan     c_keputusan_rapat?     @relation(fields: [c_keputusan_rapat_id], references: [id], onDelete: SetNull)
+  pic           m_user?                @relation("tindak_lanjut_pic", fields: [m_user_id_pic], references: [id], onDelete: SetNull)
+  pembuat       m_user                 @relation("tindak_lanjut_dibuat", fields: [m_user_id_pembuat], references: [id])
+  update_progres c_update_tindak_lanjut[]
+
+  dibuat_pada     DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
+
+  @@index([m_notulen_id])
+  @@index([m_user_id_pic])
+  @@index([status])
+  @@index([deadline])
+}
+
+// ----------------------------------------------------------
+// CHILD: Update/Log Progres Tindak Lanjut
+// ----------------------------------------------------------
+model c_update_tindak_lanjut {
+  id                 Int @id @default(autoincrement())
+  c_tindak_lanjut_id Int
+  m_user_id          Int
+
+  keterangan     String             @db.Text
+  progres_persen Int                // Snapshot progres saat update
+  status_baru    StatusTindakLanjut
+
+  // Relasi
+  tindak_lanjut c_tindak_lanjut @relation(fields: [c_tindak_lanjut_id], references: [id], onDelete: Cascade)
+  user          m_user           @relation("update_tl_oleh", fields: [m_user_id], references: [id])
+
+  dibuat_pada DateTime @default(now())
+
+  @@index([c_tindak_lanjut_id])
+  @@index([m_user_id])
+}
+
+// ----------------------------------------------------------
+// CHILD: Lampiran Notulen
+// ----------------------------------------------------------
+model c_lampiran_notulen {
+  id           Int @id @default(autoincrement())
+  m_notulen_id Int
+  m_user_id    Int // Yang mengupload
+
+  nama_file    String
+  nama_asli    String // Nama file original dari user
+  tipe_file    String // MIME type (application/pdf, image/jpeg, dst.)
+  ukuran_bytes Int
+  url_file     String
+  deskripsi    String?
+
+  // Relasi
+  notulen       m_notulen @relation(fields: [m_notulen_id], references: [id], onDelete: Cascade)
+  diunggah_oleh m_user    @relation("lampiran_notulen_diunggah", fields: [m_user_id], references: [id])
+
+  dibuat_pada DateTime @default(now())
+
+  @@index([m_notulen_id])
+  @@index([m_user_id])
+}
+
+// ----------------------------------------------------------
+// CHILD: Komentar / Anotasi Notulen
+// ----------------------------------------------------------
+model c_komentar_notulen {
+  id           Int  @id @default(autoincrement())
+  m_notulen_id Int
+  m_user_id    Int
+  parent_id    Int? // Untuk balasan komentar (threading)
+
+  isi_komentar String  @db.Text
+  is_resolved  Boolean @default(false)
+
+  // Relasi
+  parent      c_komentar_notulen?  @relation("komentar_reply", fields: [parent_id], references: [id], onDelete: SetNull)
+  balasan     c_komentar_notulen[] @relation("komentar_reply")
+  notulen_ref m_notulen            @relation(fields: [m_notulen_id], references: [id], onDelete: Cascade)
+  user        m_user               @relation("komentar_notulen_oleh", fields: [m_user_id], references: [id])
+
+  dibuat_pada     DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
+
+  @@index([m_notulen_id])
+  @@index([m_user_id])
+  @@index([parent_id])
+}
+
+// ----------------------------------------------------------
+// CHILD: Riwayat Revisi Notulen (Audit Trail konten)
+// ----------------------------------------------------------
+model c_revisi_notulen {
+  id           Int @id @default(autoincrement())
+  m_notulen_id Int
+  m_user_id    Int
+
+  nomor_revisi   Int    // Auto increment per notulen
+  snapshot_json  String @db.Text // JSON snapshot isi notulen saat revisi
+  catatan_revisi String? // Apa yang diubah
+  status_dari    StatusNotulen
+  status_ke      StatusNotulen
+
+  // Relasi
+  notulen       m_notulen @relation(fields: [m_notulen_id], references: [id], onDelete: Cascade)
+  direvisi_oleh m_user    @relation("revisi_notulen_oleh", fields: [m_user_id], references: [id])
+
+  dibuat_pada DateTime @default(now())
+
+  @@index([m_notulen_id])
+  @@index([m_user_id])
+}

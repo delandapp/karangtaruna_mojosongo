@@ -55,6 +55,11 @@ export const REDIS_KEYS = {
     ALL_PREFIX: "karangtaruna_master:rapat:all:*",
     SINGLE: (id: number) => `karangtaruna_master:rapat:${id}`,
   },
+  NOTULEN: {
+    ALL: "karangtaruna_master:notulen:all",
+    ALL_PREFIX: "karangtaruna_master:notulen:all:*",
+    SINGLE: (id: number) => `karangtaruna_master:notulen:${id}`,
+  },
   SEKTOR_INDUSTRI: {
     ALL: "karangtaruna_master:sektor_industri:all",
     ALL_PREFIX: "karangtaruna_master:sektor_industri:all:*",
@@ -154,6 +159,7 @@ export const ELASTIC_INDICES = {
   RUNDOWN: "karangtaruna_rundown_acara_index",
   TUGAS: "karangtaruna_tugas_event_index",
   RAPAT: "karangtaruna_rapat_index",
+  NOTULEN: "karangtaruna_notulen_index",
 
   // ── Keuangan ──────────────────────────────────────────────────────────
   ANGGARAN: "karangtaruna_anggaran_index",

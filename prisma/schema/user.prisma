@@ -5,7 +5,7 @@ model m_level {
   users           m_user[]
   hak_akses_rules m_hak_akses_rule[]
 
-  dibuat_pada DateTime @default(now())
+  dibuat_pada     DateTime @default(now())
   diperbarui_pada DateTime @updatedAt
 }
 
@@ -18,7 +18,7 @@ model m_jabatan {
   hak_akses_rules m_hak_akses_rule[]
   anggota_panitia anggota_panitia[]
 
-  dibuat_pada DateTime @default(now())
+  dibuat_pada     DateTime @default(now())
   diperbarui_pada DateTime @updatedAt
 }
 
@@ -66,18 +66,30 @@ model m_user {
   media_diunggah       media_galeri[]
   notifikasi           notifikasi[]
   log_audit            log_audit[]
-  rapat_dibuat         rapat[]
   saran_user           saran_masukan[]      @relation("saran_dari_user")
   respon_survei_user   respon_survei[]      @relation("respon_user")
 
   // Relasi Berita
-  berita_ditulis       c_berita[]                  @relation("berita_ditulis_oleh")
-  komentar_berita      c_komentar_berita[]
-  interaksi_berita     r_user_interaksi_berita[]
+  berita_ditulis   c_berita[]                @relation("berita_ditulis_oleh")
+  komentar_berita  c_komentar_berita[]
+  interaksi_berita r_user_interaksi_berita[]
 
-  dibuat_pada   DateTime      @default(now())
-  diperbarui_pada   DateTime      @updatedAt
-  mEproposals m_eproposal[]
+  // ---- Notulen Rapat ----
+  m_rapat_dibuat       m_rapat[]                @relation("rapat_dibuat")
+  agenda_pic           c_agenda_rapat[]         @relation("agenda_pic")
+  peserta_rapat        c_peserta_rapat[]        @relation("peserta_rapat")
+  notulen_dibuat       m_notulen[]              @relation("notulen_dibuat")
+  notulen_disetujui    m_notulen[]              @relation("notulen_disetujui")
+  tindak_lanjut_pic    c_tindak_lanjut[]        @relation("tindak_lanjut_pic")
+  tindak_lanjut_dibuat c_tindak_lanjut[]        @relation("tindak_lanjut_dibuat")
+  update_tindak_lanjut c_update_tindak_lanjut[] @relation("update_tl_oleh")
+  lampiran_notulen     c_lampiran_notulen[]     @relation("lampiran_notulen_diunggah")
+  komentar_notulen     c_komentar_notulen[]     @relation("komentar_notulen_oleh")
+  revisi_notulen       c_revisi_notulen[]       @relation("revisi_notulen_oleh")
+
+  dibuat_pada     DateTime      @default(now())
+  diperbarui_pada DateTime      @updatedAt
+  mEproposals     m_eproposal[]
 
   // Optimasi Index untuk pencarian relasi agar lebih cepat saat JOIN
   @@index([m_jabatan_id])

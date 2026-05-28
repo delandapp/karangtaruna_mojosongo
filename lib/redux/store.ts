@@ -8,6 +8,7 @@ import { panitiaApi } from "@/features/api/panitiaApi";
 import { rundownApi } from "@/features/api/rundownApi";
 import { tugasApi } from "@/features/api/tugasApi";
 import { rapatApi } from "@/features/api/rapatApi";
+import { notulenApi } from "@/features/api/notulenApi";
 import { anggaranApi } from "@/features/api/anggaranApi";
 import { keuanganApi } from "@/features/api/keuanganApi";
 import { eproposalApi } from "@/features/api/eproposalApi";
@@ -27,6 +28,7 @@ export const store = configureStore({
         [rundownApi.reducerPath]: rundownApi.reducer,
         [tugasApi.reducerPath]: tugasApi.reducer,
         [rapatApi.reducerPath]: rapatApi.reducer,
+        [notulenApi.reducerPath]: notulenApi.reducer,
         [anggaranApi.reducerPath]: anggaranApi.reducer,
         [keuanganApi.reducerPath]: keuanganApi.reducer,
         [wilayahApi.reducerPath]: wilayahApi.reducer,
@@ -46,6 +48,7 @@ export const store = configureStore({
             rundownApi.middleware,
             tugasApi.middleware,
             rapatApi.middleware,
+            notulenApi.middleware,
             anggaranApi.middleware,
             keuanganApi.middleware,
             wilayahApi.middleware,
@@ -59,3 +62,4 @@ export const store = configureStore({
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
+

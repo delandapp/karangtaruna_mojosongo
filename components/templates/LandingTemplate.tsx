@@ -26,6 +26,14 @@ export function LandingTemplate() {
 
   const navItems = [
     {
+      label: "Home",
+      bgColor: "var(--color-primary-600)",
+      textColor: "#fff",
+      links: [
+        { label: "Halaman Utama", href: "/", ariaLabel: "Home" }
+      ]
+    },
+    {
       label: "Program",
       bgColor: "var(--color-primary-500)",
       textColor: "#fff",
@@ -56,7 +64,7 @@ export function LandingTemplate() {
       <SectionIndicator sections={LANDING_SECTIONS} />
       
       <CardNav 
-        logo="/image/logo/logo-karang-taruna.png"
+        logo="/image/logo/logo.png"
         logoAlt="Karang Taruna Mojosongo"
         items={navItems}
         baseColor="var(--color-background)"

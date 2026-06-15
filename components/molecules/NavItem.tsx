@@ -30,10 +30,11 @@ export function NavItem({
 }: NavItemProps) {
   const pathname = usePathname();
 
-  const isActive =
+  const isActive = pathname ? (
     pathname === href ||
     pathname.startsWith(href + "/") ||
-    (subItems ? subItems.some((sub) => pathname === sub.href || pathname.startsWith(sub.href + "/")) : false);
+    (subItems ? subItems.some((sub) => pathname === sub.href || pathname.startsWith(sub.href + "/")) : false)
+  ) : false;
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -104,7 +105,7 @@ export function NavItem({
         {!collapsed && isOpen && (
           <div className="flex flex-col gap-0.5 pl-9 pr-3 py-1">
             {subItems.map((subItem) => {
-              const isSubActive = pathname === subItem.href || pathname.startsWith(subItem.href + "/");
+              const isSubActive = pathname ? (pathname === subItem.href || pathname.startsWith(subItem.href + "/")) : false;
               return (
                 <Link
                   key={subItem.href}

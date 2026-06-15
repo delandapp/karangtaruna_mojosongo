@@ -35,7 +35,7 @@ export default function EventDetailPage(props: PageProps) {
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const tabParam = searchParams.get("tab");
+  const tabParam = searchParams ? searchParams.get("tab") : null;
   const activeTab: TabValue = isValidTab(tabParam) ? tabParam : "informasi";
 
   // ── Lifted add triggers (each tab registers its open-form fn) ─────────────
@@ -60,7 +60,7 @@ export default function EventDetailPage(props: PageProps) {
 
   const handleTabChange = useCallback(
     (value: string) => {
-      const sp = new URLSearchParams(searchParams.toString());
+      const sp = new URLSearchParams(searchParams ? searchParams.toString() : "");
       sp.set("tab", value);
       router.replace(`?${sp.toString()}`, { scroll: false });
     },

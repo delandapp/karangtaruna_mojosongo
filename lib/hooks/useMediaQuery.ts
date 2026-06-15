@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useEventListener } from "./useEventListener"; // Will create if needed, or just inline
 
 export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(false);

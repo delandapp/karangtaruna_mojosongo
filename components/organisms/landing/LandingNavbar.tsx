@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import Logo from "@/components/atoms/Logo";
 import { MagneticButton } from "@/components/atoms/MagneticButton";
 import { ThemeToggle } from "@/components/atoms/ThemeToggle";
@@ -9,9 +11,17 @@ import { useSmoothScroll } from "@/lib/hooks/useSmoothScroll";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
 
-const NAV_LINKS = [
+type NavLink = {
+  label: string;
+  /** href berupa anchor (#...) atau route (/...) */
+  href: string;
+  /** Jika true, gunakan <Link> (navigasi halaman) bukan scroll */
+  isRoute?: boolean;
+};
+
+const NAV_LINKS: NavLink[] = [
   { label: "Program", href: "#program" },
-  { label: "Galeri", href: "#galeri" },
+  { label: "Galeri", href: "/galeri", isRoute: true },
   { label: "Mitra", href: "#mitra" },
 ];
 
@@ -19,6 +29,7 @@ export function LandingNavbar() {
   const { scrollY, direction } = useScrollPosition();
   const { scrollTo } = useSmoothScroll();
   const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
 
   // Close mobile menu on scroll or resize
   useEffect(() => {
@@ -33,6 +44,13 @@ export function LandingNavbar() {
 
   const isScrolled = scrollY > 50;
   const isHidden = scrollY > 300 && direction === "down" && !isOpen;
+
+  const handleNavClick = (link: NavLink) => {
+    setIsOpen(false);
+    if (!link.isRoute) {
+      scrollTo(link.href);
+    }
+  };
 
   return (
     <>
@@ -52,15 +70,30 @@ export function LandingNavbar() {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
-            {NAV_LINKS.map((link) => (
-              <button
-                key={link.label}
-                onClick={() => scrollTo(link.href)}
-                className="text-sm font-semibold tracking-wide text-foreground/80 hover:text-primary transition-colors hover:scale-105 transform duration-200"
-              >
-                {link.label}
-              </button>
-            ))}
+            {NAV_LINKS.map((link) =>
+              link.isRoute ? (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className={cn(
+                    "text-sm font-semibold tracking-wide transition-colors hover:scale-105 transform duration-200",
+                    pathname === link.href
+                      ? "text-primary-500"
+                      : "text-foreground/80 hover:text-primary"
+                  )}
+                >
+                  {link.label}
+                </Link>
+              ) : (
+                <button
+                  key={link.label}
+                  onClick={() => handleNavClick(link)}
+                  className="text-sm font-semibold tracking-wide text-foreground/80 hover:text-primary transition-colors hover:scale-105 transform duration-200"
+                >
+                  {link.label}
+                </button>
+              )
+            )}
           </nav>
 
           {/* Desktop Actions */}
@@ -92,18 +125,31 @@ export function LandingNavbar() {
           isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
       >
-        {NAV_LINKS.map((link) => (
-          <button
-            key={link.label}
-            onClick={() => {
-              setIsOpen(false);
-              scrollTo(link.href);
-            }}
-            className="text-4xl font-title font-bold text-foreground hover:text-primary transition-colors"
-          >
-            {link.label}
-          </button>
-        ))}
+        {NAV_LINKS.map((link) =>
+          link.isRoute ? (
+            <Link
+              key={link.label}
+              href={link.href}
+              onClick={() => setIsOpen(false)}
+              className={cn(
+                "text-4xl font-title font-bold transition-colors",
+                pathname === link.href
+                  ? "text-primary-500"
+                  : "text-foreground hover:text-primary"
+              )}
+            >
+              {link.label}
+            </Link>
+          ) : (
+            <button
+              key={link.label}
+              onClick={() => handleNavClick(link)}
+              className="text-4xl font-title font-bold text-foreground hover:text-primary transition-colors"
+            >
+              {link.label}
+            </button>
+          )
+        )}
         <MagneticButton
           onClick={() => {
             setIsOpen(false);

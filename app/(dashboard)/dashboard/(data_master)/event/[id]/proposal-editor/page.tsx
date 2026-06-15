@@ -13,7 +13,7 @@ export default function ProposalEditorPage(props: PageProps) {
   const eventId = parseInt(params.id, 10);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const templateId = searchParams.get("template") || undefined;
+  const templateId = searchParams ? (searchParams.get("template") || undefined) : undefined;
 
   if (isNaN(eventId)) {
     return (

@@ -346,4 +346,132 @@ html.lenis, html.lenis body {
 }
 .pin-spacer-override {
   padding-bottom: 0 !important;
-}
+}
+
+/* Smooth Wave Scrolling Animations */
+@keyframes wave-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-wave-slow {
+  animation: wave-scroll 24s linear infinite;
+}
+
+.animate-wave-medium {
+  animation: wave-scroll 16s linear infinite;
+}
+
+.animate-wave-fast {
+  animation: wave-scroll 10s linear infinite;
+}
+
+/* ── Scrollbar Hide ── */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Berita: Prose Article ── */
+.prose-article {
+  font-family: var(--font-body, serif);
+  line-height: 1.85;
+  color: hsl(var(--foreground));
+}
+
+.prose-article h1,
+.prose-article h2,
+.prose-article h3,
+.prose-article h4 {
+  font-family: var(--font-title, sans-serif);
+  color: hsl(var(--foreground));
+  font-weight: 700;
+  margin-top: 1.5em;
+  margin-bottom: 0.6em;
+  line-height: 1.3;
+}
+
+.prose-article p {
+  margin-bottom: 1.1em;
+}
+
+.prose-article blockquote {
+  border-left: 4px solid hsl(var(--primary) / 0.4);
+  padding-left: 1rem;
+  font-style: italic;
+  color: hsl(var(--muted-foreground));
+  margin: 1.5em 0;
+}
+
+.prose-article a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+}
+
+.prose-article img {
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 24px hsl(var(--foreground) / 0.08);
+  max-width: 100%;
+  margin: 1.5em auto;
+}
+
+.prose-article ul {
+  list-style-type: disc;
+  padding-left: 1.4em;
+  margin-bottom: 1em;
+}
+
+.prose-article ol {
+  list-style-type: decimal;
+  padding-left: 1.4em;
+  margin-bottom: 1em;
+}
+
+.prose-article code {
+  background: hsl(var(--muted));
+  border-radius: 0.3em;
+  padding: 0.15em 0.4em;
+  font-size: 0.875em;
+  font-family: var(--font-mono, monospace);
+}
+
+.prose-article pre {
+  background: hsl(var(--muted) / 0.8);
+  border: 1px solid hsl(var(--border) / 0.5);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  margin: 1.5em 0;
+}
+
+.prose-article pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.prose-article table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5em 0;
+  font-size: 0.9em;
+}
+
+.prose-article th,
+.prose-article td {
+  border: 1px solid hsl(var(--border));
+  padding: 0.6em 0.9em;
+  text-align: left;
+}
+
+.prose-article th {
+  background: hsl(var(--muted) / 0.5);
+  font-weight: 600;
+}
+

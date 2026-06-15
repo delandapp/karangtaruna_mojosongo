@@ -201,43 +201,46 @@ const CardNav: React.FC<CardNavProps> = ({
           backgroundColor: isScrolled || isExpanded ? baseColor : "transparent",
         }}
       >
-        <div className="card-nav-top absolute inset-x-0 top-0 h-[60px] flex items-center justify-between p-2 pl-[1.1rem] z-[2]">
+        <div className="card-nav-top absolute inset-x-0 top-0 h-[60px] flex items-center justify-between px-4 z-[2]">
+          {/* Hamburger Menu (Left) */}
           <div
-            className={`hamburger-menu ${isHamburgerOpen ? "open" : ""} group h-full flex flex-col items-center justify-center cursor-pointer gap-[6px] order-2 md:order-none`}
+            className={`hamburger-menu ${isHamburgerOpen ? "open" : ""} group w-9 h-9 rounded-full hover:bg-black/5 dark:hover:bg-white/5 flex flex-col items-center justify-center cursor-pointer gap-[5px] transition-colors`}
             onClick={toggleMenu}
             role="button"
             aria-label={isExpanded ? "Close menu" : "Open menu"}
             tabIndex={0}
-            style={{ color: menuColor || "#000" }}
+            style={{ color: menuColor || "var(--color-foreground)" }}
           >
             <div
-              className={`hamburger-line w-[30px] h-[2px] bg-current transition-[transform,opacity,margin] duration-300 ease-linear [transform-origin:50%_50%] ${
-                isHamburgerOpen ? "translate-y-[4px] rotate-45" : ""
+              className={`hamburger-line w-5 h-[1.5px] bg-current transition-[transform,opacity,margin] duration-300 ease-linear [transform-origin:50%_50%] ${
+                isHamburgerOpen ? "translate-y-[3.5px] rotate-45" : ""
               } group-hover:opacity-75`}
             />
             <div
-              className={`hamburger-line w-[30px] h-[2px] bg-current transition-[transform,opacity,margin] duration-300 ease-linear [transform-origin:50%_50%] ${
-                isHamburgerOpen ? "-translate-y-[4px] -rotate-45" : ""
+              className={`hamburger-line w-5 h-[1.5px] bg-current transition-[transform,opacity,margin] duration-300 ease-linear [transform-origin:50%_50%] ${
+                isHamburgerOpen ? "-translate-y-[3.5px] -rotate-45" : ""
               } group-hover:opacity-75`}
             />
           </div>
 
-          <div className="logo-container flex items-center md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 order-1 md:order-none">
-            <img src={logo} alt={logoAlt} className="logo h-[28px]" />
+          {/* Centered Logo (Middle) */}
+          <div className="logo-container flex items-center absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+            <img src={logo} alt={logoAlt} className="logo h-[28px] object-contain pointer-events-auto" />
           </div>
 
-          <div className="flex items-center gap-2 absolute right-[3.5rem] top-1/2 -translate-y-1/2 md:static md:transform-none md:h-full">
+          {/* Theme Toggle & CTA (Right) */}
+          <div className="flex items-center gap-2">
             <button
               onClick={toggleTheme}
-              className="p-1.5 rounded-full hover:bg-black/10 transition-colors flex items-center justify-center"
+              className="w-9 h-9 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-center"
               aria-label="Toggle theme"
-              style={{ color: menuColor || "#000" }}
+              style={{ color: menuColor || "var(--color-foreground)" }}
             >
-              {isDarkMode ? <GoSun size={20} /> : <GoMoon size={20} />}
+              {isDarkMode ? <GoSun size={18} /> : <GoMoon size={18} />}
             </button>
             <button
               type="button"
-              className="card-nav-cta-button hidden md:inline-flex border-0 rounded-[calc(0.75rem-0.2rem)] px-4 items-center h-full font-medium cursor-pointer transition-colors duration-300"
+              className="card-nav-cta-button hidden md:inline-flex border-0 rounded-full px-4 items-center justify-center h-9 font-semibold text-xs cursor-pointer shadow-sm hover:scale-105 transition-all duration-300"
               style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
             >
               {ctaLabel}
@@ -253,7 +256,7 @@ const CardNav: React.FC<CardNavProps> = ({
           } md:flex-row md:items-end md:gap-[12px]`}
           aria-hidden={!isExpanded}
         >
-          {(items || []).slice(0, 3).map((item, idx) => (
+          {(items || []).slice(0, 4).map((item, idx) => (
             <div
               key={`${item.label}-${idx}`}
               className="nav-card select-none relative flex flex-col items-center text-center gap-2 p-[12px_16px] rounded-[calc(0.75rem-0.2rem)] min-w-0 flex-[1_1_auto] h-auto min-h-[60px] md:h-full md:min-h-0 md:flex-[1_1_0%]"

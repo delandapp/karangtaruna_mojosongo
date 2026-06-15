@@ -14,6 +14,7 @@ interface AnimatedTextProps {
   variant?: "reveal" | "typewriter" | "scramble" | "clip" | "slide-up";
   delay?: number;
   duration?: number;
+  style?: React.CSSProperties;
 }
 
 export function AnimatedText({
@@ -23,6 +24,7 @@ export function AnimatedText({
   variant = "reveal",
   delay = 0,
   duration = 0.8,
+  style,
 }: AnimatedTextProps) {
   const containerRef = useRef<HTMLElement>(null);
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -99,7 +101,10 @@ export function AnimatedText({
     <Component
       ref={containerRef}
       className={cn("inline-block", className)}
-      style={{ overflow: variant === "reveal" ? "hidden" : "visible" }}
+      style={{
+        overflow: variant === "reveal" ? "hidden" : "visible",
+        ...style,
+      }}
     >
       {elements.map((el, index) => (
         <span

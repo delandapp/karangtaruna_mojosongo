@@ -17,6 +17,7 @@ import { seedPerusahaan } from "./seeds/10-perusahaan";
 import { seedOrganisasi } from "./seeds/11-organisasi";
 import { seedNews } from "./seeds/12-news";
 import { seedRapatNotulen } from "./seeds/13-rapat-notulen";
+import { seedPlatform } from "./seeds/14-platform";
 
 import { invalidateCachePrefix } from "../lib/redis";
 
@@ -92,6 +93,7 @@ async function main() {
   await seedPerusahaan(prisma);
   await seedOrganisasi(prisma);
   await seedRapatNotulen(prisma);
+  await seedPlatform(prisma);
 
   console.log("\n✅ Seeding database selesai!");
 

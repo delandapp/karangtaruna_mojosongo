@@ -144,7 +144,14 @@ function CoverUpload({
   const handleFile = useCallback(async (file: File) => {
     try {
       const result = await uploadFile({ bucketName: S3_BUCKET, file }).unwrap();
-      const rawUrl: string = result?.data?.file?.url || result?.data?.url || result?.data?.s3_url || result?.data?.Location || "";
+      const rawUrl: string =
+        result?.data?.file?.urlPublik ||
+        result?.data?.urlPublik ||
+        result?.data?.file?.url ||
+        result?.data?.url ||
+        result?.data?.s3_url ||
+        result?.data?.Location ||
+        "";
       const url = rawUrl.startsWith("/")
         ? `${(process.env.NEXT_PUBLIC_S3_API_URL || "https://s3-api.mediatamaedu.com/api/v1/").replace(/\/api\/v1\/?$/, "")}${rawUrl}`
         : rawUrl;

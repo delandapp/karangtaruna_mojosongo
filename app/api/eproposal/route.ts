@@ -17,7 +17,7 @@ function extractUrl(value: unknown): string {
     url = value;
   } else if (value && typeof value === "object") {
     const obj = value as Record<string, any>;
-    url = obj.file?.urlPublik || obj.url || "";
+    url = obj.file?.urlPublik || obj.urlPublik || obj.file?.url || obj.url || "";
   }
   return url.replace("http://shared-minio:9000", "https://storage.mediatamaedu.com");
 }

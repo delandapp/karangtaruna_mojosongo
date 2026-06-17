@@ -49,6 +49,8 @@ export const PUT = withAuth(
       ) {
         dataToUpdate.file_pdf_url =
           (dataToUpdate.file_pdf_url as any).file?.urlPublik ||
+          (dataToUpdate.file_pdf_url as any).urlPublik ||
+          (dataToUpdate.file_pdf_url as any).file?.url ||
           (dataToUpdate.file_pdf_url as any).url ||
           "";
       }
@@ -58,6 +60,8 @@ export const PUT = withAuth(
       ) {
         dataToUpdate.cover_url =
           (dataToUpdate.cover_url as any).file?.urlPublik ||
+          (dataToUpdate.cover_url as any).urlPublik ||
+          (dataToUpdate.cover_url as any).file?.url ||
           (dataToUpdate.cover_url as any).url ||
           "";
       }
@@ -69,6 +73,8 @@ export const PUT = withAuth(
       ) {
         pengaturan.bg_music_url =
           (pengaturan.bg_music_url as any).file?.urlPublik ||
+          (pengaturan.bg_music_url as any).urlPublik ||
+          (pengaturan.bg_music_url as any).file?.url ||
           (pengaturan.bg_music_url as any).url ||
           "";
       }

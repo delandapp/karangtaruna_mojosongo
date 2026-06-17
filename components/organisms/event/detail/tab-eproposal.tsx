@@ -131,7 +131,13 @@ export const TabEProposal: React.FC<TabEProposalProps> = ({ eventId }) => {
           file: pdfFile,
         }).unwrap();
         if (res.success === false) throw res;
-        const rawUrl = res.data?.file?.url || res.data?.url || res.data?.fileUrl || (typeof res.data === "string" ? res.data : "");
+        const rawUrl =
+          res.data?.file?.urlPublik ||
+          res.data?.urlPublik ||
+          res.data?.file?.url ||
+          res.data?.url ||
+          res.data?.fileUrl ||
+          (typeof res.data === "string" ? res.data : "");
         file_pdf_url = rawUrl.startsWith("/")
           ? `${(process.env.NEXT_PUBLIC_S3_API_URL || "https://s3-api.mediatamaedu.com/api/v1/").replace(/\/api\/v1\/?$/, "")}${rawUrl}`
           : rawUrl;
@@ -151,7 +157,13 @@ export const TabEProposal: React.FC<TabEProposalProps> = ({ eventId }) => {
           file: coverFile,
         }).unwrap();
         if (res.success === false) throw res;
-        const rawUrl = res.data?.file?.url || res.data?.url || res.data?.fileUrl || (typeof res.data === "string" ? res.data : "");
+        const rawUrl =
+          res.data?.file?.urlPublik ||
+          res.data?.urlPublik ||
+          res.data?.file?.url ||
+          res.data?.url ||
+          res.data?.fileUrl ||
+          (typeof res.data === "string" ? res.data : "");
         cover_url = rawUrl.startsWith("/")
           ? `${(process.env.NEXT_PUBLIC_S3_API_URL || "https://s3-api.mediatamaedu.com/api/v1/").replace(/\/api\/v1\/?$/, "")}${rawUrl}`
           : rawUrl;
@@ -172,7 +184,13 @@ export const TabEProposal: React.FC<TabEProposalProps> = ({ eventId }) => {
           file: musicFile,
         }).unwrap();
         if (res.success === false) throw res;
-        const rawUrl = res.data?.file?.url || res.data?.url || res.data?.fileUrl || (typeof res.data === "string" ? res.data : "");
+        const rawUrl =
+          res.data?.file?.urlPublik ||
+          res.data?.urlPublik ||
+          res.data?.file?.url ||
+          res.data?.url ||
+          res.data?.fileUrl ||
+          (typeof res.data === "string" ? res.data : "");
         bg_music_url = rawUrl.startsWith("/")
           ? `${(process.env.NEXT_PUBLIC_S3_API_URL || "https://s3-api.mediatamaedu.com/api/v1/").replace(/\/api\/v1\/?$/, "")}${rawUrl}`
           : rawUrl;

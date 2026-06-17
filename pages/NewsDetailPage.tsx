@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { LandingNavbar } from "@/components/organisms/landing/LandingNavbar";
+import CardNav from "@/components/organisms/cards/NavCard";
 import { LandingFooter } from "@/components/organisms/landing/LandingFooter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -170,6 +170,41 @@ interface NewsDetailPageProps {
 }
 
 export default function NewsDetailPage({ slug }: NewsDetailPageProps) {
+  const navItems = [
+    {
+      label: "Home",
+      bgColor: "var(--color-primary-600)",
+      textColor: "#fff",
+      links: [
+        { label: "Halaman Utama", href: "/", ariaLabel: "Home" },
+      ],
+    },
+    {
+      label: "Program",
+      bgColor: "var(--color-primary-500)",
+      textColor: "#fff",
+      links: [
+        { label: "Lihat Semua Program", href: "/#program", ariaLabel: "Program" },
+      ],
+    },
+    {
+      label: "Berita",
+      bgColor: "var(--color-accent-500)",
+      textColor: "#fff",
+      links: [
+        { label: "Kabar Terbaru", href: "/berita", ariaLabel: "Berita" },
+      ],
+    },
+    {
+      label: "Galeri",
+      bgColor: "var(--color-n-800)",
+      textColor: "#fff",
+      links: [
+        { label: "Dokumentasi Foto", href: "/galeri", ariaLabel: "Galeri" },
+      ],
+    },
+  ];
+
   const router = useRouter();
   const { data: response, isLoading, isError } = useGetBeritaBySlugQuery(slug);
   const { data: topData } = useGetBeritaTopQuery({ limit: 6 });
@@ -187,7 +222,16 @@ export default function NewsDetailPage({ slug }: NewsDetailPageProps) {
   if (isError) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <LandingNavbar />
+        <CardNav
+          logo="/image/logo/logo.png"
+          logoAlt="Karang Taruna Mojosongo"
+          items={navItems}
+          baseColor="var(--color-background)"
+          menuColor="var(--color-foreground)"
+          buttonBgColor="var(--color-primary-500)"
+          buttonTextColor="#ffffff"
+          ctaLabel="Bergabung"
+        />
         <div className="flex flex-1 flex-col items-center justify-center gap-4 pt-32 text-center px-4">
           <Newspaper className="h-20 w-20 text-muted-foreground/30" />
           <h1 className="font-title text-2xl font-bold text-foreground">Berita Tidak Ditemukan</h1>
@@ -205,7 +249,16 @@ export default function NewsDetailPage({ slug }: NewsDetailPageProps) {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <LandingNavbar />
+      <CardNav
+        logo="/image/logo/logo.png"
+        logoAlt="Karang Taruna Mojosongo"
+        items={navItems}
+        baseColor="var(--color-background)"
+        menuColor="var(--color-foreground)"
+        buttonBgColor="var(--color-primary-500)"
+        buttonTextColor="#ffffff"
+        ctaLabel="Bergabung"
+      />
 
       <main className="flex-1 pt-24 pb-20">
         <div className="container mx-auto px-4 max-w-7xl">

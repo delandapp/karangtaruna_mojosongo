@@ -7,16 +7,7 @@ import {
 } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import {
-  REDIS_KEYS,
-  ELASTIC_INDICES,
-  DEFAULT_CACHE_TTL,
-} from "@/lib/constants";
-import {
-  searchDocuments,
-  indexDocument,
-  deleteDocument,
-} from "@/lib/elasticsearch";
+import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
 import { z } from "zod";
@@ -42,38 +33,40 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
 
     // Cek cache hanya untuk non-search
     if (!search) {
-      const cached = await getCache<{ data: unknown[]; meta: unknown }>(
-        cacheKey,
-      );
+      const cached = await getCache<{ data: unknown[]; meta: unknown }>(cacheKey);
       if (cached)
         return paginatedResponse(cached.data as any[], cached.meta as any, 200);
     }
 
-    const esQuery: Record<string, unknown> = search
+    const where = search
       ? {
-          multi_match: {
-            query: search,
-            fields: ["nama_org", "alamat", "email"],
-            fuzziness: "AUTO",
-          },
+          OR: [
+            { nama_org: { contains: search, mode: "insensitive" as const } },
+            { alamat:   { contains: search, mode: "insensitive" as const } },
+            { email:    { contains: search, mode: "insensitive" as const } },
+          ],
         }
-      : { match_all: {} };
+      : {};
 
-    const { hits, total } = await searchDocuments(
-      ELASTIC_INDICES.ORGANISASI,
-      esQuery,
-      { from: skip, size: limit, sort: [{ dibuat_pada: { order: "desc" } }] },
-    );
+    const [organisasiList, total] = await prisma.$transaction([
+      prisma.m_organisasi.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { dibuat_pada: "desc" },
+      }),
+      prisma.m_organisasi.count({ where }),
+    ]);
 
     const totalPages = Math.ceil(total / limit);
     const meta = { page, limit, total, totalPages };
 
     // Simpan ke cache jika bukan pencarian
     if (!search) {
-      await setCache(cacheKey, { data: hits, meta }, DEFAULT_CACHE_TTL);
+      await setCache(cacheKey, { data: organisasiList, meta }, DEFAULT_CACHE_TTL);
     }
 
-    return paginatedResponse(hits, meta, 200);
+    return paginatedResponse(organisasiList, meta, 200);
   } catch (error) {
     return handleApiError(error);
   }
@@ -90,10 +83,8 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     const newOrganisasi = await prisma.m_organisasi.create({
       data: {
         nama_org: validatedData.nama_org,
-        kode_wilayah_induk_kelurahan:
-          validatedData.kode_wilayah_induk_kelurahan,
-        kode_wilayah_induk_kecamatan:
-          validatedData.kode_wilayah_induk_kecamatan,
+        kode_wilayah_induk_kelurahan: validatedData.kode_wilayah_induk_kelurahan,
+        kode_wilayah_induk_kecamatan: validatedData.kode_wilayah_induk_kecamatan,
         kode_wilayah_induk_kota: validatedData.kode_wilayah_induk_kota,
         kode_wilayah_induk_provinsi: validatedData.kode_wilayah_induk_provinsi,
         no_handphone: validatedData.no_handphone,
@@ -107,11 +98,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     });
 
     // Invalidate cache
-    await indexDocument(
-      ELASTIC_INDICES.ORGANISASI,
-      String(newOrganisasi.id),
-      newOrganisasi,
-    );
     await invalidateCachePrefix(REDIS_KEYS.ORGANISASI.ALL_PREFIX);
     return successResponse(newOrganisasi, 201);
   } catch (error) {

@@ -74,6 +74,10 @@ model m_user {
   komentar_berita  c_komentar_berita[]
   interaksi_berita r_user_interaksi_berita[]
 
+  // Buku Kas
+  kas_dicatat   m_kas[] @relation("kas_dicatat_oleh")
+  kas_disetujui m_kas[] @relation("kas_disetujui_oleh")
+
   // ---- Notulen Rapat ----
   m_rapat_dibuat       m_rapat[]                @relation("rapat_dibuat")
   agenda_pic           c_agenda_rapat[]         @relation("agenda_pic")

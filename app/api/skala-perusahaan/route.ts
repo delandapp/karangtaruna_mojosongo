@@ -9,14 +9,8 @@ import { handleApiError } from "@/lib/error-handler";
 import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
 import {
   REDIS_KEYS,
-  ELASTIC_INDICES,
   DEFAULT_CACHE_TTL,
 } from "@/lib/constants";
-import {
-  searchDocuments,
-  indexDocument,
-  deleteDocument,
-} from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
 import { z } from "zod";
@@ -44,18 +38,13 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
       const cached = await getCache<unknown[]>(cacheKey);
       if (cached) return successResponse(cached, 200);
 
-      const { hits } = await searchDocuments(
-        ELASTIC_INDICES.SKALA_PERUSAHAAN,
-        { match_all: {} },
-        {
-          size: 10000,
-          sort: [{ "nama.keyword": { order: "asc" } }],
-          _source: ["id", "nama"],
-        },
-      );
+      const data = await prisma.m_skala_perusahaan.findMany({
+        select: { id: true, nama: true },
+        orderBy: { nama: "asc" },
+      });
 
-      await setCache(cacheKey, hits, DEFAULT_CACHE_TTL);
-      return successResponse(hits, 200);
+      await setCache(cacheKey, data, DEFAULT_CACHE_TTL);
+      return successResponse(data, 200);
     }
 
     // ── Mode Paginated ────────────────────────────────────────────────────
@@ -70,35 +59,30 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
         return paginatedResponse(cached.data as any[], cached.meta as any, 200);
     }
 
-    const esQuery = search
-      ? {
-          multi_match: {
-            query: search,
-            fields: ["nama"],
-            type: "best_fields" as const,
-            fuzziness: "AUTO",
-          },
-        }
-      : { match_all: {} };
+    // Build Prisma where clause
+    const where: Record<string, unknown> = {};
+    if (search) {
+      where.nama = { contains: search, mode: "insensitive" };
+    }
 
-    const { hits, total } = await searchDocuments(
-      ELASTIC_INDICES.SKALA_PERUSAHAAN,
-      esQuery,
-      {
-        from: skip,
-        size: limit,
-        sort: [{ "nama.keyword": { order: "asc" } }],
-      },
-    );
+    const [data, total] = await Promise.all([
+      prisma.m_skala_perusahaan.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { nama: "asc" },
+      }),
+      prisma.m_skala_perusahaan.count({ where }),
+    ]);
 
     const totalPages = Math.ceil(total / limit);
     const meta = { page, limit, total, totalPages };
 
     if (!search) {
-      await setCache(cacheKey, { data: hits, meta }, DEFAULT_CACHE_TTL);
+      await setCache(cacheKey, { data, meta }, DEFAULT_CACHE_TTL);
     }
 
-    return paginatedResponse(hits, meta, 200);
+    return paginatedResponse(data, meta, 200);
   } catch (error) {
     return handleApiError(error);
   }
@@ -124,11 +108,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     });
 
     // Invalidate cache
-    await indexDocument(
-      ELASTIC_INDICES.SKALA_PERUSAHAAN,
-      String(newItem.id),
-      newItem,
-    );
     await invalidateCachePrefix(REDIS_KEYS.SKALA_PERUSAHAAN.ALL_PREFIX);
     return successResponse(newItem, 201);
   } catch (error) {

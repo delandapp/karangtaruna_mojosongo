@@ -2,10 +2,11 @@ import { Metadata } from "next";
 import NewsDetailPage from "@/pages/NewsDetailPage";
 
 interface Props {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params;
   try {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const res = await fetch(`${baseUrl}/api/berita/slug/${params.slug}`, {
@@ -41,6 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default function BeritaDetailRoute({ params }: Props) {
+export default async function BeritaDetailRoute(props: Props) {
+  const params = await props.params;
   return <NewsDetailPage slug={params.slug} />;
 }

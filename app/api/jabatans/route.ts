@@ -7,16 +7,7 @@ import {
 } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import {
-  REDIS_KEYS,
-  ELASTIC_INDICES,
-  DEFAULT_CACHE_TTL,
-} from "@/lib/constants";
-import {
-  searchDocuments,
-  indexDocument,
-  deleteDocument,
-} from "@/lib/elasticsearch";
+import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
 import { z } from "zod";
@@ -44,18 +35,13 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
       const cached = await getCache<unknown[]>(cacheKey);
       if (cached) return successResponse(cached, 200);
 
-      const { hits } = await searchDocuments(
-        ELASTIC_INDICES.JABATANS,
-        { match_all: {} },
-        {
-          size: 10000,
-          sort: [{ nama_jabatan: { order: "asc" } }],
-          _source: ["id", "nama_jabatan"],
-        },
-      );
+      const jabatans = await prisma.m_jabatan.findMany({
+        select: { id: true, nama_jabatan: true },
+        orderBy: { nama_jabatan: "asc" },
+      });
 
-      await setCache(cacheKey, hits, DEFAULT_CACHE_TTL);
-      return successResponse(hits, 200);
+      await setCache(cacheKey, jabatans, DEFAULT_CACHE_TTL);
+      return successResponse(jabatans, 200);
     }
 
     // ── Mode Paginated ────────────────────────────────────────────────────
@@ -63,45 +49,45 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
     const cacheKey = `${REDIS_KEYS.JABATANS.ALL}:page:${page}:limit:${limit}`;
 
     if (!search) {
-      const cached = await getCache<{ data: unknown[]; meta: unknown }>(
-        cacheKey,
-      );
+      const cached = await getCache<{ data: unknown[]; meta: unknown }>(cacheKey);
       if (cached)
         return paginatedResponse(cached.data as any[], cached.meta as any, 200);
     }
 
-    const esQuery = search
+    const where = search
       ? {
-          multi_match: {
-            query: search,
-            fields: ["nama_jabatan", "deskripsi_jabatan"],
-            type: "best_fields" as const,
-            fuzziness: "AUTO" as const,
-          },
+          OR: [
+            { nama_jabatan: { contains: search, mode: "insensitive" as const } },
+            { deskripsi_jabatan: { contains: search, mode: "insensitive" as const } },
+          ],
         }
-      : { match_all: {} };
+      : {};
 
-    const { hits, total } = await searchDocuments(
-      ELASTIC_INDICES.JABATANS,
-      esQuery,
-      { from: skip, size: limit, sort: [{ dibuat_pada: { order: "desc" } }] },
-    );
+    const [jabatans, total] = await prisma.$transaction([
+      prisma.m_jabatan.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { dibuat_pada: "desc" },
+      }),
+      prisma.m_jabatan.count({ where }),
+    ]);
 
     const totalPages = Math.ceil(total / limit);
     const meta = { page, limit, total, totalPages };
 
     if (!search) {
-      await setCache(cacheKey, { data: hits, meta }, DEFAULT_CACHE_TTL);
+      await setCache(cacheKey, { data: jabatans, meta }, DEFAULT_CACHE_TTL);
     }
 
-    return paginatedResponse(hits, meta, 200);
+    return paginatedResponse(jabatans, meta, 200);
   } catch (error) {
     return handleApiError(error);
   }
 });
 
 // ──────────────────────────────────────────────────────────
-// POST /api/jabatans
+// POST /api/jabatans — Buat Jabatan Baru
 // ──────────────────────────────────────────────────────────
 export const POST = withAuth(async (req: AuthenticatedRequest) => {
   try {
@@ -116,11 +102,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     });
 
     // Invalidate cache
-    await indexDocument(
-      ELASTIC_INDICES.JABATANS,
-      String(newJabatan.id),
-      newJabatan,
-    );
     await invalidateCachePrefix(REDIS_KEYS.JABATANS.ALL_PREFIX);
     return successResponse(newJabatan, 201);
   } catch (error) {

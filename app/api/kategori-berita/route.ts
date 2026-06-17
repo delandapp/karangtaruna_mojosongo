@@ -4,12 +4,7 @@ import { createKategoriBeritaSchema } from "@/lib/validations/berita.schema";
 import { successResponse, paginatedResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import {
-  searchDocuments,
-  indexDocument,
-  deleteDocument,
-} from "@/lib/elasticsearch";
-import { ELASTIC_INDICES, REDIS_KEYS } from "@/lib/constants";
+import { REDIS_KEYS } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
 const CACHE_TTL = 5 * 60; // 5 menit
@@ -39,74 +34,55 @@ export async function GET(req: NextRequest) {
       const cached = await getCache<unknown[]>(cacheKey);
       if (cached) return successResponse(cached, 200);
 
-      const { hits } = await searchDocuments(
-        ELASTIC_INDICES.KATEGORI_BERITA,
-        { term: { is_aktif: true } },
-        {
-          size: 1000,
-          sort: [
-            { urutan: { order: "asc" } },
-            { "nama.keyword": { order: "asc" } },
-          ],
-          _source: ["id", "nama", "slug", "warna_hex", "icon_url"],
-        },
-      );
+      const kategoris = await prisma.m_kategori_berita.findMany({
+        select: { id: true, nama: true, slug: true, warna_hex: true, icon_url: true },
+        orderBy: [{ urutan: "asc" }, { nama: "asc" }],
+      });
 
-      await setCache(cacheKey, hits, CACHE_TTL);
-      return successResponse(hits, 200);
+      await setCache(cacheKey, kategoris, CACHE_TTL);
+      return successResponse(kategoris, 200);
     }
 
     // ── Mode Paginated ────────────────────────────────────────────────────
     const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
-    const limit = Math.min(
-      100,
-      Math.max(1, Number(searchParams.get("limit") ?? "20")),
-    );
+    const limit = Math.min(100, Math.max(1, Number(searchParams.get("limit") ?? "20")));
     const skip = (page - 1) * limit;
 
     // Cek cache Redis (hanya untuk non-search)
     const cacheKey = `${REDIS_KEYS.KATEGORI_BERITA.ALL}:page:${page}:limit:${limit}`;
     if (!search) {
-      const cached = await getCache<{ data: unknown[]; meta: unknown }>(
-        cacheKey,
-      );
+      const cached = await getCache<{ data: unknown[]; meta: unknown }>(cacheKey);
       if (cached)
         return paginatedResponse(cached.data as any[], cached.meta as any, 200);
     }
 
-    const esQuery = search
+    const where = search
       ? {
-          bool: {
-            must: [
-              {
-                multi_match: {
-                  query: search,
-                  fields: ["nama^2", "deskripsi"],
-                  fuzziness: "AUTO",
-                },
-              },
-            ],
-          },
+          OR: [
+            { nama: { contains: search, mode: "insensitive" as const } },
+            { deskripsi: { contains: search, mode: "insensitive" as const } },
+          ],
         }
-      : { match_all: {} };
+      : {};
 
-    const { hits, total } = await searchDocuments(
-      ELASTIC_INDICES.KATEGORI_BERITA,
-      esQuery,
-      {
-        from: skip,
-        size: limit,
-        sort: [
-          { urutan: { order: "asc" } },
-          { "nama.keyword": { order: "asc" } },
-        ],
-      },
-    );
+    const [kategoris, total] = await prisma.$transaction([
+      prisma.m_kategori_berita.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: [{ urutan: "asc" }, { nama: "asc" }],
+      }),
+      prisma.m_kategori_berita.count({ where }),
+    ]);
 
     const totalPages = Math.ceil(total / limit);
     const meta = { page, limit, total, totalPages };
 
-    return paginatedResponse(hits, meta, 200);
+    if (!search) {
+      await setCache(cacheKey, { data: kategoris, meta }, CACHE_TTL);
+    }
+
+    return paginatedResponse(kategoris, meta, 200);
   } catch (error) {
     return handleApiError(error);
   }
@@ -152,11 +128,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     });
 
     // Invalidate cache
-    await indexDocument(
-      ELASTIC_INDICES.KATEGORI_BERITA,
-      String(kategori.id),
-      kategori,
-    );
     await invalidateCachePrefix(REDIS_KEYS.KATEGORI_BERITA.ALL_PREFIX);
     return successResponse(kategori, 201);
   } catch (error) {

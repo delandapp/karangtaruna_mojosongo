@@ -7,12 +7,7 @@ import {
 } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import { ELASTIC_INDICES, DEFAULT_CACHE_TTL } from "@/lib/constants";
-import {
-  searchDocuments,
-  indexDocument,
-  deleteDocument,
-} from "@/lib/elasticsearch";
+import { DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
 import { z } from "zod";
@@ -76,37 +71,32 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
         return paginatedResponse(cached.data as any[], cached.meta as any, 200);
     }
 
-    // Build Elasticsearch query
-    const must: Record<string, unknown>[] = [];
-    if (anggaran_id) must.push({ term: { anggaran_id } });
-    if (item_anggaran_id) must.push({ term: { item_anggaran_id } });
-    if (jenis_transaksi) must.push({ term: { jenis_transaksi } });
-    if (status) must.push({ term: { status } });
+    // Build Prisma where clause
+    const where: Record<string, unknown> = {};
+    if (anggaran_id) where.anggaran_id = anggaran_id;
+    if (item_anggaran_id) where.item_anggaran_id = item_anggaran_id;
+    if (jenis_transaksi) where.jenis_transaksi = jenis_transaksi;
+    if (status) where.status = status;
 
-    const esQuery = must.length > 0 ? { bool: { must } } : { match_all: {} };
-
-    const { hits, total } = await searchDocuments(
-      ELASTIC_INDICES.TRANSAKSI_KEUANGAN,
-      esQuery,
-      {
-        from: skip,
-        size: limit,
-        sort: [
-          { tanggal_transaksi: { order: "desc" } },
-          { id: { order: "desc" } },
-        ],
-      },
-    );
+    const [data, total] = await Promise.all([
+      prisma.transaksi_keuangan.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: [{ tanggal_transaksi: "desc" }, { id: "desc" }],
+      }),
+      prisma.transaksi_keuangan.count({ where }),
+    ]);
 
     const totalPages = Math.ceil(total / limit);
     const meta = { page, limit, total, totalPages };
 
     // Simpan ke cache hanya untuk query tanpa filter
     if (!isFiltered) {
-      await setCache(cacheKey, { data: hits, meta }, DEFAULT_CACHE_TTL);
+      await setCache(cacheKey, { data, meta }, DEFAULT_CACHE_TTL);
     }
 
-    return paginatedResponse(hits, meta, 200);
+    return paginatedResponse(data, meta, 200);
   } catch (error) {
     return handleApiError(error);
   }

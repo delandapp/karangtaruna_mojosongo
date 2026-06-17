@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
@@ -24,12 +25,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { TablePagination } from "@/components/molecules/TablePagination";
-
-import { BeritaFormModal } from "../modals/berita/BeritaFormModal";
 import { BeritaDeleteModal } from "../modals/berita/BeritaDeleteModal";
+
 import {
   useGetBeritaListQuery,
-  useGetBeritaByIdQuery,
   usePublishBeritaMutation,
   type Berita,
   type StatusBerita,
@@ -46,7 +45,7 @@ const STATUS_CONFIG: Record<StatusBerita, { label: string; className: string; ic
   REJECTED: { label: "Ditolak", className: "bg-destructive/10 text-destructive border-destructive/30", icon: <EyeOff className="h-3 w-3" /> },
 };
 
-// ─── Quick Publish Dropdown ───────────────────────────────────────────────────
+// ─── Quick Action Menu ────────────────────────────────────────────────────────
 
 function QuickActionMenu({ berita, onRefetch }: { berita: Berita; onRefetch: () => void }) {
   const [publishBerita] = usePublishBeritaMutation();
@@ -96,15 +95,14 @@ function QuickActionMenu({ berita, onRefetch }: { berita: Berita; onRefetch: () 
 // ─── BeritaTable ──────────────────────────────────────────────────────────────
 
 export function BeritaTable() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<StatusBerita | "ALL">("ALL");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
 
-  // Modal states
-  const [formOpen, setFormOpen] = useState(false);
+  // Delete modal state
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
   const [deletingBerita, setDeletingBerita] = useState<Pick<Berita, "id" | "judul"> | null>(null);
 
   const {
@@ -116,35 +114,21 @@ export function BeritaTable() {
     status: filterStatus !== "ALL" ? filterStatus : undefined,
   });
 
-  // Fetch full data for editing
-  const { data: editResponse } = useGetBeritaByIdQuery(editingId!, {
-    skip: !editingId,
-  });
-  const editingBerita = editResponse?.data ?? null;
-
   const beritaList = response?.data || [];
   const totalPages = response?.meta?.totalPages || 0;
 
-  const handleEdit = useCallback((b: Berita) => {
-    setEditingId(b.id);
-    setFormOpen(true);
-  }, []);
-
   const handleCreate = useCallback(() => {
-    setEditingId(null);
-    setFormOpen(true);
-  }, []);
+    router.push("/dashboard/berita/buat");
+  }, [router]);
+
+  const handleEdit = useCallback((b: Berita) => {
+    router.push(`/dashboard/berita/edit/${b.id}`);
+  }, [router]);
 
   const handleDelete = useCallback((b: Berita) => {
     setDeletingBerita({ id: b.id, judul: b.judul });
     setDeleteOpen(true);
   }, []);
-
-  const onFormSuccess = useCallback(() => {
-    setFormOpen(false);
-    setEditingId(null);
-    refetch();
-  }, [refetch]);
 
   const onDeleteSuccess = useCallback(() => {
     setDeleteOpen(false);
@@ -361,13 +345,7 @@ export function BeritaTable() {
         )}
       </div>
 
-      {/* ── Modals ── */}
-      <BeritaFormModal
-        isOpen={formOpen}
-        onOpenChange={setFormOpen}
-        onSuccess={onFormSuccess}
-        initialData={editingId ? editingBerita : null}
-      />
+      {/* ── Delete Modal ── */}
       <BeritaDeleteModal
         isOpen={deleteOpen}
         onOpenChange={setDeleteOpen}

@@ -6,8 +6,7 @@ import {
 } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import { ELASTIC_INDICES, DEFAULT_CACHE_TTL } from "@/lib/constants";
-import { searchDocuments, indexDocument, deleteDocument } from "@/lib/elasticsearch";
+import { DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { z } from "zod";
 
@@ -42,52 +41,37 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
         return paginatedResponse(cached.data as any[], cached.meta as any, 200);
     }
 
-    // Build Elasticsearch query
-    const must: Record<string, unknown>[] = [];
-    const filter: Record<string, unknown>[] = [];
-
+    // Build Prisma where clause
+    const where: Record<string, unknown> = {};
     if (search) {
-      must.push({
-        multi_match: {
-          query: search,
-          fields: ["skenario", "deskripsi"],
-          fuzziness: "AUTO",
-        },
-      });
+      where.OR = [
+        { skenario: { contains: search, mode: "insensitive" } },
+        { deskripsi: { contains: search, mode: "insensitive" } },
+      ];
     }
-    if (status) filter.push({ term: { status } });
-    if (skenario) filter.push({ term: { skenario } });
-    if (event_id) filter.push({ term: { event_id } });
+    if (status) where.status = status;
+    if (skenario) where.skenario = skenario;
+    if (event_id) where.event_id = event_id;
 
-    const esQuery =
-      must.length > 0 || filter.length > 0
-        ? {
-            bool: {
-              must: must.length > 0 ? must : [{ match_all: {} }],
-              filter,
-            },
-          }
-        : { match_all: {} };
-
-    const { hits, total } = await searchDocuments(
-      ELASTIC_INDICES.ANGGARAN,
-      esQuery,
-      {
-        from: skip,
-        size: limit,
-        sort: [{ id: { order: "desc" } }],
-      },
-    );
+    const [data, total] = await Promise.all([
+      prisma.anggaran.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { id: "desc" },
+      }),
+      prisma.anggaran.count({ where }),
+    ]);
 
     const totalPages = Math.ceil(total / limit);
     const meta = { page, limit, total, totalPages };
 
     // Simpan ke cache jika query tanpa filter
     if (!isFiltered) {
-      await setCache(cacheKey, { data: hits, meta }, DEFAULT_CACHE_TTL);
+      await setCache(cacheKey, { data, meta }, DEFAULT_CACHE_TTL);
     }
 
-    return paginatedResponse(hits, meta, 200);
+    return paginatedResponse(data, meta, 200);
   } catch (error) {
     return handleApiError(error);
   }

@@ -7,16 +7,7 @@ import {
 } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import {
-  REDIS_KEYS,
-  ELASTIC_INDICES,
-  DEFAULT_CACHE_TTL,
-} from "@/lib/constants";
-import {
-  searchDocuments,
-  indexDocument,
-  deleteDocument,
-} from "@/lib/elasticsearch";
+import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
 import { z } from "zod";
@@ -44,18 +35,13 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
       const cached = await getCache<unknown[]>(cacheKey);
       if (cached) return successResponse(cached, 200);
 
-      const { hits } = await searchDocuments(
-        ELASTIC_INDICES.SEKTOR_INDUSTRI,
-        { match_all: {} },
-        {
-          size: 10000,
-          sort: [{ nama_sektor: { order: "asc" } }],
-          _source: ["id", "nama_sektor"],
-        },
-      );
+      const sektors = await prisma.m_sektor_industri.findMany({
+        select: { id: true, nama_sektor: true },
+        orderBy: { nama_sektor: "asc" },
+      });
 
-      await setCache(cacheKey, hits, DEFAULT_CACHE_TTL);
-      return successResponse(hits, 200);
+      await setCache(cacheKey, sektors, DEFAULT_CACHE_TTL);
+      return successResponse(sektors, 200);
     }
 
     // ── Mode Paginated ────────────────────────────────────────────────────
@@ -63,42 +49,38 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
     const cacheKey = `${REDIS_KEYS.SEKTOR_INDUSTRI.ALL}:page:${page}:limit:${limit}`;
 
     if (!search) {
-      const cached = await getCache<{ data: unknown[]; meta: unknown }>(
-        cacheKey,
-      );
+      const cached = await getCache<{ data: unknown[]; meta: unknown }>(cacheKey);
       if (cached)
         return paginatedResponse(cached.data as any[], cached.meta as any, 200);
     }
 
-    const esQuery = search
+    const where = search
       ? {
-          multi_match: {
-            query: search,
-            fields: ["nama_sektor", "deskripsi_sektor"],
-            type: "best_fields" as const,
-            fuzziness: "AUTO",
-          },
+          OR: [
+            { nama_sektor:     { contains: search, mode: "insensitive" as const } },
+            { deskripsi_sektor:{ contains: search, mode: "insensitive" as const } },
+          ],
         }
-      : { match_all: {} };
+      : {};
 
-    const { hits, total } = await searchDocuments(
-      ELASTIC_INDICES.SEKTOR_INDUSTRI,
-      esQuery,
-      {
-        from: skip,
-        size: limit,
-        sort: [{ dibuat_pada: { order: "desc" } }],
-      },
-    );
+    const [sektors, total] = await prisma.$transaction([
+      prisma.m_sektor_industri.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { dibuat_pada: "desc" },
+      }),
+      prisma.m_sektor_industri.count({ where }),
+    ]);
 
     const totalPages = Math.ceil(total / limit);
     const meta = { page, limit, total, totalPages };
 
     if (!search) {
-      await setCache(cacheKey, { data: hits, meta }, DEFAULT_CACHE_TTL);
+      await setCache(cacheKey, { data: sektors, meta }, DEFAULT_CACHE_TTL);
     }
 
-    return paginatedResponse(hits, meta, 200);
+    return paginatedResponse(sektors, meta, 200);
   } catch (error) {
     return handleApiError(error);
   }
@@ -125,11 +107,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     });
 
     // Invalidate cache
-    await indexDocument(
-      ELASTIC_INDICES.SEKTOR_INDUSTRI,
-      String(newItem.id),
-      newItem,
-    );
     await invalidateCachePrefix(REDIS_KEYS.SEKTOR_INDUSTRI.ALL_PREFIX);
     return successResponse(newItem, 201);
   } catch (error) {

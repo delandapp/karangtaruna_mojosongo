@@ -26,6 +26,9 @@ import {
   CalendarClock,
   Building2,
   MapPin,
+  Newspaper,
+  Tag,
+  LayoutList,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -35,6 +38,20 @@ interface SidebarProps {
 const GENERAL_NAV = [
   { href: "/dashboard/home", icon: LayoutDashboard, label: "Home" },
   { href: "/dashboard/event", icon: Calendar, label: "Event" },
+];
+
+const BERITA_NAV = [
+  {
+    href: "/dashboard/berita",
+    icon: Newspaper,
+    label: "Berita",
+    subItems: [
+      { href: "/dashboard/berita", label: "Semua Berita" },
+      { href: "/dashboard/berita/buat", label: "Tulis Berita" },
+      { href: "/dashboard/berita/kategori", label: "Kategori" },
+      { href: "/dashboard/berita/tag", label: "Tag" },
+    ],
+  },
 ];
 
 const MASTER_NAV = [
@@ -63,6 +80,7 @@ const TOOLS_NAV = [
     icon: Wallet,
     label: "Keuangan",
     subItems: [
+      { href: "/dashboard/keuangan", label: "Buku Kas" },
       { href: "/dashboard/keuangan/anggaran", label: "Anggaran" },
       { href: "/dashboard/keuangan/transaksi", label: "Transaksi" },
     ],
@@ -152,6 +170,20 @@ export function Sidebar({ className }: SidebarProps) {
           {GENERAL_NAV.map((item) => (
             <NavItem key={item.href} {...item} collapsed={collapsed} />
           ))}
+        </div>
+
+        {/* Berita */}
+        <div className="mt-5">
+          {!collapsed && (
+            <span className="mb-2 block px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+              Berita
+            </span>
+          )}
+          <div className="flex flex-col gap-0.5">
+            {BERITA_NAV.map((item) => (
+              <NavItem key={item.href} {...item} collapsed={collapsed} />
+            ))}
+          </div>
         </div>
 
         {/* Data Master */}

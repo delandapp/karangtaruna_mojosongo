@@ -3,16 +3,7 @@ import { updateLevelSchema } from "@/lib/validations/level.schema";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import {
-  REDIS_KEYS,
-  ELASTIC_INDICES,
-  DEFAULT_CACHE_TTL,
-} from "@/lib/constants";
-import {
-  getDocument,
-  indexDocument,
-  deleteDocument,
-} from "@/lib/elasticsearch";
+import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
 type RouteProps = { params: Promise<{ id: string }> };
@@ -24,7 +15,7 @@ const parseId = (id: string): number | null => {
 
 /**
  * GET /api/levels/[id]
- * Ambil detail level by ID. Prioritas: Redis cache → Elasticsearch.
+ * Ambil detail level by ID. Prioritas: Redis cache → Prisma.
  */
 export const GET = withAuth(
   async (_req: AuthenticatedRequest, { params }: RouteProps) => {
@@ -40,8 +31,8 @@ export const GET = withAuth(
       const cached = await getCache<unknown>(cacheKey);
       if (cached) return successResponse(cached, 200);
 
-      // 2. Ambil dari Elasticsearch
-      const level = await getDocument(ELASTIC_INDICES.LEVELS, levelId);
+      // 2. Ambil dari Prisma
+      const level = await prisma.m_level.findUnique({ where: { id: levelId } });
       if (!level)
         return errorResponse(404, "Level tidak ditemukan", "NOT_FOUND");
 
@@ -57,8 +48,7 @@ export const GET = withAuth(
 
 /**
  * PUT /api/levels/[id]
- * Update data level. ES sync dilakukan langsung.
- * Invalidate cache.
+ * Update data level. Invalidate cache.
  */
 export const PUT = withAuth(
   async (req: AuthenticatedRequest, { params }: RouteProps) => {
@@ -85,7 +75,6 @@ export const PUT = withAuth(
 
       // Invalidate cache
       await invalidateCachePrefix(REDIS_KEYS.LEVELS.SINGLE(levelId));
-      await indexDocument(ELASTIC_INDICES.LEVELS, String(updated.id), updated);
       await invalidateCachePrefix(REDIS_KEYS.LEVELS.ALL_PREFIX);
       return successResponse(updated, 200);
     } catch (error) {
@@ -96,8 +85,7 @@ export const PUT = withAuth(
 
 /**
  * DELETE /api/levels/[id]
- * Hapus level.
- * Invalidate cache.
+ * Hapus level. Invalidate cache.
  */
 export const DELETE = withAuth(
   async (_req: AuthenticatedRequest, { params }: RouteProps) => {
@@ -118,7 +106,6 @@ export const DELETE = withAuth(
 
       // Invalidate cache
       await invalidateCachePrefix(REDIS_KEYS.LEVELS.SINGLE(levelId));
-      await deleteDocument(ELASTIC_INDICES.LEVELS, String(id));
       await invalidateCachePrefix(REDIS_KEYS.LEVELS.ALL_PREFIX);
       return successResponse(null, 200);
     } catch (error) {

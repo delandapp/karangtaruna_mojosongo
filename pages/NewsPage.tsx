@@ -10,7 +10,7 @@ import {
   Search, X, ArrowRight, Newspaper, BookOpen, Star,
 } from "lucide-react";
 
-import { LandingNavbar } from "@/components/organisms/landing/LandingNavbar";
+import CardNav from "@/components/organisms/cards/NavCard";
 import { LandingFooter } from "@/components/organisms/landing/LandingFooter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -274,6 +274,41 @@ function SidebarKategori({ items, activeSlug, onSelect }: {
 // ─── Main NewsPage ─────────────────────────────────────────────────────────────
 
 export default function NewsPage() {
+  const navItems = [
+    {
+      label: "Home",
+      bgColor: "var(--color-primary-600)",
+      textColor: "#fff",
+      links: [
+        { label: "Halaman Utama", href: "/", ariaLabel: "Home" },
+      ],
+    },
+    {
+      label: "Program",
+      bgColor: "var(--color-primary-500)",
+      textColor: "#fff",
+      links: [
+        { label: "Lihat Semua Program", href: "/#program", ariaLabel: "Program" },
+      ],
+    },
+    {
+      label: "Berita",
+      bgColor: "var(--color-accent-500)",
+      textColor: "#fff",
+      links: [
+        { label: "Kabar Terbaru", href: "/berita", ariaLabel: "Berita" },
+      ],
+    },
+    {
+      label: "Galeri",
+      bgColor: "var(--color-n-800)",
+      textColor: "#fff",
+      links: [
+        { label: "Dokumentasi Foto", href: "/galeri", ariaLabel: "Galeri" },
+      ],
+    },
+  ];
+
   const [activeKategori, setActiveKategori] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -322,7 +357,16 @@ export default function NewsPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <LandingNavbar />
+      <CardNav
+        logo="/image/logo/logo.png"
+        logoAlt="Karang Taruna Mojosongo"
+        items={navItems}
+        baseColor="var(--color-background)"
+        menuColor="var(--color-foreground)"
+        buttonBgColor="var(--color-primary-500)"
+        buttonTextColor="#ffffff"
+        ctaLabel="Bergabung"
+      />
 
       {/* Breaking News */}
       {breakingNews.length > 0 && <BreakingNewsTicker items={breakingNews} />}

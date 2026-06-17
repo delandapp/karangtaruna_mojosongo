@@ -133,6 +133,8 @@ export const S3_BUCKETS = {
   E_PROPOSAL: "assets-proposal-sponsorship-karang-taruna",
   COVER_E_PROPOSAL: "assets-cover-sponsorship-karang-taruna",
   SOUND_E_PROPOSAL: "assets-music-sponsorship-karang-taruna",
+  BERITA: "assets-berita-karang-taruna",
+  NOTA: "assets-nota-karang-taruna"
 };
 
 // Global cache TTL in seconds (1 Hour by default)

@@ -1,15 +1,10 @@
-import { indexDocument, deleteDocument } from "@/lib/elasticsearch";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import {
-  createTagBeritaSchema,
-  beritaListQuerySchema,
-} from "@/lib/validations/berita.schema";
+import { createTagBeritaSchema } from "@/lib/validations/berita.schema";
 import { successResponse, paginatedResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache , invalidateCachePrefix } from "@/lib/redis";
-
-import { REDIS_KEYS, ELASTIC_INDICES } from "@/lib/constants";
+import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
+import { REDIS_KEYS } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
 /**
@@ -23,6 +18,7 @@ import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
  *  - page   : nomor halaman (default: 1)
  *  - limit  : item per halaman (default: 20, max: 100)
  *  - search : filter by nama tag
+ *  - dropdown : "true" → return semua tanpa pagination
  */
 export async function GET(req: NextRequest) {
   try {
@@ -32,9 +28,7 @@ export async function GET(req: NextRequest) {
     // ── Mode Dropdown (untuk select input di CMS) ─────────────────────────
     if (dropdown) {
       const cacheKey = `${REDIS_KEYS.TAG_BERITA.ALL}:dropdown`;
-      const cached = await getCache<{ id: number; nama: string; slug: string }[]>(
-        cacheKey,
-      );
+      const cached = await getCache<{ id: number; nama: string; slug: string }[]>(cacheKey);
       if (cached) return successResponse(cached, 200);
 
       const tags = await prisma.m_tag.findMany({
@@ -48,10 +42,10 @@ export async function GET(req: NextRequest) {
     }
 
     // ── Mode Pagination ───────────────────────────────────────────────────
-    const page   = Math.max(1, Number(searchParams.get("page")  ?? "1"));
-    const limit  = Math.min(100, Math.max(1, Number(searchParams.get("limit") ?? "20")));
+    const page  = Math.max(1, Number(searchParams.get("page")  ?? "1"));
+    const limit = Math.min(100, Math.max(1, Number(searchParams.get("limit") ?? "20")));
     const search = searchParams.get("search") ?? undefined;
-    const skip   = (page - 1) * limit;
+    const skip  = (page - 1) * limit;
 
     // Cek cache Redis (hanya untuk non-search)
     const cacheKey = `${REDIS_KEYS.TAG_BERITA.ALL}:page:${page}:limit:${limit}`;
@@ -99,11 +93,6 @@ export async function GET(req: NextRequest) {
  *
  * Buat tag berita baru.
  * Protected: hanya admin / editor.
- *
- * Body:
- *  - nama      : string (min 2, max 80)
- *  - slug      : string (max 100, hanya huruf kecil/angka/strip)
- *  - deskripsi : string (opsional)
  */
 export const POST = withAuth(async (req: AuthenticatedRequest) => {
   try {
@@ -119,7 +108,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     });
 
     // Invalidate semua cache listing tag
-    await indexDocument(ELASTIC_INDICES.TAG_BERITA, String(tag.id), tag);
     await invalidateCachePrefix(REDIS_KEYS.TAG_BERITA.ALL_PREFIX);
     return successResponse(tag, 201);
   } catch (error) {

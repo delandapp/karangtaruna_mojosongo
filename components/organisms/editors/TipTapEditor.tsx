@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useCallback, useRef } from "react";
-import { useEditor, EditorContent, BubbleMenu } from "@tiptap/react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
@@ -187,11 +188,24 @@ export function TipTapEditor({
 
   // Sync external content change
   useEffect(() => {
-    if (!editor || !content) return;
-    const currentJson = JSON.stringify(editor.getJSON());
-    const newContent = typeof content === "string" ? content : JSON.stringify(content);
-    if (currentJson !== newContent) {
-      editor.commands.setContent(content as string);
+    if (!editor) return;
+
+    // Prevent sync loops when both content are effectively empty
+    const isEmptyProps = !content || content === "" || content === "<p></p>";
+    if (isEmptyProps && editor.isEmpty) return;
+
+    if (typeof content === "string") {
+      // For HTML strings
+      if (editor.getHTML() !== content) {
+        editor.commands.setContent(content, { emitUpdate: false });
+      }
+    } else if (content) {
+      // For JSON objects
+      const currentJson = JSON.stringify(editor.getJSON());
+      const newJson = JSON.stringify(content);
+      if (currentJson !== newJson) {
+        editor.commands.setContent(content, { emitUpdate: false });
+      }
     }
   }, [content, editor]);
 
@@ -404,7 +418,7 @@ export function TipTapEditor({
       </div>
 
       {/* ── Bubble Menu (on text selection) ── */}
-      <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }}
+      <BubbleMenu editor={editor}
         className="flex items-center gap-0.5 rounded-xl border border-border/60 bg-card/95 p-1 shadow-xl backdrop-blur-xl"
       >
         <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive("bold")}>

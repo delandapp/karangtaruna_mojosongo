@@ -11,16 +11,7 @@ import {
 } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import {
-  REDIS_KEYS,
-  ELASTIC_INDICES,
-  DEFAULT_CACHE_TTL,
-} from "@/lib/constants";
-import {
-  searchDocuments,
-  indexDocument,
-  deleteDocument,
-} from "@/lib/elasticsearch";
+import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
 // ──────────────────────────────────────────────────────────
@@ -37,18 +28,13 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
       const cached = await getCache<unknown[]>(cacheKey);
       if (cached) return successResponse(cached, 200);
 
-      const { hits } = await searchDocuments(
-        ELASTIC_INDICES.LEVELS,
-        { match_all: {} },
-        {
-          size: 1000,
-          sort: [{ id: { order: "asc" } }],
-          _source: ["id", "nama_level"],
-        },
-      );
+      const levels = await prisma.m_level.findMany({
+        select: { id: true, nama_level: true },
+        orderBy: { id: "asc" },
+      });
 
-      await setCache(cacheKey, hits, DEFAULT_CACHE_TTL);
-      return successResponse(hits, 200);
+      await setCache(cacheKey, levels, DEFAULT_CACHE_TTL);
+      return successResponse(levels, 200);
     }
 
     // ── Mode Paginated ────────────────────────────────────────────────────
@@ -67,32 +53,34 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
 
     // Cek cache hanya untuk non-search
     if (!searchQuery) {
-      const cached = await getCache<{ data: unknown[]; meta: unknown }>(
-        cacheKey,
-      );
+      const cached = await getCache<{ data: unknown[]; meta: unknown }>(cacheKey);
       if (cached)
         return paginatedResponse(cached.data as any[], cached.meta as any, 200);
     }
 
-    const esQuery = searchQuery
-      ? { multi_match: { query: searchQuery, fields: ["nama_level"] } }
-      : { match_all: {} };
+    const where = searchQuery
+      ? { nama_level: { contains: searchQuery, mode: "insensitive" as const } }
+      : {};
 
-    const { hits, total } = await searchDocuments(
-      ELASTIC_INDICES.LEVELS,
-      esQuery,
-      { from: skip, size: limit, sort: [{ dibuat_pada: { order: "desc" } }] },
-    );
+    const [levels, total] = await prisma.$transaction([
+      prisma.m_level.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { dibuat_pada: "desc" },
+      }),
+      prisma.m_level.count({ where }),
+    ]);
 
     const totalPages = Math.ceil(total / limit);
     const meta = { page, limit, total, totalPages };
 
     // Simpan ke cache jika bukan pencarian
     if (!searchQuery) {
-      await setCache(cacheKey, { data: hits, meta }, DEFAULT_CACHE_TTL);
+      await setCache(cacheKey, { data: levels, meta }, DEFAULT_CACHE_TTL);
     }
 
-    return paginatedResponse(hits, meta, 200);
+    return paginatedResponse(levels, meta, 200);
   } catch (error) {
     return handleApiError(error);
   }
@@ -111,7 +99,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     });
 
     // Invalidate cache
-    await indexDocument(ELASTIC_INDICES.LEVELS, String(newLevel.id), newLevel);
     await invalidateCachePrefix(REDIS_KEYS.LEVELS.ALL_PREFIX);
     return successResponse(newLevel, 201);
   } catch (error) {

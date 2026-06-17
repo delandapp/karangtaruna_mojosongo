@@ -1,25 +1,15 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import {
   successResponse,
   errorResponse,
   paginatedResponse,
 } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import bcrypt from "bcrypt";
-import { z } from "zod";
 import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import {
-  REDIS_KEYS,
-  DEFAULT_CACHE_TTL,
-  ELASTIC_INDICES,
-} from "@/lib/constants";
-import {
-  searchDocuments,
-  indexDocument,
-  deleteDocument,
-} from "@/lib/elasticsearch";
+import { DEFAULT_CACHE_TTL } from "@/lib/constants";
+import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
+import { z } from "zod";
 
 // ─── Validation Schemas ───────────────────────────────────────────────────────
 
@@ -94,7 +84,7 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
 
     // ── Mode Dropdown (untuk select input) ───────────────────────────────
     if (dropdown) {
-      const cacheKey = `${REDIS_KEYS.USERS.ALL}:dropdown`;
+      const cacheKey = `users:all:dropdown`;
       const cached = await getCache<unknown[]>(cacheKey);
       if (cached) return successResponse(cached, 200);
 
@@ -109,7 +99,6 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
 
     // ── Mode Paginated ────────────────────────────────────────────────────
     const skip = (page - 1) * limit;
-    const isFiltered = !!(search || m_jabatan_id?.length || m_level_id?.length);
 
     // Koordinator hanya boleh melihat user di jabatannya sendiri
     let forcedJabatanId: number | null = null;
@@ -145,7 +134,7 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
     // Buat cache key yang mencerminkan semua parameter
     const jabKey = m_jabatan_id?.join(",") ?? "all";
     const lvlKey = m_level_id?.join(",") ?? "all";
-    const cacheKey = `${REDIS_KEYS.USERS.ALL}:page:${page}:limit:${limit}:jab:${jabKey}:lvl:${lvlKey}`;
+    const cacheKey = `users:all:page:${page}:limit:${limit}:jab:${jabKey}:lvl:${lvlKey}`;
 
     // Cek cache hanya untuk query tanpa search
     if (!search) {
@@ -156,38 +145,16 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
         return paginatedResponse(cached.data as any[], cached.meta as any, 200);
     }
 
-    // ── Query via Elasticsearch untuk search, Prisma untuk list ──────────
-    let idFilter: number[] | undefined;
-
-    if (search) {
-      const { hits } = await searchDocuments(
-        ELASTIC_INDICES.USERS,
-        {
-          multi_match: {
-            query: search,
-            fields: ["nama_lengkap", "username"],
-            fuzziness: "AUTO",
-          },
-        },
-        { size: 5000 },
-      );
-
-      idFilter = hits
-        .map((h: any) => parseInt(h.id ?? h._id, 10))
-        .filter((id: number) => !isNaN(id));
-
-      if (idFilter.length === 0) {
-        return paginatedResponse(
-          [],
-          { total: 0, page, limit, totalPages: 0 },
-          200,
-        );
-      }
-    }
-
     // Build Prisma where clause
     const where: Record<string, unknown> = {};
-    if (idFilter) where.id = { in: idFilter };
+
+    if (search) {
+      where.OR = [
+        { nama_lengkap: { contains: search, mode: "insensitive" } },
+        { username: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
     if (forcedJabatanId) {
       where.m_jabatan_id = forcedJabatanId;
     } else {
@@ -287,6 +254,7 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     }
 
     // Hash password
+    const bcrypt = await import("bcrypt");
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
     const newUser = await prisma.m_user.create({
@@ -301,8 +269,7 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     });
 
     // Invalidate cache
-    await indexDocument(ELASTIC_INDICES.USERS, String(newUser.id), newUser);
-    await invalidateCachePrefix(REDIS_KEYS.USERS.ALL_PREFIX);
+    await invalidateCachePrefix("users:all");
     return successResponse(newUser, 201);
   } catch (error) {
     return handleApiError(error);

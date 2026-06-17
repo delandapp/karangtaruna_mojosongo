@@ -3,9 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { provinsiSchema } from "@/lib/validations/wilayah.schema";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache } from "@/lib/redis";
-import { REDIS_KEYS, ELASTIC_INDICES } from "@/lib/constants";
-import { getDocument } from "@/lib/elasticsearch";
+import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
+import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { checkUserAccess } from "@/lib/rbac";
 
@@ -24,9 +23,11 @@ export const GET = withAuth(async (req: AuthenticatedRequest, { params }: { para
     const cachedData = await getCache(cacheKey);
     if (cachedData) return successResponse(cachedData, 200);
 
-    const data = await getDocument(ELASTIC_INDICES.PROVINSI, id);
+    // Ambil dari Prisma
+    const data = await prisma.m_provinsi.findUnique({ where: { id } });
     if (!data) return errorResponse(404, "Provinsi tidak ditemukan", "NOT_FOUND");
 
+    await setCache(cacheKey, data, DEFAULT_CACHE_TTL);
     return successResponse(data, 200);
   } catch (error) {
     return handleApiError(error);
@@ -67,6 +68,10 @@ export const PUT = withAuth(async (req: AuthenticatedRequest, { params }: { para
         nama: validatedData.nama,
       },
     });
+
+    // Invalidate cache
+    await invalidateCachePrefix(REDIS_KEYS.PROVINSI.SINGLE(id));
+    await invalidateCachePrefix(REDIS_KEYS.PROVINSI.ALL_PREFIX);
     return successResponse(updatedData, 200);
   } catch (error) {
     return handleApiError(error);
@@ -84,16 +89,18 @@ export const DELETE = withAuth(async (req: AuthenticatedRequest, { params }: { p
     const id = parseInt((await params).id, 10);
     if (isNaN(id)) return errorResponse(400, "ID tidak valid", "BAD_REQUEST");
 
-    // Prisma relational integrity check: check if any kota refers to this provinsi
+    // Prisma relational integrity check
     const referencedKota = await prisma.m_kota.findFirst({
       where: { m_provinsi_id: id },
     });
-    
+
     if (referencedKota) {
       return errorResponse(400, "Provinsi tidak dapat dihapus karena masih menjadi rujukan lokasi kota.");
     }
 
     await prisma.m_provinsi.delete({ where: { id } });
+    await invalidateCachePrefix(REDIS_KEYS.PROVINSI.SINGLE(id));
+    await invalidateCachePrefix(REDIS_KEYS.PROVINSI.ALL_PREFIX);
     return successResponse(null, 200);
   } catch (error) {
     return handleApiError(error);

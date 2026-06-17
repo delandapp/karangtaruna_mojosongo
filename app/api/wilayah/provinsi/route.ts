@@ -9,15 +9,9 @@ import {
   paginatedResponse,
 } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache, setCache , invalidateCachePrefix } from "@/lib/redis";
-import {
-  REDIS_KEYS,
-  ELASTIC_INDICES,
-  DEFAULT_CACHE_TTL,
-} from "@/lib/constants";
-import { searchDocuments , indexDocument, deleteDocument } from "@/lib/elasticsearch";
+import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
+import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
-
 
 // ──────────────────────────────────────────────────────────
 // GET /api/wilayah/provinsi — List dengan Pagination, Search & Dropdown
@@ -33,18 +27,13 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
       const cached = await getCache<unknown[]>(cacheKey);
       if (cached) return successResponse(cached, 200);
 
-      const { hits } = await searchDocuments(
-        ELASTIC_INDICES.PROVINSI,
-        { match_all: {} },
-        {
-          size: 10000,
-          _source: ["id", "kode_wilayah", "nama"],
-          sort: [{ "nama.keyword": { order: "asc" } }],
-        },
-      );
+      const provinsis = await prisma.m_provinsi.findMany({
+        select: { id: true, kode_wilayah: true, nama: true },
+        orderBy: { nama: "asc" },
+      });
 
-      await setCache(cacheKey, hits, DEFAULT_CACHE_TTL);
-      return successResponse(hits, 200);
+      await setCache(cacheKey, provinsis, DEFAULT_CACHE_TTL);
+      return successResponse(provinsis, 200);
     }
 
     // ── Mode Paginated ────────────────────────────────────────────────────
@@ -59,42 +48,39 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
 
     // Cek cache hanya untuk non-search
     if (!search) {
-      const cached = await getCache<{ data: unknown[]; meta: unknown }>(
-        cacheKey,
-      );
+      const cached = await getCache<{ data: unknown[]; meta: unknown }>(cacheKey);
       if (cached)
         return paginatedResponse(cached.data as any[], cached.meta as any, 200);
     }
 
-    const esQuery = search
+    const where = search
       ? {
-          multi_match: {
-            query: search,
-            fields: ["nama", "kode_wilayah"],
-            type: "phrase_prefix" as const,
-          },
+          OR: [
+            { nama:         { contains: search, mode: "insensitive" as const } },
+            { kode_wilayah: { contains: search, mode: "insensitive" as const } },
+          ],
         }
-      : { match_all: {} };
+      : {};
 
-    const { hits, total } = await searchDocuments(
-      ELASTIC_INDICES.PROVINSI,
-      esQuery,
-      {
-        from: skip,
-        size: limit,
-        sort: [{ "nama.keyword": { order: "asc" } }],
-      },
-    );
+    const [provinsis, total] = await prisma.$transaction([
+      prisma.m_provinsi.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { nama: "asc" },
+      }),
+      prisma.m_provinsi.count({ where }),
+    ]);
 
     const totalPages = Math.ceil(total / limit);
     const meta = { page, limit, total, totalPages };
 
     // Simpan ke cache jika bukan pencarian
     if (!search) {
-      await setCache(cacheKey, { data: hits, meta }, DEFAULT_CACHE_TTL);
+      await setCache(cacheKey, { data: provinsis, meta }, DEFAULT_CACHE_TTL);
     }
 
-    return paginatedResponse(hits, meta, 200);
+    return paginatedResponse(provinsis, meta, 200);
   } catch (error) {
     return handleApiError(error);
   }
@@ -113,11 +99,7 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
       select: { id: true },
     });
     if (existing) {
-      return errorResponse(
-        409,
-        "Kode wilayah provinsi sudah digunakan",
-        "CONFLICT",
-      );
+      return errorResponse(409, "Kode wilayah provinsi sudah digunakan", "CONFLICT");
     }
 
     const newData = await prisma.m_provinsi.create({
@@ -127,8 +109,7 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
       },
     });
 
-    // Invalidate list cache — CDC akan sync ke ES secara otomatis
-    await indexDocument(ELASTIC_INDICES.PROVINSI, String(newData.id), newData);
+    // Invalidate list cache
     await invalidateCachePrefix(REDIS_KEYS.PROVINSI.ALL_PREFIX);
     return successResponse(newData, 201);
   } catch (error) {

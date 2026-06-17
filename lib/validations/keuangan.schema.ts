@@ -44,3 +44,24 @@ export const updateTransaksiKeuanganSchema = z.object({
   status: z.enum(["menunggu_persetujuan", "disetujui", "ditolak", "dibayar"]).optional(),
   catatan: z.string().optional().nullable(),
 });
+
+export const createKasSchema = z.object({
+  jenis_kas: z.enum(["masuk", "keluar"]),
+  sumber_tujuan: z.string().min(1, "Sumber / Tujuan wajib diisi"),
+  jumlah: z.number().positive("Jumlah harus lebih besar dari 0"),
+  deskripsi: z.string().min(1, "Deskripsi wajib diisi"),
+  bukti_url: z.string().optional().nullable(),
+  tanggal: z.string().datetime({ message: "Format tanggal tidak valid" }),
+  catatan: z.string().optional().nullable(),
+});
+
+export const updateKasSchema = z.object({
+  jenis_kas: z.enum(["masuk", "keluar"]).optional(),
+  sumber_tujuan: z.string().min(1).optional(),
+  jumlah: z.number().positive().optional(),
+  deskripsi: z.string().min(1).optional(),
+  bukti_url: z.string().optional().nullable(),
+  tanggal: z.string().datetime().optional(),
+  status: z.enum(["menunggu_persetujuan", "disetujui", "ditolak"]).optional(),
+  catatan: z.string().optional().nullable(),
+});

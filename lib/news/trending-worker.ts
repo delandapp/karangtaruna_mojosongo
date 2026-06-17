@@ -12,9 +12,8 @@
  * Dijalankan dari scripts/StartNewsConsumer.ts sebagai background process.
  */
 import { prisma } from "@/lib/prisma";
-import { indexDocument } from "@/lib/elasticsearch";
 import { invalidateCachePrefix } from "@/lib/redis";
-import { ELASTIC_INDICES, REDIS_KEYS } from "@/lib/constants";
+import { REDIS_KEYS } from "@/lib/constants";
 import { differenceInHours, subDays } from "date-fns";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -85,11 +84,8 @@ export async function recalculateTrendingScores(): Promise<void> {
       });
 
       // ── 2. Partial update Elasticsearch (hanya field yang berubah) ────
-      await indexDocument(
-        ELASTIC_INDICES.BERITA,
-        berita.id,
-        { trending_score: score } as Record<string, unknown>,
-      );
+      // ── 2. Elasticsearch bypass (Elasticsearch tidak digunakan) ────
+      // Skip ES update
 
       updated++;
     }

@@ -9,26 +9,16 @@ import {
   paginatedResponse,
 } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { searchDocuments } from "@/lib/elasticsearch";
-import { ELASTIC_INDICES } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
 /**
  * GET /api/berita
  *
  * CMS list berita — semua status (DRAFT, REVIEW, PUBLISHED, dst).
- * Mendukung filter by status, kategori slug, is_featured, dan full-text search.
- * Data diambil dari Elasticsearch.
+ * Mendukung filter by status, kategori slug, is_featured, dan text search.
+ * Data diambil langsung dari PostgreSQL via Prisma.
  *
  * Protected: hanya admin / editor.
- *
- * Query Params:
- *  - page       : nomor halaman (default: 1)
- *  - limit      : item per halaman (default: 20, max: 100)
- *  - search     : full-text search (judul, konten, seo_description)
- *  - status     : filter by StatusBerita enum
- *  - kategori   : filter by kategori slug
- *  - is_featured: filter berita unggulan
  */
 export const GET = withAuth(async (req: AuthenticatedRequest) => {
   try {
@@ -38,47 +28,46 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
 
     const skip = (page - 1) * limit;
 
-    // ── Build Elasticsearch Query ─────────────────────────────────────────
-    const must: Record<string, unknown>[] = [];
-    const filter: Record<string, unknown>[] = [];
+    const where: any = { dihapus_pada: null };
 
+    if (status) {
+      where.status = status;
+    }
+    if (kategori) {
+      where.m_kategori_berita = { slug: kategori };
+    }
+    if (is_featured !== undefined) {
+      where.is_featured = is_featured;
+    }
     if (search) {
-      must.push({
-        multi_match: {
-          query: search,
-          fields: ["judul^3", "konten", "seo_description"],
-          type: "best_fields",
-          fuzziness: "AUTO",
-        },
-      });
+      where.OR = [
+        { judul: { contains: search, mode: "insensitive" } },
+        { sub_judul: { contains: search, mode: "insensitive" } },
+        { penulis: { contains: search, mode: "insensitive" } },
+      ];
     }
 
-    if (status)                  filter.push({ term: { status } });
-    if (kategori)                filter.push({ term: { kategori_slug: kategori } });
-    if (is_featured !== undefined) filter.push({ term: { is_featured } });
-
-    const esQuery =
-      must.length > 0 || filter.length > 0
-        ? {
-            bool: {
-              must: must.length > 0 ? must : [{ match_all: {} }],
-              filter,
-            },
-          }
-        : { match_all: {} };
-
-    const { hits, total } = await searchDocuments(
-      ELASTIC_INDICES.BERITA,
-      esQuery,
-      {
-        from: skip,
-        size: limit,
-        sort: [{ dibuat_pada: { order: "desc" } }],
-      },
-    );
+    const [docs, total] = await Promise.all([
+      prisma.c_berita.findMany({
+        where,
+        orderBy: { dibuat_pada: "desc" },
+        skip,
+        take: limit,
+        include: {
+          m_kategori_berita: true,
+          r_berita_tag: {
+            include: { m_tag: true },
+          },
+          c_berita_cover: {
+            orderBy: { is_primary: "desc" },
+          },
+        },
+      }),
+      prisma.c_berita.count({ where }),
+    ]);
 
     const totalPages = Math.ceil(total / limit);
-    return paginatedResponse(hits, { page, limit, total, totalPages }, 200);
+    return paginatedResponse(docs, { page, limit, total, totalPages }, 200);
   } catch (error) {
     return handleApiError(error);
   }

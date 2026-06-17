@@ -213,8 +213,8 @@ export function ItemAnggaranFormModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl border-border/50 bg-card/95 backdrop-blur-xl rounded-2xl">
-        <DialogHeader className="mb-1">
+      <DialogContent className="max-h-[92vh] overflow-hidden sm:max-w-2xl border-border/50 bg-card/95 backdrop-blur-xl rounded-2xl flex flex-col p-0">
+        <DialogHeader className="p-6 pb-4 border-b border-border/40 shrink-0">
           <DialogTitle className="text-xl font-semibold">
             {isEditing ? "✏️ Edit Item Anggaran" : "➕ Tambah Item Anggaran"}
           </DialogTitle>
@@ -224,40 +224,40 @@ export function ItemAnggaranFormModal({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 pb-2">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
+            <div className="overflow-y-auto flex-1 p-6 space-y-5">
 
-            {/* ── Jenis Item ── */}
-            <FormField
-              control={form.control}
-              name="jenis_item"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Jenis Item <span className="text-destructive">*</span></FormLabel>
-                  <div className="grid grid-cols-2 gap-3">
-                    {JENIS_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => field.onChange(opt.value)}
-                        className={`flex items-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all
-                          ${field.value === opt.value
-                            ? opt.value === "pemasukan"
-                              ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400"
-                              : "border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
-                            : "border-border bg-muted/30 text-muted-foreground hover:border-border/80"}`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                  <FormMessage className="text-xs" />
-                </FormItem>
-              )}
-            />
+              {/* ── Jenis Item ── */}
+              <FormField
+                control={form.control}
+                name="jenis_item"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Jenis Item <span className="text-destructive">*</span></FormLabel>
+                    <div className="grid grid-cols-2 gap-3">
+                      {JENIS_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => field.onChange(opt.value)}
+                          className={`flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all
+                            ${field.value === opt.value
+                              ? opt.value === "pemasukan"
+                                ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400"
+                                : "border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
+                              : "border-border bg-muted/30 text-muted-foreground hover:border-border/80"}`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
 
-            {/* ── Kategori + Kode Item ── */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="col-span-2">
+              {/* ── Kategori + Kode Item ── */}
+              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="kategori"
@@ -267,7 +267,7 @@ export function ItemAnggaranFormModal({
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger className="bg-muted/50 focus:ring-primary/50">
-                            <SelectValue placeholder="Pilih kategori pos..." />
+                            <SelectValue placeholder="Pilih kategori..." />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -285,70 +285,64 @@ export function ItemAnggaranFormModal({
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="kode_item"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Kode Item <span className="text-[10px] text-muted-foreground font-normal">(Opsional)</span></FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Contoh: A1, B2..."
+                          {...field}
+                          value={field.value || ""}
+                          className="bg-muted/50 focus-visible:ring-primary/50"
+                        />
+                      </FormControl>
+                      <FormDescription className="text-[10px]">Untuk penomoran di laporan</FormDescription>
+                      <FormMessage className="text-xs" />
+                    </FormItem>
+                  )}
+                />
               </div>
 
+              {/* ── Deskripsi ── */}
               <FormField
                 control={form.control}
-                name="kode_item"
+                name="deskripsi"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Kode Item</FormLabel>
+                    <FormLabel>Keterangan / Deskripsi <span className="text-destructive">*</span></FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="A1, B2..."
+                        placeholder="Contoh: Honor pemateri, Sewa sound system, Konsumsi panitia..."
                         {...field}
-                        className="bg-muted/50 focus-visible:ring-primary/50 uppercase"
+                        className="bg-muted/50 focus-visible:ring-primary/50"
                       />
                     </FormControl>
-                    <FormDescription className="text-[10px]">Opsional, untuk laporan</FormDescription>
                     <FormMessage className="text-xs" />
                   </FormItem>
                 )}
               />
-            </div>
 
-            {/* ── Deskripsi ── */}
-            <FormField
-              control={form.control}
-              name="deskripsi"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Deskripsi / Nama Item <span className="text-destructive">*</span></FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Contoh: Sewa Panggung Utama 8x6m, DP Vendor Catering, dsb."
-                      {...field}
-                      className="bg-muted/50 focus-visible:ring-primary/50"
-                    />
-                  </FormControl>
-                  <FormMessage className="text-xs" />
-                </FormItem>
-              )}
-            />
-
-            {/* ── Qty + Harga Satuan + Total Preview ── */}
-            <Separator className="opacity-50" />
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
-                Estimasi Biaya / Nilai
-              </p>
+              {/* ── Volume + Harga Satuan ── */}
+              <Separator className="opacity-50" />
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="jumlah_satuan"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Jumlah / Qty <span className="text-destructive">*</span></FormLabel>
+                      <FormLabel>Volume / Jumlah Satuan <span className="text-destructive">*</span></FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           min={1}
-                          placeholder="1"
                           {...field}
                           className="bg-muted/50 focus-visible:ring-primary/50"
                         />
                       </FormControl>
-                      <FormDescription className="text-[10px]">Jumlah unit/satuan</FormDescription>
                       <FormMessage className="text-xs" />
                     </FormItem>
                   )}
@@ -359,7 +353,7 @@ export function ItemAnggaranFormModal({
                   name="harga_satuan_rencana"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Harga Satuan (Rp) <span className="text-destructive">*</span></FormLabel>
+                      <FormLabel>Harga Satuan Rencana <span className="text-destructive">*</span></FormLabel>
                       <FormControl>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">Rp</span>
@@ -372,58 +366,48 @@ export function ItemAnggaranFormModal({
                           />
                         </div>
                       </FormControl>
-                      <FormDescription className="text-[10px]">Estimasi per unit</FormDescription>
                       <FormMessage className="text-xs" />
                     </FormItem>
                   )}
                 />
               </div>
 
-              {/* Total Preview */}
-              <div className={`mt-3 flex items-center justify-between rounded-xl px-4 py-3 ${
-                watchJenis === "pemasukan"
-                  ? "bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800"
-                  : "bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800"
-              }`}>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Calculator className="h-4 w-4" />
-                  <span>Total Rencana ({watchQty} × {formatRupiah(watchHarga)})</span>
+              {/* Total Calculation Preview */}
+              <div className="flex items-center justify-between rounded-xl bg-primary/5 border border-primary/10 px-4 py-3">
+                <div className="flex items-center gap-2 text-primary">
+                  <Calculator className="size-4" />
+                  <span className="text-xs font-semibold uppercase tracking-wider">Total Estimasi Rencana</span>
                 </div>
-                <Badge
-                  variant="secondary"
-                  className={`text-sm font-bold ${
-                    watchJenis === "pemasukan"
-                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                      : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                  }`}
-                >
-                  {watchJenis === "pemasukan" ? "+" : "-"}{formatRupiah(totalRencana)}
+                <Badge variant="secondary" className="text-sm font-bold bg-primary/10 text-primary">
+                  {formatRupiah(watchQty * watchHarga)}
                 </Badge>
               </div>
+
+              {/* ── Catatan ── */}
+              <FormField
+                control={form.control}
+                name="catatan"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Catatan Tambahan <span className="text-[10px] text-muted-foreground font-normal">(Opsional)</span></FormLabel>
+                    <FormControl>
+                      <Textarea
+                        rows={2}
+                        placeholder="Catatan detail mengenai item ini..."
+                        {...field}
+                        value={field.value || ""}
+                        className="bg-muted/50 focus-visible:ring-primary/50 resize-none"
+                      />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+
             </div>
 
-            {/* ── Catatan ── */}
-            <FormField
-              control={form.control}
-              name="catatan"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Catatan Tambahan</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      rows={2}
-                      placeholder="Keterangan tambahan, referensi vendor, asumsi harga, dsb..."
-                      {...field}
-                      className="bg-muted/50 focus-visible:ring-primary/50 resize-none"
-                    />
-                  </FormControl>
-                  <FormMessage className="text-xs" />
-                </FormItem>
-              )}
-            />
-
-            {/* ── Actions ── */}
-            <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
+            {/* Footer */}
+            <div className="flex justify-end gap-3 p-6 bg-muted/10 border-t border-border/50 shrink-0">
               <Button
                 type="button"
                 variant="outline"

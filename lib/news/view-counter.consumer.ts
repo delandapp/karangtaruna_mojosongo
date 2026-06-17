@@ -14,9 +14,8 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { elasticClient } from "@/lib/elasticsearch";
 import { invalidateCachePrefix } from "@/lib/redis";
-import { ELASTIC_INDICES, REDIS_KEYS } from "@/lib/constants";
+import { REDIS_KEYS } from "@/lib/constants";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -72,25 +71,8 @@ export async function flushToDatabase(): Promise<void> {
     }
   }
 
-  // ── 2. Bulk UPDATE ke Elasticsearch (script update) ───────────────────────
-  try {
-    const body = updates.flatMap(([id, count]) => [
-      { update: { _index: ELASTIC_INDICES.BERITA, _id: String(id) } },
-      {
-        script: {
-          source: "ctx._source.total_views += params.count",
-          params: { count },
-        },
-        upsert: { total_views: count },
-      },
-    ]);
-
-    if (body.length > 0) {
-      await elasticClient.bulk({ body, refresh: false });
-    }
-  } catch (error) {
-    console.error("[VIEW_COUNTER] ES bulk update failed:", error);
-  }
+  // ── 2. Elasticsearch bypass (Elasticsearch tidak digunakan) ─────────────────
+  // Skip ES bulk update
 
   // ── 3. Invalidasi Redis cache untuk setiap berita yang diupdate ───────────
   for (const [beritaId] of updates) {

@@ -46,7 +46,7 @@ export function LandingTemplate() {
       bgColor: "var(--color-accent-500)",
       textColor: "#fff",
       links: [
-        { label: "Kabar Terbaru", href: "#berita", ariaLabel: "Berita" }
+        { label: "Kabar Terbaru", href: "/berita", ariaLabel: "Berita" }
       ]
     },
     {

@@ -5,7 +5,7 @@ const EXTERNAL_API_KEY = process.env.NEXT_PUBLIC_S3_API_KEY || '423c4122eb8748b0
 export const storageApi = createApi({
   reducerPath: 'storageApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_S3_API_URL || 'http://localhost:4020/api/v1/',
+    baseUrl: process.env.NEXT_PUBLIC_S3_API_URL || 'https://s3-api.mediatamaedu.com/api/v1/',
     prepareHeaders: (headers) => {
       headers.set('x-api-key', EXTERNAL_API_KEY);
       return headers;

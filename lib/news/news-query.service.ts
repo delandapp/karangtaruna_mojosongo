@@ -2,7 +2,7 @@
  * News Query Service — Aggregation queries untuk portal berita publik.
  *
  * Semua query menggunakan pola:
- *   Redis cache → miss → Elasticsearch → simpan ke Redis → return
+ *   Redis cache → miss → PostgreSQL (Prisma) → simpan ke Redis → return
  *
  * TTL Strategy:
  *   Trending   = 15 menit  (diupdate worker 15 menit sekali)
@@ -12,10 +12,10 @@
  *   By Slug    = 10 menit  (stale setelah diedit)
  *   By Kategori= 5 menit   (medium frequency)
  */
-import { searchDocuments } from "@/lib/elasticsearch";
+import { prisma } from "@/lib/prisma";
 import { getCache, setCache } from "@/lib/redis";
-import { ELASTIC_INDICES, REDIS_KEYS } from "@/lib/constants";
-import type { NewsEsDocument } from "./news-es";
+import { REDIS_KEYS } from "@/lib/constants";
+import { subDays } from "date-fns";
 
 // ─── TTL Constants (dalam detik) ─────────────────────────────────────────────
 
@@ -30,36 +30,48 @@ const TTL = {
 
 // ─── Shared Types ─────────────────────────────────────────────────────────────
 
-export type BeritaCard = Pick<
-  NewsEsDocument,
-  | "id"
-  | "judul"
-  | "cover_url"
-  | "kategori"
-  | "kategori_slug"
-  | "tags"
-  | "published_at"
-  | "total_views"
-  | "total_likes"
-  | "trending_score"
-  | "is_featured"
-  | "seo_slug"
->;
+export interface BeritaCard {
+  id: number;
+  judul: string;
+  cover_url: string | null;
+  kategori: string;
+  kategori_slug: string;
+  tags: string[];
+  published_at: string | null;
+  total_views: number;
+  total_likes: number;
+  trending_score: number;
+  is_featured: boolean;
+  seo_slug: string;
+  // Tambahan field opsional untuk detail berita / es compat
+  konten?: string;
+  seo_description?: string | null;
+  keywords?: string[];
+  is_breaking_news?: boolean;
+  penulis?: string;
+  sub_judul?: string | null;
+}
 
-const CARD_FIELDS = [
-  "id",
-  "judul",
-  "cover_url",
-  "kategori",
-  "kategori_slug",
-  "tags",
-  "published_at",
-  "total_views",
-  "total_likes",
-  "trending_score",
-  "is_featured",
-  "seo_slug",
-];
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function mapToBeritaCard(b: any): BeritaCard {
+  const cover = b.c_berita_cover?.find((c: any) => c.is_primary) || b.c_berita_cover?.[0];
+  const tags = b.r_berita_tag?.map((rt: any) => rt.m_tag?.nama).filter(Boolean) || [];
+  return {
+    id: b.id,
+    judul: b.judul,
+    cover_url: cover?.s3_url || null,
+    kategori: b.m_kategori_berita?.nama || "",
+    kategori_slug: b.m_kategori_berita?.slug || "",
+    tags,
+    published_at: b.published_at ? b.published_at.toISOString() : null,
+    total_views: Number(b.total_views),
+    total_likes: b.total_likes,
+    trending_score: b.trending_score,
+    is_featured: b.is_featured,
+    seo_slug: b.seo_slug,
+  };
+}
 
 // ─── Query Functions ──────────────────────────────────────────────────────────
 
@@ -71,20 +83,22 @@ export async function getBeritaTrending(limit = 10): Promise<BeritaCard[]> {
   const cached = await getCache<BeritaCard[]>(REDIS_KEYS.BERITA.TRENDING);
   if (cached) return cached;
 
-  const { hits } = await searchDocuments<BeritaCard>(
-    ELASTIC_INDICES.BERITA,
-    {
-      bool: {
-        filter: [{ range: { published_at: { gte: "now-7d/d" } } }],
-      },
+  const docs = await prisma.c_berita.findMany({
+    where: {
+      status: "PUBLISHED",
+      published_at: { gte: subDays(new Date(), 7) },
+      dihapus_pada: null,
     },
-    {
-      size: limit,
-      sort: [{ trending_score: { order: "desc" } }],
-      _source: CARD_FIELDS,
+    orderBy: { trending_score: "desc" },
+    take: limit,
+    include: {
+      m_kategori_berita: true,
+      r_berita_tag: { include: { m_tag: true } },
+      c_berita_cover: { where: { is_primary: true } },
     },
-  );
+  });
 
+  const hits = docs.map(mapToBeritaCard);
   await setCache(REDIS_KEYS.BERITA.TRENDING, hits, TTL.TRENDING);
   return hits;
 }
@@ -97,16 +111,22 @@ export async function getBeritaTop(limit = 10): Promise<BeritaCard[]> {
   const cached = await getCache<BeritaCard[]>(REDIS_KEYS.BERITA.TOP);
   if (cached) return cached;
 
-  const { hits } = await searchDocuments<BeritaCard>(
-    ELASTIC_INDICES.BERITA,
-    { range: { published_at: { gte: "now-30d/d" } } },
-    {
-      size: limit,
-      sort: [{ total_views: { order: "desc" } }],
-      _source: CARD_FIELDS,
+  const docs = await prisma.c_berita.findMany({
+    where: {
+      status: "PUBLISHED",
+      published_at: { gte: subDays(new Date(), 30) },
+      dihapus_pada: null,
     },
-  );
+    orderBy: { total_views: "desc" },
+    take: limit,
+    include: {
+      m_kategori_berita: true,
+      r_berita_tag: { include: { m_tag: true } },
+      c_berita_cover: { where: { is_primary: true } },
+    },
+  });
 
+  const hits = docs.map(mapToBeritaCard);
   await setCache(REDIS_KEYS.BERITA.TOP, hits, TTL.TOP);
   return hits;
 }
@@ -123,18 +143,32 @@ export async function getBeritaTerbaru(
   const cached = await getCache<{ hits: BeritaCard[]; total: number }>(cacheKey);
   if (cached) return cached;
 
-  const result = await searchDocuments<BeritaCard>(
-    ELASTIC_INDICES.BERITA,
-    { match_all: {} },
-    {
-      from: (page - 1) * limit,
-      size: limit,
-      sort: [{ published_at: { order: "desc" } }],
-      _source: CARD_FIELDS,
-    },
-  );
+  const where = { status: "PUBLISHED" as const, status_berita: undefined, dihapus_pada: null };
+  const [docs, total] = await Promise.all([
+    prisma.c_berita.findMany({
+      where: {
+        status: "PUBLISHED",
+        dihapus_pada: null,
+      },
+      orderBy: { published_at: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+      include: {
+        m_kategori_berita: true,
+        r_berita_tag: { include: { m_tag: true } },
+        c_berita_cover: { where: { is_primary: true } },
+      },
+    }),
+    prisma.c_berita.count({
+      where: {
+        status: "PUBLISHED",
+        dihapus_pada: null,
+      },
+    }),
+  ]);
 
-  const data = { hits: result.hits, total: result.total };
+  const hits = docs.map(mapToBeritaCard);
+  const data = { hits, total };
   const ttl = page === 1 ? TTL.LATEST_P1 : TTL.LATEST_P2PLUS;
   await setCache(cacheKey, data, ttl);
   return data;
@@ -146,20 +180,46 @@ export async function getBeritaTerbaru(
  */
 export async function getBeritaBySlug(
   slug: string,
-): Promise<(NewsEsDocument & { id: string }) | null> {
+): Promise<BeritaCard | null> {
   const cacheKey = REDIS_KEYS.BERITA.SINGLE_BY_SLUG(slug);
-  const cached = await getCache<NewsEsDocument & { id: string }>(cacheKey);
+  const cached = await getCache<BeritaCard>(cacheKey);
   if (cached) return cached;
 
-  const { hits } = await searchDocuments<NewsEsDocument>(
-    ELASTIC_INDICES.BERITA,
-    { term: { seo_slug: slug } },
-    { size: 1 },
-  );
+  const b = await prisma.c_berita.findFirst({
+    where: { seo_slug: slug, status: "PUBLISHED", dihapus_pada: null },
+    include: {
+      m_kategori_berita: true,
+      r_berita_tag: { include: { m_tag: true } },
+      c_berita_cover: { where: { is_primary: true } },
+    },
+  });
 
-  if (hits.length === 0) return null;
+  if (!b) return null;
 
-  const doc = hits[0] as NewsEsDocument & { id: string };
+  const cover = b.c_berita_cover?.find((c) => c.is_primary) || b.c_berita_cover?.[0];
+  const tags = b.r_berita_tag?.map((rt) => rt.m_tag?.nama).filter(Boolean) || [];
+
+  const doc: BeritaCard = {
+    id: b.id,
+    judul: b.judul,
+    konten: b.konten_html, // NewsEsDocument.konten maps to konten_html
+    seo_description: b.seo_description,
+    keywords: b.seo_keywords,
+    kategori: b.m_kategori_berita?.nama || "",
+    kategori_slug: b.m_kategori_berita?.slug || "",
+    tags,
+    published_at: b.published_at ? b.published_at.toISOString() : null,
+    total_views: Number(b.total_views),
+    total_likes: b.total_likes,
+    trending_score: b.trending_score,
+    cover_url: cover?.s3_url || null,
+    is_featured: b.is_featured,
+    is_breaking_news: b.is_breaking_news,
+    seo_slug: b.seo_slug,
+    penulis: b.penulis,
+    sub_judul: b.sub_judul,
+  };
+
   await setCache(cacheKey, doc, TTL.BY_SLUG);
   return doc;
 }
@@ -177,25 +237,35 @@ export async function getBeritaByKategori(
   const cached = await getCache<{ hits: BeritaCard[]; total: number }>(cacheKey);
   if (cached) return cached;
 
-  const result = await searchDocuments<BeritaCard>(
-    ELASTIC_INDICES.BERITA,
-    { term: { kategori_slug: kategoriSlug } },
-    {
-      from: (page - 1) * limit,
-      size: limit,
-      sort: [{ published_at: { order: "desc" } }],
-      _source: CARD_FIELDS,
-    },
-  );
+  const where = {
+    status: "PUBLISHED" as const,
+    dihapus_pada: null,
+    m_kategori_berita: { slug: kategoriSlug },
+  };
 
-  const data = { hits: result.hits, total: result.total };
+  const [docs, total] = await Promise.all([
+    prisma.c_berita.findMany({
+      where,
+      orderBy: { published_at: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+      include: {
+        m_kategori_berita: true,
+        r_berita_tag: { include: { m_tag: true } },
+        c_berita_cover: { where: { is_primary: true } },
+      },
+    }),
+    prisma.c_berita.count({ where }),
+  ]);
+
+  const hits = docs.map(mapToBeritaCard);
+  const data = { hits, total };
   await setCache(cacheKey, data, TTL.BY_KATEGORI);
   return data;
 }
 
 /**
  * Full-text search berita — tanpa cache (hasil terlalu dinamis).
- * Boost: judul^3 > konten > seo_description > keywords > tags.
  */
 export async function searchBerita(
   query: string,
@@ -203,38 +273,35 @@ export async function searchBerita(
   limit = 20,
   kategoriSlug?: string,
 ): Promise<{ hits: BeritaCard[]; total: number }> {
-  const filter: Record<string, unknown>[] = [];
+  const where: any = {
+    status: "PUBLISHED",
+    dihapus_pada: null,
+    OR: [
+      { judul: { contains: query, mode: "insensitive" } },
+      { sub_judul: { contains: query, mode: "insensitive" } },
+      { konten_plaintext: { contains: query, mode: "insensitive" } },
+    ],
+  };
+
   if (kategoriSlug) {
-    filter.push({ term: { kategori_slug: kategoriSlug } });
+    where.m_kategori_berita = { slug: kategoriSlug };
   }
 
-  const result = await searchDocuments<BeritaCard>(
-    ELASTIC_INDICES.BERITA,
-    {
-      bool: {
-        must: [
-          {
-            multi_match: {
-              query,
-              fields: ["judul^3", "konten", "seo_description", "keywords", "tags"],
-              type: "best_fields",
-              fuzziness: "AUTO",
-            },
-          },
-        ],
-        filter,
+  const [docs, total] = await Promise.all([
+    prisma.c_berita.findMany({
+      where,
+      orderBy: { published_at: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+      include: {
+        m_kategori_berita: true,
+        r_berita_tag: { include: { m_tag: true } },
+        c_berita_cover: { where: { is_primary: true } },
       },
-    },
-    {
-      from: (page - 1) * limit,
-      size: limit,
-      sort: [
-        { _score: { order: "desc" } },
-        { published_at: { order: "desc" } },
-      ],
-      _source: CARD_FIELDS,
-    },
-  );
+    }),
+    prisma.c_berita.count({ where }),
+  ]);
 
-  return { hits: result.hits, total: result.total };
+  const hits = docs.map(mapToBeritaCard);
+  return { hits, total };
 }

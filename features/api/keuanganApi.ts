@@ -84,11 +84,57 @@ interface SingleResponse<T> {
   data: T;
 }
 
+// --- Types for Kas (Buku Kas) ---
+export interface Kas {
+  id: number;
+  nomor_kas: string;
+  jenis_kas: "masuk" | "keluar";
+  sumber_tujuan: string;
+  jumlah: string | number;
+  deskripsi: string;
+  bukti_url?: string | null;
+  tanggal: string;
+  status: "menunggu_persetujuan" | "disetujui" | "ditolak";
+  catatan?: string | null;
+  dicatat_oleh_id: number;
+  disetujui_oleh_id?: number | null;
+  disetujui_pada?: string | null;
+  dibuat_pada: string;
+  diperbarui_pada: string;
+
+  dicatat_oleh?: { id: number; nama_lengkap: string };
+  disetujui_oleh?: { id: number; nama_lengkap: string } | null;
+}
+
+export type CreateKasPayload = {
+  jenis_kas: "masuk" | "keluar";
+  sumber_tujuan: string;
+  jumlah: number;
+  deskripsi: string;
+  bukti_url?: string | null;
+  tanggal: string;
+  catatan?: string | null;
+};
+
+export type UpdateKasPayload = Partial<CreateKasPayload> & {
+  status?: "menunggu_persetujuan" | "disetujui" | "ditolak";
+};
+
+export interface KasPublicSummary {
+  total_masuk: string | number;
+  total_keluar: string | number;
+  saldo: string | number;
+  count_masuk: number;
+  count_keluar: number;
+  data: Kas[];
+  meta: ListMeta;
+}
+
 // --- API Slice ---
 export const keuanganApi = createApi({
   reducerPath: "keuanganApi",
   baseQuery: fetchBaseQuery({ baseUrl: "/api", credentials: "include" }),
-  tagTypes: ["ItemAnggaran", "TransaksiKeuangan"],
+  tagTypes: ["ItemAnggaran", "TransaksiKeuangan", "Kas"],
   endpoints: (builder) => ({
     
     // ==========================================
@@ -220,6 +266,84 @@ export const keuanganApi = createApi({
       invalidatesTags: ["TransaksiKeuangan"],
     }),
 
+    // ==========================================
+    // KAS (BUKU KAS) ENDPOINTS
+    // ==========================================
+    getKasList: builder.query<
+      ListResponse<Kas>,
+      { page?: number; limit?: number; jenis_kas?: string; status?: string; search?: string }
+    >({
+      query: ({ page = 1, limit = 20, jenis_kas, status, search }) => {
+        const params = new URLSearchParams();
+        params.append("page", String(page));
+        params.append("limit", String(limit));
+        if (jenis_kas) params.append("jenis_kas", jenis_kas);
+        if (status) params.append("status", status);
+        if (search) params.append("search", search);
+        return `/keuangan/kas?${params.toString()}`;
+      },
+      providesTags: ["Kas"],
+    }),
+
+    getKasById: builder.query<SingleResponse<Kas>, number>({
+      query: (id) => `/keuangan/kas/${id}`,
+      providesTags: (_r, _e, id) => [{ type: "Kas", id }],
+    }),
+
+    createKas: builder.mutation<SingleResponse<Kas>, CreateKasPayload>({
+      query: (body) => ({
+        url: `/keuangan/kas`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Kas"],
+    }),
+
+    updateKas: builder.mutation<SingleResponse<Kas>, { id: number; body: UpdateKasPayload }>({
+      query: ({ id, body }) => ({
+        url: `/keuangan/kas/${id}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: "Kas", id }, "Kas"],
+    }),
+
+    deleteKas: builder.mutation<{ success: boolean; data: null }, number>({
+      query: (id) => ({
+        url: `/keuangan/kas/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Kas"],
+    }),
+
+    approveKas: builder.mutation<
+      SingleResponse<Kas>,
+      { id: number; body: { status: "disetujui" | "ditolak"; catatan?: string } }
+    >({
+      query: ({ id, body }) => ({
+        url: `/keuangan/kas/${id}/approve`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: "Kas", id }, "Kas"],
+    }),
+
+    getKasPublic: builder.query<
+      { success: boolean; summary: { total_masuk: string; total_keluar: string; saldo: string; count_masuk: number; count_keluar: number }; data: Kas[]; meta: ListMeta },
+      { page?: number; limit?: number; jenis_kas?: string; tahun?: number; bulan?: number }
+    >({
+      query: ({ page = 1, limit = 20, jenis_kas, tahun, bulan }) => {
+        const params = new URLSearchParams();
+        params.append("page", String(page));
+        params.append("limit", String(limit));
+        if (jenis_kas) params.append("jenis_kas", jenis_kas);
+        if (tahun) params.append("tahun", String(tahun));
+        if (bulan) params.append("bulan", String(bulan));
+        return `/keuangan/kas/public?${params.toString()}`;
+      },
+      providesTags: ["Kas"],
+    }),
+
   }),
 });
 
@@ -230,11 +354,20 @@ export const {
   useCreateItemAnggaranMutation,
   useUpdateItemAnggaranMutation,
   useDeleteItemAnggaranMutation,
-  
+
   // Transaksi Keuangan
   useGetTransaksiKeuanganQuery,
   useGetTransaksiKeuanganByIdQuery,
   useCreateTransaksiKeuanganMutation,
   useUpdateTransaksiKeuanganMutation,
   useDeleteTransaksiKeuanganMutation,
+
+  // Kas (Buku Kas)
+  useGetKasListQuery,
+  useGetKasByIdQuery,
+  useCreateKasMutation,
+  useUpdateKasMutation,
+  useDeleteKasMutation,
+  useApproveKasMutation,
+  useGetKasPublicQuery,
 } = keuanganApi;

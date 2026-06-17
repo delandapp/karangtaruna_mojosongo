@@ -101,3 +101,35 @@ model transaksi_keuangan {
   @@index([status])
   @@index([tanggal_transaksi])
 }
+
+// -----------------------------------------------------------------------------
+// BUKU KAS (Kas Masuk & Kas Keluar)
+// -----------------------------------------------------------------------------
+model m_kas {
+  id                Int      @id @default(autoincrement())
+  nomor_kas         String   @unique // "KAS-IN-20260616-0001" atau "KAS-OUT-20260616-0001"
+  jenis_kas         String   // "masuk" | "keluar"
+  sumber_tujuan     String   // Asal/tujuan aliran dana
+  jumlah            Decimal  @db.Decimal(15, 2)
+  deskripsi         String   @db.Text
+  bukti_url         String?  // Foto kuitansi / bukti transaksi
+  tanggal           DateTime
+  status            String   @default("menunggu_persetujuan") // "menunggu_persetujuan" | "disetujui" | "ditolak"
+  catatan           String?  @db.Text
+
+  dicatat_oleh_id   Int
+  disetujui_oleh_id Int?
+  disetujui_pada    DateTime?
+
+  // Relasi
+  dicatat_oleh   m_user  @relation("kas_dicatat_oleh", fields: [dicatat_oleh_id], references: [id])
+  disetujui_oleh m_user? @relation("kas_disetujui_oleh", fields: [disetujui_oleh_id], references: [id], onDelete: SetNull)
+
+  dibuat_pada     DateTime @default(now())
+  diperbarui_pada DateTime @updatedAt
+
+  @@index([dicatat_oleh_id])
+  @@index([disetujui_oleh_id])
+  @@index([status])
+  @@index([tanggal])
+}

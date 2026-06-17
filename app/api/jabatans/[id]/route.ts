@@ -3,17 +3,7 @@ import { updateJabatanSchema } from "@/lib/validations/jabatan.schema";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import {
-  REDIS_KEYS,
-  ELASTIC_INDICES,
-  DEFAULT_CACHE_TTL,
-} from "@/lib/constants";
-import {
-  getDocument,
-  indexDocument,
-  deleteDocument,
-} from "@/lib/elasticsearch";
-
+import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
 interface RouteProps {
@@ -38,8 +28,10 @@ export const GET = withAuth(
       const cached = await getCache<unknown>(cacheKey);
       if (cached) return successResponse(cached, 200);
 
-      // 2. Ambil dari Elasticsearch
-      const jabatan = await getDocument(ELASTIC_INDICES.JABATANS, jabatanId);
+      // 2. Ambil dari Prisma
+      const jabatan = await prisma.m_jabatan.findUnique({
+        where: { id: jabatanId },
+      });
       if (!jabatan) {
         return errorResponse(404, "Jabatan tidak ditemukan", "NOT_FOUND");
       }
@@ -88,11 +80,6 @@ export const PUT = withAuth(
 
       // Invalidate cache
       await invalidateCachePrefix(REDIS_KEYS.JABATANS.SINGLE(jabatanId));
-      await indexDocument(
-        ELASTIC_INDICES.JABATANS,
-        String(updated.id),
-        updated,
-      );
       await invalidateCachePrefix(REDIS_KEYS.JABATANS.ALL_PREFIX);
       return successResponse(updated, 200);
     } catch (error) {
@@ -126,7 +113,6 @@ export const DELETE = withAuth(
 
       // Invalidate cache
       await invalidateCachePrefix(REDIS_KEYS.JABATANS.SINGLE(jabatanId));
-      await deleteDocument(ELASTIC_INDICES.JABATANS, String(id));
       await invalidateCachePrefix(REDIS_KEYS.JABATANS.ALL_PREFIX);
       return successResponse(null, 200);
     } catch (error) {

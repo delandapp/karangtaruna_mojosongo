@@ -14,28 +14,28 @@
   --font-poppins: var(--font-poppins), sans-serif;
 
   /* Primary */
-  --color-primary-50: #E8FFF5;
-  --color-primary-100: #BDFCE0;
-  --color-primary-200: #7CF5C1;
-  --color-primary-300: #2EEAA0;
-  --color-primary-400: #00D97E;
-  --color-primary-500: #00BC6A;
-  --color-primary-600: #009A55;
-  --color-primary-700: #007540;
-  --color-primary-800: #005430;
-  --color-primary-900: #003320;
+  --color-accent-50: #E8FFF5;
+  --color-accent-100: #BDFCE0;
+  --color-accent-200: #7CF5C1;
+  --color-accent-300: #2EEAA0;
+  --color-accent-400: #00D97E;
+  --color-accent-500: #00BC6A;
+  --color-accent-600: #009A55;
+  --color-accent-700: #007540;
+  --color-accent-800: #005430;
+  --color-accent-900: #003320;
 
   /* Accent */
-  --color-accent-50: #FFF5E8;
-  --color-accent-100: #FFE4BD;
-  --color-accent-200: #FFCB7A;
-  --color-accent-300: #FFB040;
-  --color-accent-400: #FF9A14;
-  --color-accent-500: #F57C00;
-  --color-accent-600: #C95E00;
-  --color-accent-700: #9A4300;
-  --color-accent-800: #6E2D00;
-  --color-accent-900: #3D1600;
+  --color-primary-50: #FFF5E8;
+  --color-primary-100: #FFE4BD;
+  --color-primary-200: #FFCB7A;
+  --color-primary-300: #FFB040;
+  --color-primary-400: #FF9A14;
+  --color-primary-500: #F57C00;
+  --color-primary-600: #C95E00;
+  --color-primary-700: #9A4300;
+  --color-primary-800: #6E2D00;
+  --color-primary-900: #3D1600;
 
   /* Blue */
   --color-blue-50: #EAF3FF;
@@ -270,7 +270,7 @@ html.transitioning *::after {
 
   .bg-gradient-mesh {
     background-image: radial-gradient(at 0% 0%, hsla(153, 100%, 37%, 0.15) 0px, transparent 50%),
-                      radial-gradient(at 100% 0%, hsla(28, 100%, 50%, 0.15) 0px, transparent 50%);
+      radial-gradient(at 100% 0%, hsla(28, 100%, 50%, 0.15) 0px, transparent 50%);
     background-size: 200% 200%;
     animation: gradientShift 15s ease infinite alternate;
   }
@@ -282,42 +282,66 @@ html.transitioning *::after {
   .animate-blob {
     animation: blob 7s infinite;
   }
-  
+
   .animation-delay-2000 {
     animation-delay: 2s;
   }
-  
+
   .animation-delay-4000 {
     animation-delay: 4s;
   }
 }
 
 @keyframes gradientShift {
-  0% { background-position: 0% 0%; }
-  50% { background-position: 100% 100%; }
-  100% { background-position: 0% 100%; }
+  0% {
+    background-position: 0% 0%;
+  }
+
+  50% {
+    background-position: 100% 100%;
+  }
+
+  100% {
+    background-position: 0% 100%;
+  }
 }
 
 @keyframes blob {
-  0% { transform: translate(0px, 0px) scale(1); }
-  33% { transform: translate(30px, -50px) scale(1.1); }
-  66% { transform: translate(-20px, 20px) scale(0.9); }
-  100% { transform: translate(0px, 0px) scale(1); }
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
 }
 
 /* Lenis smooth scroll */
-html.lenis, html.lenis body {
+html.lenis,
+html.lenis body {
   height: auto;
 }
+
 .lenis.lenis-smooth {
   scroll-behavior: auto !important;
 }
+
 .lenis.lenis-smooth [data-lenis-prevent] {
   overscroll-behavior: contain;
 }
+
 .lenis.lenis-stopped {
   overflow: hidden;
 }
+
 .lenis.lenis-smooth iframe {
   pointer-events: none;
 }
@@ -329,13 +353,16 @@ html.lenis, html.lenis body {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--color-primary-500);
   border-radius: 99px;
 }
+
 ::-webkit-scrollbar-corner {
   background: transparent;
 }
@@ -344,6 +371,7 @@ html.lenis, html.lenis body {
 .clip-text {
   clip-path: polygon(0 100%, 100% 100%, 100% 100%, 0 100%);
 }
+
 .pin-spacer-override {
   padding-bottom: 0 !important;
 }
@@ -353,6 +381,7 @@ html.lenis, html.lenis body {
   0% {
     transform: translateX(0);
   }
+
   100% {
     transform: translateX(-50%);
   }
@@ -375,6 +404,7 @@ html.lenis, html.lenis body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
@@ -474,4 +504,3 @@ html.lenis, html.lenis body {
   background: hsl(var(--muted) / 0.5);
   font-weight: 600;
 }
-

@@ -22,13 +22,20 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
       );
     }
 
-    const { chat_id, isi_balasan } = parsed.data;
+    const { chat_id, isi_balasan, media } = parsed.data;
 
-    // Cek apakah chat session ada
+    // Cek apakah chat session ada beserta akun-nya
     const chat = await prisma.m_chat.findFirst({
       where: {
         id: chat_id,
         dihapus_pada: null,
+      },
+      include: {
+        akun: {
+          include: {
+            platform: true,
+          },
+        },
       },
     });
 
@@ -36,14 +43,54 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
       return errorResponse(404, "Percakapan tidak ditemukan", "NOT_FOUND");
     }
 
-    // Melakukan transaksi pembuatan balasan dan mengubah status chat ke 'dijawab'
+    const platformSlug = chat.akun?.platform?.slug?.toLowerCase() || "";
+    const isWhatsapp = platformSlug === "whatsapp";
+    const senderId = chat.sender_id;
+
+    let sentToWhatsapp = false;
+    let waPlatformMsgId: string | null = null;
+
+    // ── Kirim lewat WhatsApp jika platform = whatsapp dan klien terhubung ──
+    if (isWhatsapp && senderId) {
+      try {
+        const { getWhatsappClient, sendWhatsappMessage, sendWhatsappMedia } =
+          await import("@/lib/whatsapp-client");
+
+        const clientInfo = getWhatsappClient(chat.akun_id);
+
+        if (clientInfo.status === "connected" && clientInfo.client) {
+          if (media) {
+            // Kirim media (gambar/dokumen/file) — returns platform msg ID
+            waPlatformMsgId = await sendWhatsappMedia(
+              chat.akun_id,
+              senderId,
+              media.data,
+              media.mimeType,
+              media.filename,
+              isi_balasan || undefined
+            );
+          } else if (isi_balasan) {
+            // Kirim teks biasa — returns platform msg ID
+            waPlatformMsgId = await sendWhatsappMessage(chat.akun_id, senderId, isi_balasan);
+          }
+          sentToWhatsapp = true;
+        }
+      } catch (waErr: any) {
+        console.error(`[Chat Balas] WhatsApp send error:`, waErr);
+        // Lanjut simpan ke DB meski gagal kirim ke WA (log error saja)
+      }
+    }
+
+    // ── Simpan balasan dan update status chat dalam transaksi ──
     const balasan = await prisma.$transaction(async (tx) => {
       const newBalasan = await tx.c_balasan_chat.create({
         data: {
           chat_id,
-          isi_balasan,
+          isi_balasan: isi_balasan || (media ? `[${media.filename}]` : ""),
           dikirim_oleh: String(userId),
-          berhasil: true, // Simulasikan pengiriman ke API platform eksternal sukses
+          berhasil: isWhatsapp ? sentToWhatsapp : true,
+          // Save WA platform msg ID so message_create handler can skip duplicates
+          ...(waPlatformMsgId ? { platform_msg_id: waPlatformMsgId } : {}),
         },
       });
 
@@ -58,7 +105,22 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
       return newBalasan;
     });
 
-    return successResponse(balasan, 201);
+    // Emit real-time event to notify SSE active connections
+    try {
+      const { emitWhatsappEvent } = await import("@/lib/whatsapp-client");
+      emitWhatsappEvent(chat.akun_id, "chat_update", {
+        type: "message_create",
+        fromMe: true,
+        contactId: chat.sender_id,
+      });
+    } catch (emitErr) {
+      console.error("Failed to emit chat_update event on reply:", emitErr);
+    }
+
+    return successResponse(
+      { ...balasan, sent_to_whatsapp: sentToWhatsapp },
+      201
+    );
   } catch (error) {
     return handleApiError(error);
   }

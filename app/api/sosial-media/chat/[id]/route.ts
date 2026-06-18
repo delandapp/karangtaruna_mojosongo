@@ -139,3 +139,87 @@ export const PUT = withAuth(
     }
   }
 );
+
+// ──────────────────────────────────────────────────────────
+// DELETE /api/sosial-media/chat/[id] — Hapus/Clear Chat
+// ──────────────────────────────────────────────────────────
+export const DELETE = withAuth(
+  async (_req: AuthenticatedRequest, { params }: RouteProps) => {
+    try {
+      const { id: rawId } = await params;
+      const id = parseId(rawId);
+      if (!id) {
+        return errorResponse(400, "ID Chat tidak valid", "VALIDATION_ERROR");
+      }
+
+      const existing = await prisma.m_chat.findFirst({
+        where: {
+          id,
+          dihapus_pada: null,
+        },
+        include: {
+          akun: {
+            include: {
+              platform: true,
+            },
+          },
+        },
+      });
+
+      if (!existing) {
+        return errorResponse(404, "Percakapan tidak ditemukan", "NOT_FOUND");
+      }
+
+      // Soft delete the chat and its replies
+      await prisma.$transaction([
+        prisma.m_chat.update({
+          where: { id },
+          data: { dihapus_pada: new Date() },
+        }),
+        prisma.c_balasan_chat.updateMany({
+          where: { chat_id: id },
+          data: { dihapus_pada: new Date() },
+        }),
+      ]);
+
+      const platformSlug = existing.akun?.platform?.slug?.toLowerCase() || "";
+      const isWhatsapp = platformSlug === "whatsapp";
+      let clearedOnWhatsapp = false;
+
+      if (isWhatsapp && existing.sender_id) {
+        try {
+          const { getWhatsappClient, clearWhatsappChat } = await import(
+            "@/lib/whatsapp-client"
+          );
+          const clientInfo = getWhatsappClient(existing.akun_id);
+
+          if (clientInfo.status === "connected" && clientInfo.client) {
+            await clearWhatsappChat(existing.akun_id, existing.sender_id);
+            clearedOnWhatsapp = true;
+          }
+        } catch (waErr) {
+          console.error("[Chat Clear] Failed to clear chat on WhatsApp device:", waErr);
+        }
+      }
+
+      // Emit event
+      try {
+        const { emitWhatsappEvent } = await import("@/lib/whatsapp-client");
+        emitWhatsappEvent(existing.akun_id, "chat_update", {
+          type: "chat_clear",
+          contactId: existing.sender_id,
+          chatId: id,
+        });
+      } catch (emitErr) {
+        console.error("Failed to emit chat_update event on clear:", emitErr);
+      }
+
+      return successResponse(
+        { message: "Percakapan berhasil dibersihkan", cleared_on_whatsapp: clearedOnWhatsapp },
+        200
+      );
+    } catch (error) {
+      return handleApiError(error);
+    }
+  }
+);

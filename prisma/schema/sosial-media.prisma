@@ -27,6 +27,8 @@ model m_akun_sosmed {
   analitik         m_analitik[]
   chat             m_chat[]
   konten           m_konten[]
+  kontak_wa        m_kontak_wa[]
+  blazzing_wa      m_blazzing_wa[]
 }
 
 model m_konten {
@@ -93,6 +95,7 @@ model c_balasan_chat {
   isi_balasan     String
   dikirim_oleh    String
   berhasil        Boolean   @default(false)
+  platform_msg_id String?
   dibuat_pada     DateTime  @default(now())
   diperbarui_pada DateTime  @updatedAt
   dihapus_pada    DateTime?
@@ -126,4 +129,53 @@ model r_konten_platform {
   dihapus_pada     DateTime?
   konten           m_konten   @relation(fields: [konten_id], references: [id])
   platform         m_platform @relation(fields: [platform_id], references: [id])
+}
+
+model m_kontak_wa {
+  id               Int                 @id @default(autoincrement())
+  akun_id          Int
+  nama             String
+  nomor_telp       String
+  email            String?
+  perusahaan       String?
+  jabatan          String?
+  grup             String?
+  catatan          String?
+  dibuat_pada      DateTime            @default(now())
+  diperbarui_pada  DateTime            @updatedAt
+  dihapus_pada     DateTime?
+  akun             m_akun_sosmed       @relation(fields: [akun_id], references: [id])
+  blazzing_penerima c_blazzing_penerima[]
+}
+
+model m_blazzing_wa {
+  id               Int                 @id @default(autoincrement())
+  akun_id          Int
+  nama_kempen      String
+  pesan            String
+  tipe             String              @default("instant") // "instant" | "scheduled"
+  status           String              @default("pending") // "pending" | "processing" | "sent" | "failed"
+  dijadwalkan_pada DateTime?
+  dibuat_pada      DateTime            @default(now())
+  diperbarui_pada  DateTime            @updatedAt
+  dihapus_pada     DateTime?
+  akun             m_akun_sosmed       @relation(fields: [akun_id], references: [id])
+  penerima         c_blazzing_penerima[]
+}
+
+model c_blazzing_penerima {
+  id              Int            @id @default(autoincrement())
+  blazzing_id     Int
+  kontak_id       Int?
+  nama            String
+  nomor_telp      String
+  status          String         @default("pending") // "pending" | "sent" | "failed"
+  dikirim_pada    DateTime?
+  pesan_error     String?
+  pesan_terformat String?
+  dibuat_pada     DateTime       @default(now())
+  diperbarui_pada DateTime       @updatedAt
+  dihapus_pada    DateTime?
+  blazzing        m_blazzing_wa  @relation(fields: [blazzing_id], references: [id])
+  kontak          m_kontak_wa?   @relation(fields: [kontak_id], references: [id])
 }

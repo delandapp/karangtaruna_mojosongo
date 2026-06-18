@@ -145,10 +145,23 @@ export const DELETE = withAuth(
           id,
           dihapus_pada: null,
         },
+        include: {
+          platform: true,
+        },
       });
 
       if (!existing) {
         return errorResponse(404, "Akun tidak ditemukan", "NOT_FOUND");
+      }
+
+      // If platform is WhatsApp, trigger official logout & session folder clean up
+      if (existing.platform.slug.toLowerCase() === "whatsapp") {
+        try {
+          const { logoutWhatsappClient } = require("@/lib/whatsapp-client");
+          await logoutWhatsappClient(id);
+        } catch (logoutErr) {
+          console.error("Failed to cleanly logout WhatsApp client during disconnection API:", logoutErr);
+        }
       }
 
       // Soft delete: set status to "terputus" and set dihapus_pada

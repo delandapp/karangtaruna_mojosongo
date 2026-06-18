@@ -106,11 +106,11 @@ export function AnalyticPage({ initialPlatformSlug }: AnalyticPageProps) {
     : "";
 
   return (
-    <div className="space-y-6">
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       {/* Header controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold tracking-tight">Analitik Performa</h1>
+          <h2 className="text-3xl font-bold tracking-tight">Analitik Performa</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
             Pantau pertumbuhan pengikut, jangkauan tayang, dan rasio keterlibatan pemirsa di seluruh akun Anda.
           </p>

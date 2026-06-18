@@ -232,6 +232,8 @@ export function ModalHubungkanAkun({
           <DialogDescription className="text-muted-foreground text-sm">
             {isInstagram
               ? "Gunakan metode Cookie Session ID untuk menghubungkan Instagram dengan andal tanpa diblokir verifikasi keamanan."
+              : isWhatsapp
+              ? "Masukkan nomor WhatsApp Anda untuk mulai menghubungkan perangkat menggunakan QR Code atau Pairing Code."
               : useCredential
               ? `Masukkan username dan password ${currentPlatform?.nama || ""} Anda untuk menghubungkan akun.`
               : "Hubungkan akun sosial media Anda untuk mengelola konten dan pesan dalam satu dashboard."}
@@ -437,7 +439,7 @@ export function ModalHubungkanAkun({
             )}
 
             {/* ── Password / Access Token ── */}
-            {(!isInstagram || loginMethod === "password") && (
+            {!isWhatsapp && (!isInstagram || loginMethod === "password") && (
               <FormField
                 control={form.control}
                 name="access_token"
@@ -484,7 +486,7 @@ export function ModalHubungkanAkun({
             )}
 
             {/* ── Refresh Token — Only for non-credential platforms ── */}
-            {!useCredential && (
+            {!useCredential && !isWhatsapp && (
               <FormField
                 control={form.control}
                 name="refresh_token"
@@ -510,7 +512,7 @@ export function ModalHubungkanAkun({
             )}
 
             {/* ── Token Expired At — Only for non-credential platforms ── */}
-            {!useCredential && (
+            {!useCredential && !isWhatsapp && (
               <FormField
                 control={form.control}
                 name="token_expires_at"

@@ -107,12 +107,13 @@ const SOSMED_NAV = [
     ],
   },
   {
-    href: "/dashboard/whatsapp/content",
+    href: "/dashboard/whatsapp/kontak",
     icon: FaWhatsapp,
     label: "WhatsApp",
     subItems: [
       { href: "/dashboard/whatsapp/login", label: "Koneksi Akun" },
-      { href: "/dashboard/whatsapp/content", label: "Konten & Kalender" },
+      { href: "/dashboard/whatsapp/kontak", label: "Kontak" },
+      { href: "/dashboard/whatsapp/blazzing", label: "Blazzing" },
       { href: "/dashboard/whatsapp/chat", label: "Pesan & DMs" },
       { href: "/dashboard/whatsapp/analytic", label: "Analitik" },
     ],

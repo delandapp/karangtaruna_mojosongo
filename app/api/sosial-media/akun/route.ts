@@ -4,6 +4,7 @@ import { handleApiError } from "@/lib/error-handler";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { schemaHubungkanAkun } from "@/lib/validations/sosial-media.schema";
 import { authenticateInstagram } from "@/lib/instagram-login";
+import { getWhatsappClient, initializeWhatsappClient } from "@/lib/whatsapp-client";
 
 // ──────────────────────────────────────────────────────────
 // GET /api/sosial-media/akun — Get Connected Accounts
@@ -28,7 +29,31 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
       },
     });
 
-    return successResponse(accounts, 200);
+    const processedAccounts = accounts.map((acc) => {
+      const copy = { ...acc };
+      if (copy.platform.slug.toLowerCase() === "whatsapp") {
+        const clientInfo = getWhatsappClient(copy.id);
+        
+        if (copy.status === "terhubung" && !clientInfo.client) {
+          console.log(`[WhatsApp GET] Client ${copy.id} is marked connected in DB but not active in memory. Auto-initializing...`);
+          initializeWhatsappClient(copy.id);
+        }
+
+        const currentStatus = getWhatsappClient(copy.id).status;
+        if (currentStatus === "connected") {
+          copy.status = "terhubung";
+        } else if (currentStatus === "initializing" || currentStatus === "qr_ready") {
+          copy.status = "menghubungkan";
+        } else if (currentStatus === "disconnected" && copy.status === "terhubung") {
+          copy.status = "terputus";
+        } else if (clientInfo.error) {
+          copy.status = "gagal_koneksi";
+        }
+      }
+      return copy;
+    });
+
+    return successResponse(processedAccounts, 200);
   } catch (error) {
     return handleApiError(error);
   }
@@ -142,6 +167,7 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     const finalAccessToken = (platformSlug === "instagram" && session_id) ? session_id : (access_token ?? "");
 
     let account;
+    const initialStatus = platformSlug === "whatsapp" ? "terputus" : "terhubung";
     if (existing) {
       account = await prisma.m_akun_sosmed.update({
         where: { id: existing.id },
@@ -150,7 +176,7 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
           access_token: finalAccessToken,
           refresh_token: finalRefreshToken,
           token_expires_at: token_expires_at ? new Date(token_expires_at) : null,
-          status: "terhubung",
+          status: initialStatus,
           dihapus_pada: null, // restore
         },
         include: {
@@ -166,7 +192,7 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
           access_token: finalAccessToken,
           refresh_token: finalRefreshToken,
           token_expires_at: token_expires_at ? new Date(token_expires_at) : null,
-          status: "terhubung",
+          status: initialStatus,
         },
         include: {
           platform: true,

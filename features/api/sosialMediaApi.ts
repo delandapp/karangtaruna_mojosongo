@@ -18,6 +18,13 @@ import {
   ApiResponse,
   PaginatedResponse,
   UnreadCountResponse,
+  KontakWA,
+  BuatKontakPayload,
+  UpdateKontakPayload,
+  KontakFilter,
+  ImportKontakPayload,
+  BlazzingWA,
+  BuatBlazzingPayload,
 } from "@/lib/types/sosial-media.types";
 
 export const sosialMediaApi = createApi({
@@ -26,7 +33,7 @@ export const sosialMediaApi = createApi({
     baseUrl: "/api/sosial-media",
     credentials: "include",
   }),
-  tagTypes: ["Platform", "AkunSosmed", "Konten", "Chat", "Analitik"],
+  tagTypes: ["Platform", "AkunSosmed", "Konten", "Chat", "Analitik", "Kontak", "Blazzing"],
   endpoints: (builder) => ({
     // ─── Platform ─────────────────────────────────────────────────────────────
     getDaftarPlatform: builder.query<ApiResponse<Platform[]>, void>({
@@ -162,6 +169,28 @@ export const sosialMediaApi = createApi({
       query: () => "/chat/unread",
       providesTags: ["Chat"],
     }),
+    buatChat: builder.mutation<ApiResponse<Chat>, { akun_id: number; nomor_telp: string; nama?: string }>({
+      query: (body) => ({
+        url: "/chat",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Chat"],
+    }),
+    hapusPesan: builder.mutation<ApiResponse<{ message: string }>, { id: number; type: "reply" | "parent" }>({
+      query: ({ id, type }) => ({
+        url: `/chat/pesan/${id}?type=${type}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Chat"],
+    }),
+    clearChat: builder.mutation<ApiResponse<{ message: string }>, number>({
+      query: (id) => ({
+        url: `/chat/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Chat"],
+    }),
 
     // ─── Analitik ────────────────────────────────────────────────────────────
     getAnalitik: builder.query<ApiResponse<Analitik[]>, AnalitikFilter>({
@@ -195,6 +224,47 @@ export const sosialMediaApi = createApi({
         body,
       }),
     }),
+
+    // ─── Kontak WA ────────────────────────────────────────────────────────────
+    getDaftarKontak: builder.query<ApiResponse<KontakWA[]>, KontakFilter>({
+      query: (params) => {
+        const q = new URLSearchParams();
+        q.set("akun_id", String(params.akun_id));
+        if (params.search) q.set("search", params.search);
+        return `/kontak?${q.toString()}`;
+      },
+      providesTags: ["Kontak"],
+    }),
+    buatKontak: builder.mutation<ApiResponse<KontakWA>, BuatKontakPayload>({
+      query: (body) => ({ url: "/kontak", method: "POST", body }),
+      invalidatesTags: ["Kontak"],
+    }),
+    updateKontak: builder.mutation<ApiResponse<KontakWA>, UpdateKontakPayload>({
+      query: ({ id, ...body }) => ({ url: `/kontak/${id}`, method: "PUT", body }),
+      invalidatesTags: ["Kontak"],
+    }),
+    hapusKontak: builder.mutation<ApiResponse<null>, number>({
+      query: (id) => ({ url: `/kontak/${id}`, method: "DELETE" }),
+      invalidatesTags: ["Kontak"],
+    }),
+    importKontak: builder.mutation<ApiResponse<{ imported: number; skipped: number }>, ImportKontakPayload>({
+      query: (body) => ({ url: "/kontak/import", method: "POST", body }),
+      invalidatesTags: ["Kontak"],
+    }),
+
+    // ─── Blazzing WA ─────────────────────────────────────────────────────────
+    getDaftarBlazing: builder.query<ApiResponse<BlazzingWA[]>, { akun_id: number }>({
+      query: ({ akun_id }) => `/blazzing?akun_id=${akun_id}`,
+      providesTags: ["Blazzing"],
+    }),
+    buatBlazing: builder.mutation<ApiResponse<BlazzingWA>, BuatBlazzingPayload>({
+      query: (body) => ({ url: "/blazzing", method: "POST", body }),
+      invalidatesTags: ["Blazzing"],
+    }),
+    hapusBlazing: builder.mutation<ApiResponse<null>, number>({
+      query: (id) => ({ url: `/blazzing/${id}`, method: "DELETE" }),
+      invalidatesTags: ["Blazzing"],
+    }),
   }),
 });
 
@@ -216,7 +286,20 @@ export const {
   useBalasChatMutation,
   useUpdateStatusChatMutation,
   useGetUnreadCountQuery,
+  useBuatChatMutation,
+  useHapusPesanMutation,
+  useClearChatMutation,
   useGetAnalitikQuery,
   useGetTopKontenQuery,
   useExportAnalitikMutation,
+  // Kontak WA
+  useGetDaftarKontakQuery,
+  useBuatKontakMutation,
+  useUpdateKontakMutation,
+  useHapusKontakMutation,
+  useImportKontakMutation,
+  // Blazzing WA
+  useGetDaftarBlazingQuery,
+  useBuatBlazingMutation,
+  useHapusBlazingMutation,
 } = sosialMediaApi;

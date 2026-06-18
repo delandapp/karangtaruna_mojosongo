@@ -142,11 +142,11 @@ export function ChatPage({ initialPlatformSlug }: ChatPageProps) {
   const currentSelectedPlatform = platformOptions.find((p) => p.id === (selectedPlatformId || 0));
 
   return (
-    <div className="space-y-6">
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold tracking-tight">Inbox Sosial Media</h1>
+          <h2 className="text-3xl font-bold tracking-tight">Inbox Sosial Media</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
             Baca dan balas pesan pelanggan dari berbagai platform media sosial dalam satu dasbor.
           </p>

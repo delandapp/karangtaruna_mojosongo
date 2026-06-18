@@ -14,7 +14,7 @@ export interface Platform {
 }
 
 // ─── Akun Sosial Media ───────────────────────────────────────────────────────
-export type StatusAkun = "terhubung" | "terputus" | "expired";
+export type StatusAkun = "terhubung" | "terputus" | "expired" | "menghubungkan" | "gagal_koneksi";
 
 export interface AkunSosmed {
   id: number;
@@ -155,7 +155,12 @@ export interface Chat {
 
 export interface BalasChatPayload {
   chat_id: number;
-  isi_balasan: string;
+  isi_balasan?: string;
+  media?: {
+    data: string;       // base64-encoded file content
+    mimeType: string;
+    filename: string;
+  };
 }
 
 export interface ChatFilter {
@@ -232,3 +237,96 @@ export interface UnreadCountResponse {
     per_platform: Record<string, number>;
   };
 }
+
+// ─── WhatsApp Kontak ─────────────────────────────────────────────────────────
+export interface KontakWA {
+  id: number;
+  akun_id: number;
+  nama: string;
+  nomor_telp: string;
+  email: string | null;
+  perusahaan: string | null;
+  jabatan: string | null;
+  grup: string | null;
+  catatan: string | null;
+  dibuat_pada: string;
+  diperbarui_pada: string;
+  dihapus_pada: string | null;
+}
+
+export interface BuatKontakPayload {
+  akun_id: number;
+  nama: string;
+  nomor_telp: string;
+  email?: string;
+  perusahaan?: string;
+  jabatan?: string;
+  grup?: string;
+  catatan?: string;
+}
+
+export interface UpdateKontakPayload extends Partial<Omit<BuatKontakPayload, "akun_id">> {
+  id: number;
+}
+
+export interface KontakFilter {
+  akun_id: number;
+  search?: string;
+}
+
+export interface ImportKontakPayload {
+  akun_id: number;
+  contacts: Omit<BuatKontakPayload, "akun_id">[];
+}
+
+// ─── WhatsApp Blazzing ────────────────────────────────────────────────────────
+export type StatusBlazing = "pending" | "processing" | "sent" | "failed";
+export type TipeBlazing = "instant" | "scheduled";
+
+export interface BlazzingPenerima {
+  id: number;
+  blazzing_id: number;
+  kontak_id: number | null;
+  nama: string;
+  nomor_telp: string;
+  status: "pending" | "sent" | "failed";
+  dikirim_pada: string | null;
+  pesan_error: string | null;
+  pesan_terformat: string | null;
+}
+
+export interface BlazzingStats {
+  total: number;
+  sent: number;
+  failed: number;
+  pending: number;
+}
+
+export interface BlazzingWA {
+  id: number;
+  akun_id: number;
+  nama_kempen: string;
+  pesan: string;
+  tipe: TipeBlazing;
+  status: StatusBlazing;
+  dijadwalkan_pada: string | null;
+  dibuat_pada: string;
+  diperbarui_pada: string;
+  dihapus_pada: string | null;
+  penerima?: BlazzingPenerima[];
+  stats?: BlazzingStats;
+}
+
+export interface BuatBlazzingPayload {
+  akun_id: number;
+  nama_kempen: string;
+  pesan: string;
+  tipe: TipeBlazing;
+  dijadwalkan_pada?: string;
+  penerima: {
+    nama: string;
+    nomor_telp: string;
+    kontak_id?: number;
+  }[];
+}
+

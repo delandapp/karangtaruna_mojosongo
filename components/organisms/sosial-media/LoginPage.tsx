@@ -64,6 +64,7 @@ export function LoginPage({ platformSlug }: LoginPageProps) {
   const [isQrDialogOpen, setIsQrDialogOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncingAccountId, setSyncingAccountId] = useState<number | null>(null);
+  const [syncMethod, setSyncMethod] = useState<"qr" | "pairing">("qr");
 
   // WhatsApp connection polling — polls every 3 seconds while QR dialog is open
   useEffect(() => {
@@ -74,7 +75,7 @@ export function LoginPage({ platformSlug }: LoginPageProps) {
           const res = await fetch(`/api/sosial-media/akun/${syncingAccountId}/qr`);
           const data = await res.json();
           if (data.success) {
-            const { status, qrCode, pairingCode } = data.data;
+            const { status, qrCode, pairingCode, error } = data.data;
             if (status === "connected") {
               toast.success("✅ WhatsApp Web berhasil terhubung!");
               setIsQrDialogOpen(false);
@@ -91,8 +92,8 @@ export function LoginPage({ platformSlug }: LoginPageProps) {
                 setWhatsappQr(qrCode);
                 setWhatsappPairingCode(null);
               }
-            } else if (status === "disconnected") {
-              toast.error("Gagal menghubungkan WhatsApp Web");
+            } else if (status === "disconnected" && error) {
+              toast.error(`Gagal menghubungkan WhatsApp Web: ${error}`);
               setIsQrDialogOpen(false);
               setWhatsappQr(null);
               setWhatsappPairingCode(null);
@@ -111,19 +112,35 @@ export function LoginPage({ platformSlug }: LoginPageProps) {
     };
   }, [isQrDialogOpen, syncingAccountId, refetchAccounts]);
 
+  // WhatsApp account status realtime polling — polls every 5s when platform is WhatsApp
+  useEffect(() => {
+    if (platformSlug.toLowerCase() !== "whatsapp") return;
+    const statusPollId = setInterval(() => {
+      refetchAccounts();
+    }, 5000);
+    return () => clearInterval(statusPollId);
+  }, [platformSlug, refetchAccounts]);
+
   const handleSyncAccount = async (account: any, method: "qr" | "pairing" = "qr") => {
     if (isSyncing) return;
     setIsSyncing(true);
     setWhatsappQr(null);
     setWhatsappPairingCode(null);
-    setSyncingAccountId(null);
+    setSyncingAccountId(account.id);
+    setSyncMethod(method);
+
+    const isWa = platformSlug.toLowerCase() === "whatsapp";
+    // Only open dialog modal if we are connecting/reconnecting an unconnected account
+    if (isWa && account.status !== "terhubung") {
+      setIsQrDialogOpen(true);
+    }
 
     const toastId = toast.loading(`⏳ Mensinkronisasi data ${account.nama_akun}...`);
     let needsQr = false;
 
     try {
       const response = await sinkronisasiAkun(
-        platformSlug.toLowerCase() === "whatsapp" 
+        isWa 
           ? { id: account.id, method } 
           : account.id
       ).unwrap();
@@ -137,14 +154,15 @@ export function LoginPage({ platformSlug }: LoginPageProps) {
           setWhatsappQr(response.data.qrCode);
           setWhatsappPairingCode(null);
         }
-        setSyncingAccountId(account.id);
-        setIsQrDialogOpen(true);
         toast.info(response.data.pairingCode 
           ? "📱 Silakan masukkan pairing code pada WhatsApp HP Anda" 
           : "📱 Silakan scan QR Code untuk WhatsApp Web", { id: toastId });
         // isSyncing stays true — reset only when QR is resolved (in polling effect)
       } else {
         toast.success(response.data?.message || "✅ Sinkronisasi berhasil!", { id: toastId });
+        setIsQrDialogOpen(false);
+        setSyncingAccountId(null);
+        setIsSyncing(false);
         refetchAccounts();
       }
     } catch (error: any) {
@@ -154,6 +172,9 @@ export function LoginPage({ platformSlug }: LoginPageProps) {
         description: errorMsg,
         duration: 10000,
       });
+      setIsQrDialogOpen(false);
+      setSyncingAccountId(null);
+      setIsSyncing(false);
     } finally {
       // Only reset isSyncing if NOT waiting for QR scan
       if (!needsQr) {
@@ -271,6 +292,18 @@ export function LoginPage({ platformSlug }: LoginPageProps) {
             ● Terhubung
           </Badge>
         );
+      case "menghubungkan":
+        return (
+          <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 rounded-full font-medium animate-pulse">
+            ◌ Menghubungkan...
+          </Badge>
+        );
+      case "gagal_koneksi":
+        return (
+          <Badge className="bg-red-100 text-red-700 hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 rounded-full font-medium">
+            ✕ Gagal Koneksi
+          </Badge>
+        );
       case "expired":
         return (
           <Badge variant="destructive" className="rounded-full font-medium">
@@ -303,7 +336,11 @@ export function LoginPage({ platformSlug }: LoginPageProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">Koneksi Akun {currentPlatform.nama}</h2>
+      </div>
+
       {/* Platform Header Card */}
       <Card className={`border ${styles.border} bg-gradient-to-br ${styles.bg} overflow-hidden shadow-xs rounded-2xl`}>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 sm:p-8">
@@ -376,33 +413,76 @@ export function LoginPage({ platformSlug }: LoginPageProps) {
                       <TableCell className="text-muted-foreground text-sm py-4 px-6">@{acc.username}</TableCell>
                       <TableCell className="py-4 px-6">{getStatusBadge(acc.status)}</TableCell>
                       <TableCell className="text-muted-foreground text-xs py-4 px-6">
-                        {acc.token_expires_at
+                        {platformSlug.toLowerCase() === "whatsapp"
+                          ? "Tidak diperlukan"
+                          : acc.token_expires_at
                           ? new Date(acc.token_expires_at).toLocaleDateString("id-ID", {
                               dateStyle: "medium",
                             })
                           : "Tidak terbatas"}
                       </TableCell>
                       <TableCell className="py-4 px-6 text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleSyncAccount(acc)}
-                            disabled={isSyncing}
-                            className="h-8 text-xs rounded-lg gap-1.5 text-primary border-primary/20 hover:bg-primary/5"
-                          >
-                            <RefreshCw className={`size-3.5 ${isSyncing && syncingAccountId === acc.id ? "animate-spin" : ""}`} />
-                            {isSyncing && syncingAccountId === acc.id ? "Sinkronisasi..." : "Sinkronisasi"}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleOpenUpdateToken(acc)}
-                            className="h-8 text-xs rounded-lg gap-1.5"
-                          >
-                            <RefreshCw className="size-3.5" />
-                            Perbarui Token
-                          </Button>
+                        <div className="flex justify-end gap-2 flex-wrap">
+                          {platformSlug.toLowerCase() === "whatsapp" ? (
+                            acc.status === "terhubung" ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleSyncAccount(acc, "qr")}
+                                disabled={isSyncing}
+                                className="h-8 text-xs rounded-lg gap-1.5 text-emerald-600 border-emerald-500/20 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+                              >
+                                <RefreshCw className={`size-3.5 ${isSyncing && syncingAccountId === acc.id ? "animate-spin" : ""}`} />
+                                {isSyncing && syncingAccountId === acc.id ? "Sinkronisasi..." : "Sinkronisasi"}
+                              </Button>
+                            ) : (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleSyncAccount(acc, "qr")}
+                                  disabled={isSyncing}
+                                  className="h-8 text-xs rounded-lg gap-1.5 text-emerald-600 border-emerald-500/20 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+                                >
+                                  <RefreshCw className={`size-3.5 ${isSyncing && syncingAccountId === acc.id && syncMethod === "qr" ? "animate-spin" : ""}`} />
+                                  Koneksi QR
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleSyncAccount(acc, "pairing")}
+                                  disabled={isSyncing}
+                                  className="h-8 text-xs rounded-lg gap-1.5 text-sky-600 border-sky-500/20 hover:bg-sky-50 dark:hover:bg-sky-950/20"
+                                >
+                                  <RefreshCw className={`size-3.5 ${isSyncing && syncingAccountId === acc.id && syncMethod === "pairing" ? "animate-spin" : ""}`} />
+                                  Koneksi Pairing
+                                </Button>
+                              </>
+                            )
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleSyncAccount(acc)}
+                              disabled={isSyncing}
+                              className="h-8 text-xs rounded-lg gap-1.5 text-primary border-primary/20 hover:bg-primary/5"
+                            >
+                              <RefreshCw className={`size-3.5 ${isSyncing && syncingAccountId === acc.id ? "animate-spin" : ""}`} />
+                              {isSyncing && syncingAccountId === acc.id ? "Sinkronisasi..." : "Sinkronisasi"}
+                            </Button>
+                          )}
+                          
+                          {platformSlug.toLowerCase() !== "whatsapp" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenUpdateToken(acc)}
+                              className="h-8 text-xs rounded-lg gap-1.5"
+                            >
+                              <RefreshCw className="size-3.5" />
+                              Perbarui Token
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
                             size="sm"
@@ -501,12 +581,12 @@ export function LoginPage({ platformSlug }: LoginPageProps) {
         <DialogContent className="sm:max-w-md border-border/50 bg-card/95 backdrop-blur-xl rounded-2xl p-6 text-center">
           <DialogHeader className="mb-4">
             <DialogTitle className="text-xl font-semibold flex items-center justify-center gap-2">
-              {whatsappPairingCode ? "📱 Tautkan dengan Kode Pairing" : "📱 Pindai QR Code WhatsApp"}
+              {syncMethod === "pairing" ? "📱 Tautkan dengan Kode Pairing" : "📱 Pindai QR Code WhatsApp"}
             </DialogTitle>
             <DialogDescription className="text-muted-foreground text-sm mt-1">
-              {whatsappPairingCode ? (
+              {syncMethod === "pairing" ? (
                 <>
-                  Buka WhatsApp di ponsel Anda → pilih <strong className="text-foreground">Perangkat Tertaut</strong> → ketuk <strong className="text-foreground font-semibold">Tautkan Perangkat</strong> → ketuk <strong className="text-foreground font-semibold">Tautkan dengan nomor telepon saja</strong> di bagian bawah, lalu masukkan 8-digit kode berikut:
+                  Buka WhatsApp di ponsel Anda → pilih <strong className="text-foreground">Perangkat Tertaut</strong> → ketuk <strong className="text-foreground font-semibold">Tautkan Perangkat</strong> → ketuk <strong className="text-foreground font-semibold">Tautkan dengan nomor telepon saja</strong> di bagian bawah, lalu masukkan kode berikut:
                 </>
               ) : (
                 <>
@@ -516,35 +596,83 @@ export function LoginPage({ platformSlug }: LoginPageProps) {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-col items-center justify-center py-6 bg-white rounded-xl border p-4 shadow-inner my-2">
-            {whatsappPairingCode ? (
-              <div className="flex flex-col items-center justify-center py-4 px-6 gap-3">
-                <span className="text-4xl font-extrabold tracking-widest text-emerald-600 font-mono select-all select-none bg-emerald-50 px-6 py-3.5 border border-emerald-200 rounded-2xl shadow-sm">
-                  {whatsappPairingCode.substring(0, 4)}-{whatsappPairingCode.substring(4)}
-                </span>
-                <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-wide">
-                  Kode Pairing WhatsApp
-                </span>
-              </div>
-            ) : whatsappQr ? (
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(whatsappQr)}`}
-                alt="WhatsApp QR Code"
-                className="w-[220px] h-[220px] object-contain transition-all"
-              />
+          <div className="flex flex-col items-center justify-center py-6 bg-white dark:bg-zinc-950 rounded-xl border border-zinc-100 dark:border-zinc-800 p-4 shadow-xs my-2">
+            {syncMethod === "pairing" ? (
+              whatsappPairingCode ? (
+                <div className="flex flex-col items-center justify-center py-4 px-2 gap-3 w-full">
+                  <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                    {whatsappPairingCode.replace(/[^A-Za-z0-9]/g, "").split("").map((char, idx, arr) => (
+                      <div key={idx} className="flex items-center justify-center">
+                        <div className="w-10 h-14 sm:w-11 sm:h-16 flex items-center justify-center text-xl sm:text-2xl font-bold bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-xl shadow-xs font-mono transition-transform hover:scale-105">
+                          {char}
+                        </div>
+                        {arr.length === 8 && idx === 3 && (
+                          <span className="mx-1 text-zinc-400 font-bold text-lg">-</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-wide">
+                    Kode Pairing WhatsApp Anda
+                  </span>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-4 px-2 gap-3 w-full animate-pulse">
+                  <div className="flex items-center justify-center gap-1.5">
+                    {Array.from({ length: 8 }).map((_, idx) => (
+                      <div key={idx} className="flex items-center">
+                        <div className="w-10 h-14 sm:w-11 sm:h-16 bg-zinc-100 dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700"></div>
+                        {idx === 3 && (
+                          <span className="mx-1 text-zinc-300 font-bold text-lg">-</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <span className="text-[10px] text-zinc-400 font-medium uppercase tracking-wide">
+                    Menghasilkan Kode Pairing...
+                  </span>
+                </div>
+              )
             ) : (
-              <div className="flex flex-col items-center justify-center h-[220px] w-[220px]">
-                <Loader2 className="size-8 text-emerald-500 animate-spin mb-2" />
-                <span className="text-xs text-muted-foreground text-zinc-600">Menunggu respons dari server...</span>
-              </div>
+              whatsappQr ? (
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(whatsappQr)}`}
+                  alt="WhatsApp QR Code"
+                  className="w-[220px] h-[220px] object-contain transition-all"
+                />
+              ) : (
+                <div className="relative w-[220px] h-[220px] bg-zinc-50 dark:bg-zinc-900 rounded-xl p-4 flex flex-col justify-between animate-pulse border border-zinc-100 dark:border-zinc-800">
+                  <div className="flex justify-between w-full">
+                    <div className="w-12 h-12 border-4 border-zinc-300 dark:border-zinc-700 rounded-lg flex items-center justify-center">
+                      <div className="w-4 h-4 bg-zinc-300 dark:bg-zinc-700 rounded-xs"></div>
+                    </div>
+                    <div className="w-12 h-12 border-4 border-zinc-300 dark:border-zinc-700 rounded-lg flex items-center justify-center">
+                      <div className="w-4 h-4 bg-zinc-300 dark:bg-zinc-700 rounded-xs"></div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2 px-1">
+                    <div className="h-2 bg-zinc-200 dark:bg-zinc-800 rounded-full w-full"></div>
+                    <div className="h-2 bg-zinc-200 dark:bg-zinc-800 rounded-full w-5/6"></div>
+                    <div className="h-2 bg-zinc-200 dark:bg-zinc-800 rounded-full w-4/5"></div>
+                  </div>
+                  <div className="flex justify-between items-end w-full">
+                    <div className="w-12 h-12 border-4 border-zinc-300 dark:border-zinc-700 rounded-lg flex items-center justify-center">
+                      <div className="w-4 h-4 bg-zinc-300 dark:bg-zinc-700 rounded-xs"></div>
+                    </div>
+                    <div className="w-8 h-8 bg-zinc-200 dark:bg-zinc-800 rounded-md"></div>
+                  </div>
+                </div>
+              )
             )}
           </div>
 
           <div className="mt-4 flex flex-col gap-2 text-xs text-muted-foreground text-left">
             <p>● Status: <span className="font-semibold text-emerald-600 dark:text-emerald-400 capitalize">
-              {whatsappPairingCode ? "Menunggu input kode di HP..." : whatsappQr ? "Menunggu scan..." : "Menyiapkan..."}
+              {syncMethod === "pairing"
+                ? (whatsappPairingCode ? "Menunggu input kode di HP..." : "Menyiapkan pairing code...")
+                : (whatsappQr ? "Menunggu scan..." : "Menyiapkan QR Code...")}
             </span></p>
-            <p>● Halaman ini akan otomatis menutup setelah tautan berhasil terhubung.</p>
+            <p>● Dialog ini akan menutup otomatis begitu akun Anda berhasil terhubung.</p>
           </div>
         </DialogContent>
       </Dialog>

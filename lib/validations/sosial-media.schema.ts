@@ -111,9 +111,19 @@ export const schemaBalasChat = z.object({
   }).int().positive(),
   isi_balasan: z
     .string()
-    .min(1, "Balasan tidak boleh kosong")
-    .max(1000, "Balasan maksimal 1000 karakter"),
-});
+    .max(4000, "Balasan maksimal 4000 karakter")
+    .optional()
+    .or(z.literal("")),
+  // Optional media attachment
+  media: z.object({
+    data: z.string().min(1, "Data media tidak boleh kosong"),   // base64
+    mimeType: z.string().min(1, "MIME type wajib ada"),
+    filename: z.string().min(1, "Nama file wajib ada"),
+  }).optional(),
+}).refine(
+  (v) => (v.isi_balasan && v.isi_balasan.trim().length > 0) || !!v.media,
+  { message: "Kirim pesan atau lampiran", path: ["isi_balasan"] }
+);
 
 // ─── Schema: Filter Konten (Query Params) ────────────────────────────────────
 
@@ -151,6 +161,7 @@ export type FormPerbaruiToken = z.infer<typeof schemaPerbaruiToken>;
 export type FormBuatKonten = z.infer<typeof schemaBuatKonten>;
 export type FormUpdateKonten = z.infer<typeof schemaUpdateKonten>;
 export type FormBalasChat = z.infer<typeof schemaBalasChat>;
+export type MediaBalasChat = NonNullable<FormBalasChat["media"]>;
 export type FilterKonten = z.infer<typeof schemaFilterKonten>;
 export type FilterChat = z.infer<typeof schemaFilterChat>;
 export type FilterAnalitik = z.infer<typeof schemaFilterAnalitik>;

@@ -76,7 +76,7 @@ export function ModalDetailPercakapan({
       refetch(); // Reload chat list to show the new reply
     } catch (error: any) {
       toast.error("Gagal mengirim balasan", {
-        description: error?.data?.message || "Terjadi kesalahan pada sistem",
+        description: error?.data?.error?.message || error?.data?.message || "Terjadi kesalahan pada sistem",
       });
     } finally {
       setIsSubmitting(false);

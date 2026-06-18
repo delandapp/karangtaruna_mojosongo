@@ -3,6 +3,7 @@ import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { schemaPerbaruiToken } from "@/lib/validations/sosial-media.schema";
+import { IgApiClient } from "instagram-private-api";
 
 type RouteProps = { params: Promise<{ id: string }> };
 
@@ -30,7 +31,7 @@ export const PUT = withAuth(
       if (!parsed.success) {
         return errorResponse(
           400,
-          parsed.error.errors[0].message,
+          parsed.error.issues[0].message,
           "VALIDATION_ERROR"
         );
       }
@@ -40,6 +41,9 @@ export const PUT = withAuth(
           id,
           dihapus_pada: null,
         },
+        include: {
+          platform: true,
+        },
       });
 
       if (!existing) {
@@ -47,6 +51,62 @@ export const PUT = withAuth(
       }
 
       const { access_token, refresh_token, token_expires_at } = parsed.data;
+
+      const platformSlug = existing.platform.slug.toLowerCase();
+
+      // Pre-validate Instagram credentials when updating password/token
+      if (platformSlug === "instagram") {
+        try {
+          const ig = new IgApiClient();
+          ig.state.generateDevice(existing.username);
+          await ig.simulate.preLoginFlow();
+          await ig.account.login(existing.username, access_token);
+        } catch (loginError: any) {
+          console.error("Instagram pre-validation login failed on update:", loginError);
+          const errMsg = loginError?.message || "";
+          const errName = loginError?.name || "";
+
+          if (errMsg.includes("challenge") || errMsg.includes("checkpoint")) {
+            return errorResponse(
+              401,
+              "Gagal memperbarui token karena verifikasi keamanan Instagram (OTP/Challenge). Silakan buka aplikasi Instagram Anda, setujui percobaan login, lalu coba kembali.",
+              "AUTHENTICATION_CHALLENGE"
+            );
+          }
+
+          if (
+            errMsg.toLowerCase().includes("facebook") ||
+            errMsg.toLowerCase().includes("linked facebook") ||
+            errMsg.toLowerCase().includes("log in with your linked")
+          ) {
+            return errorResponse(
+              401,
+              "Akun Instagram ini terhubung ke Facebook dan tidak memiliki password Instagram sendiri. " +
+              "Buka Instagram → Pengaturan → Keamanan → Password, buat password khusus Instagram, " +
+              "lalu gunakan password baru tersebut di form ini.",
+              "FACEBOOK_LINKED_ACCOUNT"
+            );
+          }
+
+          if (
+            errName === "IgLoginBadPasswordError" ||
+            errMsg.toLowerCase().includes("bad password") ||
+            errMsg.toLowerCase().includes("wrong password")
+          ) {
+            return errorResponse(
+              401,
+              "Password Instagram salah. Pastikan password yang Anda masukkan sudah benar.",
+              "WRONG_PASSWORD"
+            );
+          }
+
+          return errorResponse(
+            400,
+            `Gagal login ke Instagram: ${errMsg || "Kredensial salah atau diblokir"}`,
+            "AUTHENTICATION_ERROR"
+          );
+        }
+      }
 
       const updated = await prisma.m_akun_sosmed.update({
         where: { id },

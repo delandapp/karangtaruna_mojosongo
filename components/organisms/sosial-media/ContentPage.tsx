@@ -25,6 +25,7 @@ import {
   XCircle,
   HelpCircle,
   FileText,
+  Clock,
 } from "lucide-react";
 import {
   useGetDaftarKontenQuery,
@@ -336,7 +337,7 @@ export function ContentPage({ initialPlatformSlug }: ContentPageProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {kontenList.map((konten) => {
             const hasMedia = konten.media && konten.media.length > 0;
-            const mediaUrl = hasMedia ? konten.media[0].url : "";
+            const mediaUrl = hasMedia ? konten.media?.[0]?.url ?? "" : "";
             const isVideo = hasMedia && ["mp4", "mov", "avi", "webm"].includes(mediaUrl.split("?")[0].split(".").pop()?.toLowerCase() || "");
 
             return (

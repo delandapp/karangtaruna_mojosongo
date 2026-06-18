@@ -159,7 +159,7 @@ export function FormKonten({ initialData, onSuccess, onCancel }: FormKontenProps
       onSuccess();
     } catch (err: any) {
       toast.error("Gagal menyimpan konten", {
-        description: err?.data?.message || "Terjadi kesalahan pada sistem",
+        description: err?.data?.error?.message || err?.data?.message || "Terjadi kesalahan pada sistem",
       });
     } finally {
       setIsSubmitting(false);

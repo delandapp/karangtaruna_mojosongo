@@ -1,15 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Loader2, Link2, RefreshCw, Trash2, Plus } from "lucide-react";
 import {
   useGetDaftarPlatformQuery,
   useGetAkunByPlatformQuery,
   usePerbaruiTokenMutation,
+  useSinkronisasiAkunMutation,
 } from "@/features/api/sosialMediaApi";
 import { ModalHubungkanAkun } from "../modals/sosial-media/login/ModalHubungkanAkun";
 import { ModalPutuskanAkun } from "../modals/sosial-media/login/ModalPutuskanAkun";
+import { PlatformGuide } from "./PlatformGuide";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,6 +56,127 @@ export function LoginPage({ platformSlug }: LoginPageProps) {
   });
 
   const accounts = accountsResponse?.data || [];
+
+  // Sync and polling states
+  const [sinkronisasiAkun] = useSinkronisasiAkunMutation();
+  const [whatsappQr, setWhatsappQr] = useState<string | null>(null);
+  const [whatsappPairingCode, setWhatsappPairingCode] = useState<string | null>(null);
+  const [isQrDialogOpen, setIsQrDialogOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncingAccountId, setSyncingAccountId] = useState<number | null>(null);
+
+  // WhatsApp connection polling — polls every 3 seconds while QR dialog is open
+  useEffect(() => {
+    let intervalId: any;
+    if (isQrDialogOpen && syncingAccountId) {
+      intervalId = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/sosial-media/akun/${syncingAccountId}/qr`);
+          const data = await res.json();
+          if (data.success) {
+            const { status, qrCode, pairingCode } = data.data;
+            if (status === "connected") {
+              toast.success("✅ WhatsApp Web berhasil terhubung!");
+              setIsQrDialogOpen(false);
+              setWhatsappQr(null);
+              setWhatsappPairingCode(null);
+              setSyncingAccountId(null);
+              setIsSyncing(false);
+              refetchAccounts();
+            } else if (status === "qr_ready") {
+              if (pairingCode) {
+                setWhatsappPairingCode(pairingCode);
+                setWhatsappQr(null);
+              } else if (qrCode) {
+                setWhatsappQr(qrCode);
+                setWhatsappPairingCode(null);
+              }
+            } else if (status === "disconnected") {
+              toast.error("Gagal menghubungkan WhatsApp Web");
+              setIsQrDialogOpen(false);
+              setWhatsappQr(null);
+              setWhatsappPairingCode(null);
+              setSyncingAccountId(null);
+              setIsSyncing(false);
+            }
+          }
+        } catch (err) {
+          console.error("Error polling WhatsApp QR:", err);
+        }
+      }, 3000);
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [isQrDialogOpen, syncingAccountId, refetchAccounts]);
+
+  const handleSyncAccount = async (account: any, method: "qr" | "pairing" = "qr") => {
+    if (isSyncing) return;
+    setIsSyncing(true);
+    setWhatsappQr(null);
+    setWhatsappPairingCode(null);
+    setSyncingAccountId(null);
+
+    const toastId = toast.loading(`⏳ Mensinkronisasi data ${account.nama_akun}...`);
+    let needsQr = false;
+
+    try {
+      const response = await sinkronisasiAkun(
+        platformSlug.toLowerCase() === "whatsapp" 
+          ? { id: account.id, method } 
+          : account.id
+      ).unwrap();
+      
+      if (response.success && response.data?.status === "need_qr") {
+        needsQr = true;
+        if (response.data.pairingCode) {
+          setWhatsappPairingCode(response.data.pairingCode);
+          setWhatsappQr(null);
+        } else {
+          setWhatsappQr(response.data.qrCode);
+          setWhatsappPairingCode(null);
+        }
+        setSyncingAccountId(account.id);
+        setIsQrDialogOpen(true);
+        toast.info(response.data.pairingCode 
+          ? "📱 Silakan masukkan pairing code pada WhatsApp HP Anda" 
+          : "📱 Silakan scan QR Code untuk WhatsApp Web", { id: toastId });
+        // isSyncing stays true — reset only when QR is resolved (in polling effect)
+      } else {
+        toast.success(response.data?.message || "✅ Sinkronisasi berhasil!", { id: toastId });
+        refetchAccounts();
+      }
+    } catch (error: any) {
+      const errorMsg = error?.data?.error?.message || error?.data?.message || "Terjadi kesalahan pada sistem";
+      toast.error("Gagal sinkronisasi data", {
+        id: toastId,
+        description: errorMsg,
+        duration: 10000,
+      });
+    } finally {
+      // Only reset isSyncing if NOT waiting for QR scan
+      if (!needsQr) {
+        setIsSyncing(false);
+      }
+    }
+  };
+
+  // Called by ModalHubungkanAkun after successfully connecting a new account
+  const handleConnectSuccess = async (newAccountId?: number, method?: "qr" | "pairing") => {
+    await refetchAccounts();
+    if (newAccountId) {
+      // Give DB a moment to settle then auto-sync the new account
+      setTimeout(async () => {
+        // Build minimal account object needed by handleSyncAccount
+        const freshAccounts = await refetchAccounts();
+        const newAcc = (freshAccounts as any)?.data?.data?.find((a: any) => a.id === newAccountId);
+        if (newAcc) {
+          handleSyncAccount(newAcc, method);
+        }
+      }, 800);
+    }
+  };
 
   // Theme matching per platform slug
   const getThemeStyles = () => {
@@ -130,8 +253,10 @@ export function LoginPage({ platformSlug }: LoginPageProps) {
       refetchAccounts();
       setIsUpdateTokenOpen(false);
     } catch (error: any) {
+      const errorMsg = error?.data?.error?.message || error?.data?.message || "Terjadi kesalahan pada sistem";
       toast.error("Gagal memperbarui token", {
-        description: error?.data?.message || "Terjadi kesalahan pada sistem",
+        description: errorMsg,
+        duration: 10000,
       });
     } finally {
       setIsUpdatingToken(false);
@@ -206,6 +331,9 @@ export function LoginPage({ platformSlug }: LoginPageProps) {
         </CardHeader>
       </Card>
 
+      {/* Platform Guide - Step by step token instructions */}
+      <PlatformGuide platformSlug={platformSlug} />
+
       {/* Connected Accounts Table */}
       <Card className="border border-border/60 bg-card/60 backdrop-blur-sm shadow-xs rounded-2xl overflow-hidden">
         <CardHeader className="p-6 pb-4 border-b border-border/40">
@@ -259,6 +387,16 @@ export function LoginPage({ platformSlug }: LoginPageProps) {
                           <Button
                             variant="outline"
                             size="sm"
+                            onClick={() => handleSyncAccount(acc)}
+                            disabled={isSyncing}
+                            className="h-8 text-xs rounded-lg gap-1.5 text-primary border-primary/20 hover:bg-primary/5"
+                          >
+                            <RefreshCw className={`size-3.5 ${isSyncing && syncingAccountId === acc.id ? "animate-spin" : ""}`} />
+                            {isSyncing && syncingAccountId === acc.id ? "Sinkronisasi..." : "Sinkronisasi"}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => handleOpenUpdateToken(acc)}
                             className="h-8 text-xs rounded-lg gap-1.5"
                           >
@@ -289,7 +427,8 @@ export function LoginPage({ platformSlug }: LoginPageProps) {
       <ModalHubungkanAkun
         isOpen={isConnectOpen}
         onOpenChange={setIsConnectOpen}
-        onSuccess={refetchAccounts}
+        onSuccess={handleConnectSuccess}
+        platformSlug={platformSlug}
       />
 
       {selectedAccount && (
@@ -347,6 +486,66 @@ export function LoginPage({ platformSlug }: LoginPageProps) {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal QR Code & Pairing Code WhatsApp */}
+      <Dialog open={isQrDialogOpen} onOpenChange={(open) => {
+        setIsQrDialogOpen(open);
+        if (!open) {
+          setWhatsappQr(null);
+          setWhatsappPairingCode(null);
+          setIsSyncing(false);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md border-border/50 bg-card/95 backdrop-blur-xl rounded-2xl p-6 text-center">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-xl font-semibold flex items-center justify-center gap-2">
+              {whatsappPairingCode ? "📱 Tautkan dengan Kode Pairing" : "📱 Pindai QR Code WhatsApp"}
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground text-sm mt-1">
+              {whatsappPairingCode ? (
+                <>
+                  Buka WhatsApp di ponsel Anda → pilih <strong className="text-foreground">Perangkat Tertaut</strong> → ketuk <strong className="text-foreground font-semibold">Tautkan Perangkat</strong> → ketuk <strong className="text-foreground font-semibold">Tautkan dengan nomor telepon saja</strong> di bagian bawah, lalu masukkan 8-digit kode berikut:
+                </>
+              ) : (
+                <>
+                  Buka aplikasi WhatsApp di ponsel Anda, pilih <strong>Perangkat Tertaut</strong>, lalu scan QR Code berikut untuk menghubungkan akun <strong>{accounts.find(a => a.id === syncingAccountId)?.nama_akun || "WhatsApp"}</strong>.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col items-center justify-center py-6 bg-white rounded-xl border p-4 shadow-inner my-2">
+            {whatsappPairingCode ? (
+              <div className="flex flex-col items-center justify-center py-4 px-6 gap-3">
+                <span className="text-4xl font-extrabold tracking-widest text-emerald-600 font-mono select-all select-none bg-emerald-50 px-6 py-3.5 border border-emerald-200 rounded-2xl shadow-sm">
+                  {whatsappPairingCode.substring(0, 4)}-{whatsappPairingCode.substring(4)}
+                </span>
+                <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-wide">
+                  Kode Pairing WhatsApp
+                </span>
+              </div>
+            ) : whatsappQr ? (
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(whatsappQr)}`}
+                alt="WhatsApp QR Code"
+                className="w-[220px] h-[220px] object-contain transition-all"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-[220px] w-[220px]">
+                <Loader2 className="size-8 text-emerald-500 animate-spin mb-2" />
+                <span className="text-xs text-muted-foreground text-zinc-600">Menunggu respons dari server...</span>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4 flex flex-col gap-2 text-xs text-muted-foreground text-left">
+            <p>● Status: <span className="font-semibold text-emerald-600 dark:text-emerald-400 capitalize">
+              {whatsappPairingCode ? "Menunggu input kode di HP..." : whatsappQr ? "Menunggu scan..." : "Menyiapkan..."}
+            </span></p>
+            <p>● Halaman ini akan otomatis menutup setelah tautan berhasil terhubung.</p>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

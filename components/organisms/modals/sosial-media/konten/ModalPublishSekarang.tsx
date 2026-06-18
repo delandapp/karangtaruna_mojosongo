@@ -41,7 +41,7 @@ export function ModalPublishSekarang({
       onOpenChange(false);
     } catch (error: any) {
       toast.error("Gagal mempublikasikan konten", {
-        description: error?.data?.message || "Terjadi kesalahan pada sistem",
+        description: error?.data?.error?.message || error?.data?.message || "Terjadi kesalahan pada sistem",
       });
     } finally {
       setIsSubmitting(false);

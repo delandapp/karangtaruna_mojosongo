@@ -1,101 +1,85 @@
 model m_level {
-  id         Int    @id @default(autoincrement())
-  nama_level String @unique // Contoh: "superuser", "admin", "anggota"
-
-  users           m_user[]
+  id              Int                @id @default(autoincrement())
+  nama_level      String             @unique
+  dibuat_pada     DateTime           @default(now())
+  diperbarui_pada DateTime           @updatedAt
   hak_akses_rules m_hak_akses_rule[]
-
-  dibuat_pada     DateTime @default(now())
-  diperbarui_pada DateTime @updatedAt
+  users           m_user[]
 }
 
 model m_jabatan {
-  id                Int     @id @default(autoincrement())
-  nama_jabatan      String  @unique
+  id                Int                @id @default(autoincrement())
+  nama_jabatan      String             @unique
   deskripsi_jabatan String?
-
-  users           m_user[]
-  hak_akses_rules m_hak_akses_rule[]
-  anggota_panitia anggota_panitia[]
-
-  dibuat_pada     DateTime @default(now())
-  diperbarui_pada DateTime @updatedAt
+  dibuat_pada       DateTime           @default(now())
+  diperbarui_pada   DateTime           @updatedAt
+  anggota_panitia   anggota_panitia[]
+  hak_akses_rules   m_hak_akses_rule[]
+  users             m_user[]
 }
 
 model m_user {
-  id           Int  @id @default(autoincrement())
-  m_jabatan_id Int?
-  m_level_id   Int?
-
-  nama_lengkap String
-  username     String @unique
-  password     String
-  no_handphone String @unique
-
-  rt            String
-  rw            String
-  alamat        String?
-  jenis_kelamin String? // "L" atau "P"
-
-  // Relasi
-  jabatan              m_jabatan?           @relation(fields: [m_jabatan_id], references: [id], onDelete: SetNull)
-  level                m_level?             @relation(fields: [m_level_id], references: [id], onDelete: SetNull)
-  event_dibuat         event[]              @relation("event_dibuat_oleh")
+  id                   Int                       @id @default(autoincrement())
+  m_jabatan_id         Int?
+  m_level_id           Int?
+  nama_lengkap         String
+  username             String                    @unique
+  password             String
+  no_handphone         String                    @unique
+  rt                   String
+  rw                   String
+  alamat               String?
+  jenis_kelamin        String?
+  dibuat_pada          DateTime                  @default(now())
+  diperbarui_pada      DateTime                  @updatedAt
+  anggaran_dibuat      anggaran[]                @relation("anggaran_dibuat_oleh")
+  anggaran_disetujui   anggaran[]                @relation("anggaran_disetujui_oleh")
   anggota_panitia      anggota_panitia[]
-  rundown_pic          rundown_acara[]
-  tugas_dibuat         tugas_event[]        @relation("tugas_dibuat_oleh")
-  tugas_ditugaskan     tugas_event[]        @relation("tugas_ditugaskan_ke")
-  tiket_order          tiket_order[]
-  tiket_validasi       tiket_terbit[]       @relation("tiket_dicek_oleh")
-  pendaftaran          pendaftaran[]
-  hasil_nilai_juri     hasil_lomba[]
-  anggaran_dibuat      anggaran[]           @relation("anggaran_dibuat_oleh")
-  anggaran_disetujui   anggaran[]           @relation("anggaran_disetujui_oleh")
-  transaksi_dicatat    transaksi_keuangan[] @relation("transaksi_dicatat_oleh")
-  transaksi_disetujui  transaksi_keuangan[] @relation("transaksi_disetujui_oleh")
-  proposal_dikirim     proposal_sponsor[]   @relation("proposal_dikirim_oleh")
-  sponsor_ditangani    event_sponsor[]      @relation("sponsor_ditangani_oleh")
-  konten_ditugaskan    kalender_konten[]
-  surat_dibuat         surat[]              @relation("surat_dibuat_oleh")
-  surat_ditandatangani surat[]              @relation("surat_ditandatangani_oleh")
+  agenda_pic           c_agenda_rapat[]          @relation("agenda_pic")
+  berita_ditulis       c_berita[]                @relation("berita_ditulis_oleh")
+  komentar_berita      c_komentar_berita[]
+  komentar_notulen     c_komentar_notulen[]      @relation("komentar_notulen_oleh")
+  lampiran_notulen     c_lampiran_notulen[]      @relation("lampiran_notulen_diunggah")
+  peserta_rapat        c_peserta_rapat[]         @relation("peserta_rapat")
+  revisi_notulen       c_revisi_notulen[]        @relation("revisi_notulen_oleh")
+  tindak_lanjut_dibuat c_tindak_lanjut[]         @relation("tindak_lanjut_dibuat")
+  tindak_lanjut_pic    c_tindak_lanjut[]         @relation("tindak_lanjut_pic")
+  update_tindak_lanjut c_update_tindak_lanjut[]  @relation("update_tl_oleh")
   dokumen_diunggah     dokumen[]
-  survei_dibuat        survei_kepuasan[]
-  saran_ditangani      saran_masukan[]      @relation("saran_ditangani_oleh")
-  laporan_dibuat       laporan[]            @relation("laporan_dibuat_oleh")
-  laporan_disetujui    laporan[]            @relation("laporan_disetujui_oleh")
+  event_dibuat         event[]                   @relation("event_dibuat_oleh")
+  sponsor_ditangani    event_sponsor[]           @relation("sponsor_ditangani_oleh")
+  hasil_nilai_juri     hasil_lomba[]
+  konten_ditugaskan    kalender_konten[]
+  laporan_dibuat       laporan[]                 @relation("laporan_dibuat_oleh")
+  laporan_disetujui    laporan[]                 @relation("laporan_disetujui_oleh")
+  log_audit            log_audit[]
+  mEproposals          m_eproposal[]
+  kas_dicatat          m_kas[]                   @relation("kas_dicatat_oleh")
+  kas_disetujui        m_kas[]                   @relation("kas_disetujui_oleh")
+  notulen_disetujui    m_notulen[]               @relation("notulen_disetujui")
+  notulen_dibuat       m_notulen[]               @relation("notulen_dibuat")
+  m_rapat_dibuat       m_rapat[]                 @relation("rapat_dibuat")
+  jabatan              m_jabatan?                @relation(fields: [m_jabatan_id], references: [id])
+  level                m_level?                  @relation(fields: [m_level_id], references: [id])
   media_diunggah       media_galeri[]
   notifikasi           notifikasi[]
-  log_audit            log_audit[]
-  saran_user           saran_masukan[]      @relation("saran_dari_user")
-  respon_survei_user   respon_survei[]      @relation("respon_user")
+  pendaftaran          pendaftaran[]
+  proposal_dikirim     proposal_sponsor[]        @relation("proposal_dikirim_oleh")
+  interaksi_berita     r_user_interaksi_berita[]
+  respon_survei_user   respon_survei[]           @relation("respon_user")
+  rundown_pic          rundown_acara[]
+  saran_ditangani      saran_masukan[]           @relation("saran_ditangani_oleh")
+  saran_user           saran_masukan[]           @relation("saran_dari_user")
+  surat_dibuat         surat[]                   @relation("surat_dibuat_oleh")
+  surat_ditandatangani surat[]                   @relation("surat_ditandatangani_oleh")
+  survei_dibuat        survei_kepuasan[]
+  tiket_order          tiket_order[]
+  tiket_validasi       tiket_terbit[]            @relation("tiket_dicek_oleh")
+  transaksi_dicatat    transaksi_keuangan[]      @relation("transaksi_dicatat_oleh")
+  transaksi_disetujui  transaksi_keuangan[]      @relation("transaksi_disetujui_oleh")
+  tugas_dibuat         tugas_event[]             @relation("tugas_dibuat_oleh")
+  tugas_ditugaskan     tugas_event[]             @relation("tugas_ditugaskan_ke")
 
-  // Relasi Berita
-  berita_ditulis   c_berita[]                @relation("berita_ditulis_oleh")
-  komentar_berita  c_komentar_berita[]
-  interaksi_berita r_user_interaksi_berita[]
-
-  // Buku Kas
-  kas_dicatat   m_kas[] @relation("kas_dicatat_oleh")
-  kas_disetujui m_kas[] @relation("kas_disetujui_oleh")
-
-  // ---- Notulen Rapat ----
-  m_rapat_dibuat       m_rapat[]                @relation("rapat_dibuat")
-  agenda_pic           c_agenda_rapat[]         @relation("agenda_pic")
-  peserta_rapat        c_peserta_rapat[]        @relation("peserta_rapat")
-  notulen_dibuat       m_notulen[]              @relation("notulen_dibuat")
-  notulen_disetujui    m_notulen[]              @relation("notulen_disetujui")
-  tindak_lanjut_pic    c_tindak_lanjut[]        @relation("tindak_lanjut_pic")
-  tindak_lanjut_dibuat c_tindak_lanjut[]        @relation("tindak_lanjut_dibuat")
-  update_tindak_lanjut c_update_tindak_lanjut[] @relation("update_tl_oleh")
-  lampiran_notulen     c_lampiran_notulen[]     @relation("lampiran_notulen_diunggah")
-  komentar_notulen     c_komentar_notulen[]     @relation("komentar_notulen_oleh")
-  revisi_notulen       c_revisi_notulen[]       @relation("revisi_notulen_oleh")
-
-  dibuat_pada     DateTime      @default(now())
-  diperbarui_pada DateTime      @updatedAt
-  mEproposals     m_eproposal[]
-
-  // Optimasi Index untuk pencarian relasi agar lebih cepat saat JOIN
   @@index([m_jabatan_id])
   @@index([m_level_id])
 }

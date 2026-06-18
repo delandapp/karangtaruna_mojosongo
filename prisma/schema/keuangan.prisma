@@ -1,34 +1,23 @@
-// =============================================================================
-// MODUL 4 — KEUANGAN & ANGGARAN
-// =============================================================================
-
-// -----------------------------------------------------------------------------
-// ANGGARAN PER EVENT
-// Mendukung 3 skenario: optimis, moderat, konservatif
-// -----------------------------------------------------------------------------
 model anggaran {
-  id                Int  @id @default(autoincrement())
-  event_id          Int
-  dibuat_oleh_id    Int
-  disetujui_oleh_id Int?
-
-  skenario                    String    @default("moderat") // "optimis" | "moderat" | "konservatif"
-  versi                       Int       @default(1)
-  total_pemasukan_rencana     Decimal   @default(0) @db.Decimal(15, 2)
-  total_pengeluaran_rencana   Decimal   @default(0) @db.Decimal(15, 2)
-  total_pemasukan_realisasi   Decimal?  @db.Decimal(15, 2)
-  total_pengeluaran_realisasi Decimal?  @db.Decimal(15, 2)
-  persen_cadangan             Decimal   @default(10.00) @db.Decimal(5, 2) // default 10%
-  status                      String    @default("draft") // "draft" | "diajukan" | "disetujui" | "final"
-  catatan                     String?   @db.Text
+  id                          Int                  @id @default(autoincrement())
+  event_id                    Int
+  dibuat_oleh_id              Int
+  disetujui_oleh_id           Int?
+  skenario                    String               @default("moderat")
+  versi                       Int                  @default(1)
+  total_pemasukan_rencana     Decimal              @default(0) @db.Decimal(15, 2)
+  total_pengeluaran_rencana   Decimal              @default(0) @db.Decimal(15, 2)
+  total_pemasukan_realisasi   Decimal?             @db.Decimal(15, 2)
+  total_pengeluaran_realisasi Decimal?             @db.Decimal(15, 2)
+  persen_cadangan             Decimal              @default(10.00) @db.Decimal(5, 2)
+  status                      String               @default("draft")
+  catatan                     String?
   disetujui_pada              DateTime?
-
-  // Relasi
-  event          event                @relation(fields: [event_id], references: [id], onDelete: Cascade)
-  dibuat_oleh    m_user               @relation("anggaran_dibuat_oleh", fields: [dibuat_oleh_id], references: [id])
-  disetujui_oleh m_user?              @relation("anggaran_disetujui_oleh", fields: [disetujui_oleh_id], references: [id], onDelete: SetNull)
-  item_anggaran  item_anggaran[]
-  transaksi      transaksi_keuangan[]
+  dibuat_oleh                 m_user               @relation("anggaran_dibuat_oleh", fields: [dibuat_oleh_id], references: [id])
+  disetujui_oleh              m_user?              @relation("anggaran_disetujui_oleh", fields: [disetujui_oleh_id], references: [id])
+  event                       event                @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  item_anggaran               item_anggaran[]
+  transaksi                   transaksi_keuangan[]
 
   @@unique([event_id, skenario, versi])
   @@index([event_id])
@@ -37,62 +26,46 @@ model anggaran {
   @@index([status])
 }
 
-// -----------------------------------------------------------------------------
-// ITEM ANGGARAN (Rincian Pos Anggaran)
-// -----------------------------------------------------------------------------
 model item_anggaran {
-  id          Int @id @default(autoincrement())
-  anggaran_id Int
-
-  jenis_item           String // "pemasukan" | "pengeluaran"
-  kategori             String // "sponsor" | "tiket" | "venue" | "sound" | "konsumsi" | dst
-  kode_item            String? // "A1", "B2", dst — untuk tampilan laporan
+  id                   Int                  @id @default(autoincrement())
+  anggaran_id          Int
+  jenis_item           String
+  kategori             String
+  kode_item            String?
   deskripsi            String
-  jumlah_satuan        Int      @default(1)
-  harga_satuan_rencana Decimal  @default(0) @db.Decimal(12, 2)
-  total_rencana        Decimal  @default(0) @db.Decimal(15, 2)
-  total_realisasi      Decimal? @db.Decimal(15, 2)
-  catatan              String?  @db.Text
-
-  // Relasi
-  anggaran  anggaran             @relation(fields: [anggaran_id], references: [id], onDelete: Cascade)
-  transaksi transaksi_keuangan[]
+  jumlah_satuan        Int                  @default(1)
+  harga_satuan_rencana Decimal              @default(0) @db.Decimal(12, 2)
+  total_rencana        Decimal              @default(0) @db.Decimal(15, 2)
+  total_realisasi      Decimal?             @db.Decimal(15, 2)
+  catatan              String?
+  anggaran             anggaran             @relation(fields: [anggaran_id], references: [id], onDelete: Cascade)
+  transaksi            transaksi_keuangan[]
 
   @@index([anggaran_id])
   @@index([jenis_item])
 }
 
-// -----------------------------------------------------------------------------
-// TRANSAKSI KEUANGAN
-// Setiap pemasukan / pengeluaran nyata dicatat di sini
-// Dual control: perlu dicatat + disetujui oleh 2 orang berbeda
-// -----------------------------------------------------------------------------
 model transaksi_keuangan {
-  id                Int  @id @default(autoincrement())
+  id                Int            @id @default(autoincrement())
   anggaran_id       Int
   item_anggaran_id  Int?
   dicatat_oleh_id   Int
   disetujui_oleh_id Int?
-
-  nomor_transaksi   String    @unique // "TRX-20250801-001"
-  jenis_transaksi   String // "pemasukan" | "pengeluaran"
-  jumlah            Decimal   @db.Decimal(15, 2)
+  nomor_transaksi   String         @unique
+  jenis_transaksi   String
+  jumlah            Decimal        @db.Decimal(15, 2)
   deskripsi         String
-  bukti_url         String? // foto nota / kwitansi
+  bukti_url         String?
   tanggal_transaksi DateTime
-  status            String    @default("menunggu_persetujuan")
-  // "menunggu_persetujuan" | "disetujui" | "ditolak" | "dibayar"
-  catatan           String?   @db.Text
+  status            String         @default("menunggu_persetujuan")
+  catatan           String?
   disetujui_pada    DateTime?
-
-  // Relasi
-  anggaran       anggaran       @relation(fields: [anggaran_id], references: [id])
-  item_anggaran  item_anggaran? @relation(fields: [item_anggaran_id], references: [id], onDelete: SetNull)
-  dicatat_oleh   m_user         @relation("transaksi_dicatat_oleh", fields: [dicatat_oleh_id], references: [id])
-  disetujui_oleh m_user?        @relation("transaksi_disetujui_oleh", fields: [disetujui_oleh_id], references: [id], onDelete: SetNull)
-
-  dibuat_pada     DateTime @default(now())
-  diperbarui_pada DateTime @updatedAt
+  dibuat_pada       DateTime       @default(now())
+  diperbarui_pada   DateTime       @updatedAt
+  anggaran          anggaran       @relation(fields: [anggaran_id], references: [id])
+  dicatat_oleh      m_user         @relation("transaksi_dicatat_oleh", fields: [dicatat_oleh_id], references: [id])
+  disetujui_oleh    m_user?        @relation("transaksi_disetujui_oleh", fields: [disetujui_oleh_id], references: [id])
+  item_anggaran     item_anggaran? @relation(fields: [item_anggaran_id], references: [id])
 
   @@index([anggaran_id])
   @@index([item_anggaran_id])
@@ -102,31 +75,24 @@ model transaksi_keuangan {
   @@index([tanggal_transaksi])
 }
 
-// -----------------------------------------------------------------------------
-// BUKU KAS (Kas Masuk & Kas Keluar)
-// -----------------------------------------------------------------------------
 model m_kas {
-  id                Int      @id @default(autoincrement())
-  nomor_kas         String   @unique // "KAS-IN-20260616-0001" atau "KAS-OUT-20260616-0001"
-  jenis_kas         String   // "masuk" | "keluar"
-  sumber_tujuan     String   // Asal/tujuan aliran dana
-  jumlah            Decimal  @db.Decimal(15, 2)
-  deskripsi         String   @db.Text
-  bukti_url         String?  // Foto kuitansi / bukti transaksi
+  id                Int       @id @default(autoincrement())
+  nomor_kas         String    @unique
+  jenis_kas         String
+  sumber_tujuan     String
+  jumlah            Decimal   @db.Decimal(15, 2)
+  deskripsi         String
+  bukti_url         String?
   tanggal           DateTime
-  status            String   @default("menunggu_persetujuan") // "menunggu_persetujuan" | "disetujui" | "ditolak"
-  catatan           String?  @db.Text
-
+  status            String    @default("menunggu_persetujuan")
+  catatan           String?
   dicatat_oleh_id   Int
   disetujui_oleh_id Int?
   disetujui_pada    DateTime?
-
-  // Relasi
-  dicatat_oleh   m_user  @relation("kas_dicatat_oleh", fields: [dicatat_oleh_id], references: [id])
-  disetujui_oleh m_user? @relation("kas_disetujui_oleh", fields: [disetujui_oleh_id], references: [id], onDelete: SetNull)
-
-  dibuat_pada     DateTime @default(now())
-  diperbarui_pada DateTime @updatedAt
+  dibuat_pada       DateTime  @default(now())
+  diperbarui_pada   DateTime  @updatedAt
+  dicatat_oleh      m_user    @relation("kas_dicatat_oleh", fields: [dicatat_oleh_id], references: [id])
+  disetujui_oleh    m_user?   @relation("kas_disetujui_oleh", fields: [disetujui_oleh_id], references: [id])
 
   @@index([dicatat_oleh_id])
   @@index([disetujui_oleh_id])

@@ -51,7 +51,7 @@ export const PERIODE_ANALITIK = [
 
 export const schemaHubungkanAkun = z.object({
   platform_id: z.number({
-    required_error: "Platform wajib dipilih",
+    message: "Platform wajib dipilih",
   }).int().positive(),
   nama_akun: z
     .string()
@@ -61,9 +61,8 @@ export const schemaHubungkanAkun = z.object({
     .string()
     .min(1, "Username wajib diisi")
     .max(100, "Username maksimal 100 karakter"),
-  access_token: z
-    .string()
-    .min(1, "Access token wajib diisi"),
+  access_token: z.string().optional().or(z.literal("")),
+  session_id: z.string().optional().or(z.literal("")),
   refresh_token: z.string().optional().or(z.literal("")),
   token_expires_at: z.string().datetime().optional().or(z.literal("")),
 });
@@ -82,10 +81,10 @@ export const schemaPerbaruiToken = z.object({
 
 export const schemaBuatKonten = z.object({
   akun_id: z.number({
-    required_error: "Akun wajib dipilih",
+    message: "Akun wajib dipilih",
   }).int().positive(),
   tipe_konten: z.enum(TIPE_KONTEN, {
-    required_error: "Tipe konten wajib dipilih",
+    message: "Tipe konten wajib dipilih",
   }),
   caption: z
     .string()
@@ -108,7 +107,7 @@ export const schemaUpdateKonten = schemaBuatKonten.partial();
 
 export const schemaBalasChat = z.object({
   chat_id: z.number({
-    required_error: "Chat ID wajib ada",
+    message: "Chat ID wajib ada",
   }).int().positive(),
   isi_balasan: z
     .string()

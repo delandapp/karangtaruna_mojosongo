@@ -1,7 +1,3 @@
-// =============================================================================
-// ENUM — digunakan PostgreSQL native, lebih cepat dari String untuk filter/index
-// =============================================================================
-
 enum TierSponsor {
   platinum
   gold

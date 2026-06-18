@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ComponentType } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { ChevronDown, type LucideIcon } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -13,7 +13,7 @@ import {
 
 export interface NavItemProps {
   href: string;
-  icon: LucideIcon;
+  icon: ComponentType<any>;
   label: string;
   badge?: number;
   collapsed?: boolean;

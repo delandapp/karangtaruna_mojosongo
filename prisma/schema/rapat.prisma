@@ -1,60 +1,38 @@
-// ==========================================================
-// FILE: rapat.prisma
-// Deskripsi: Schema untuk Manajemen Rapat (Pertemuan)
-// Konvensi: m_ = master, c_ = child, foreign key = m_table_id
-// ==========================================================
-
-// ----------------------------------------------------------
-// MASTER: Kategori / Jenis Rapat
-// ----------------------------------------------------------
 model m_kategori_rapat {
-  id            Int     @id @default(autoincrement())
-  nama_kategori String  @unique
-  deskripsi     String?
-  warna_hex     String? // Untuk tampilan UI (contoh: "#3B82F6")
-  is_aktif      Boolean @default(true)
-
-  rapats m_rapat[]
-
-  dibuat_pada     DateTime @default(now())
-  diperbarui_pada DateTime @updatedAt
+  id              Int       @id @default(autoincrement())
+  nama_kategori   String    @unique
+  deskripsi       String?
+  warna_hex       String?
+  is_aktif        Boolean   @default(true)
+  dibuat_pada     DateTime  @default(now())
+  diperbarui_pada DateTime  @updatedAt
+  rapats          m_rapat[]
 }
 
-// ----------------------------------------------------------
-// MASTER: Rapat
-// ----------------------------------------------------------
 model m_rapat {
-  id                  Int  @id @default(autoincrement())
+  id                  Int               @id @default(autoincrement())
   m_kategori_rapat_id Int?
-  m_user_id           Int  // Pembuat rapat (relasi ke m_user)
-  event_id            Int? // Event yang dibahas (opsional, null jika di luar event)
-
-  judul_rapat  String
-  jenis_rapat  JenisRapat  @default(INTERNAL)
-  status_rapat StatusRapat @default(TERJADWAL)
-  deskripsi    String?     @db.Text
-
-  // Waktu & Tempat
-  tanggal_mulai   DateTime
-  tanggal_selesai DateTime?
-  lokasi          String?
-  link_online     String? // Zoom/GMeet URL
-  is_online       Boolean   @default(false)
-
-  // Metadata
-  nomor_rapat  String? @unique // Nomor surat rapat (jika ada)
-  is_recurring Boolean @default(false)
-
-  // Relasi
-  kategori    m_kategori_rapat? @relation(fields: [m_kategori_rapat_id], references: [id], onDelete: SetNull)
-  dibuat_oleh m_user            @relation("rapat_dibuat", fields: [m_user_id], references: [id])
-  event       event?            @relation(fields: [event_id], references: [id], onDelete: SetNull)
-  agendas     c_agenda_rapat[]
-  peserta     c_peserta_rapat[]
-  notulen     m_notulen?
-
-  dibuat_pada     DateTime @default(now())
-  diperbarui_pada DateTime @updatedAt
+  m_user_id           Int
+  event_id            Int?
+  judul_rapat         String
+  jenis_rapat         JenisRapat        @default(INTERNAL)
+  status_rapat        StatusRapat       @default(TERJADWAL)
+  deskripsi           String?
+  tanggal_mulai       DateTime
+  tanggal_selesai     DateTime?
+  lokasi              String?
+  link_online         String?
+  is_online           Boolean           @default(false)
+  nomor_rapat         String?           @unique
+  is_recurring        Boolean           @default(false)
+  dibuat_pada         DateTime          @default(now())
+  diperbarui_pada     DateTime          @updatedAt
+  agendas             c_agenda_rapat[]
+  peserta             c_peserta_rapat[]
+  notulen             m_notulen?
+  event               event?            @relation(fields: [event_id], references: [id])
+  kategori            m_kategori_rapat? @relation(fields: [m_kategori_rapat_id], references: [id])
+  dibuat_oleh         m_user            @relation("rapat_dibuat", fields: [m_user_id], references: [id])
 
   @@index([m_user_id])
   @@index([m_kategori_rapat_id])
@@ -63,58 +41,43 @@ model m_rapat {
   @@index([tanggal_mulai])
 }
 
-// ----------------------------------------------------------
-// CHILD: Agenda Rapat (per item agenda)
-// ----------------------------------------------------------
 model c_agenda_rapat {
-  id         Int  @id @default(autoincrement())
-  m_rapat_id Int
-  m_user_id  Int? // PIC agenda (opsional)
-
-  urutan       Int
-  judul_agenda String
-  deskripsi    String? @db.Text
-  durasi_menit Int?    // Estimasi durasi dalam menit
-
-  // Relasi
-  rapat        m_rapat          @relation(fields: [m_rapat_id], references: [id], onDelete: Cascade)
-  pic          m_user?          @relation("agenda_pic", fields: [m_user_id], references: [id], onDelete: SetNull)
-  poin_bahasan c_poin_bahasan[]
-
-  dibuat_pada     DateTime @default(now())
-  diperbarui_pada DateTime @updatedAt
+  id              Int              @id @default(autoincrement())
+  m_rapat_id      Int
+  m_user_id       Int?
+  urutan          Int
+  judul_agenda    String
+  deskripsi       String?
+  durasi_menit    Int?
+  dibuat_pada     DateTime         @default(now())
+  diperbarui_pada DateTime         @updatedAt
+  rapat           m_rapat          @relation(fields: [m_rapat_id], references: [id], onDelete: Cascade)
+  pic             m_user?          @relation("agenda_pic", fields: [m_user_id], references: [id])
+  poin_bahasan    c_poin_bahasan[]
 
   @@index([m_rapat_id])
   @@index([m_user_id])
 }
 
-// ----------------------------------------------------------
-// CHILD: Peserta Rapat
-// ----------------------------------------------------------
 model c_peserta_rapat {
-  id         Int  @id @default(autoincrement())
-  m_rapat_id Int
-  m_user_id  Int? // Null jika tamu eksternal
-
-  nama_peserta    String // Redundan untuk tamu eksternal
-  jabatan_peserta String?
-  instansi        String? // Untuk tamu dari luar
-  email           String?
-  no_handphone    String?
-
+  id                Int             @id @default(autoincrement())
+  m_rapat_id        Int
+  m_user_id         Int?
+  nama_peserta      String
+  jabatan_peserta   String?
+  instansi          String?
+  email             String?
+  no_handphone      String?
   status_kehadiran  StatusKehadiran @default(DIUNDANG)
-  waktu_hadir       DateTime?       // Jam check-in
+  waktu_hadir       DateTime?
   catatan_kehadiran String?
-  tanda_tangan_url  String?         // URL gambar tanda tangan (opsional)
+  tanda_tangan_url  String?
   is_moderator      Boolean         @default(false)
   is_notulis        Boolean         @default(false)
-
-  // Relasi
-  rapat m_rapat @relation(fields: [m_rapat_id], references: [id], onDelete: Cascade)
-  user  m_user? @relation("peserta_rapat", fields: [m_user_id], references: [id], onDelete: SetNull)
-
-  dibuat_pada     DateTime @default(now())
-  diperbarui_pada DateTime @updatedAt
+  dibuat_pada       DateTime        @default(now())
+  diperbarui_pada   DateTime        @updatedAt
+  rapat             m_rapat         @relation(fields: [m_rapat_id], references: [id], onDelete: Cascade)
+  user              m_user?         @relation("peserta_rapat", fields: [m_user_id], references: [id])
 
   @@unique([m_rapat_id, m_user_id])
   @@index([m_rapat_id])

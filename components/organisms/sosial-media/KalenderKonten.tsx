@@ -15,6 +15,7 @@ import { id as localeId } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MessageSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   FaFacebook,
   FaInstagram,

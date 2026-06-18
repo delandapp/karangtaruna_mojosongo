@@ -36,6 +36,7 @@ export interface HubungkanAkunPayload {
   nama_akun: string;
   username: string;
   access_token: string;
+  session_id?: string;
   refresh_token?: string;
   token_expires_at?: string;
 }

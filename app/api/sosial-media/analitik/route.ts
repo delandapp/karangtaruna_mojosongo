@@ -18,7 +18,7 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
     if (!parsed.success) {
       return errorResponse(
         400,
-        parsed.error.errors[0].message,
+        parsed.error.issues[0].message,
         "VALIDATION_ERROR"
       );
     }

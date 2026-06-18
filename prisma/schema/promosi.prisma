@@ -1,30 +1,21 @@
-// -----------------------------------------------------------------------------
-// KALENDER KONTEN PROMOSI
-// Perencanaan & tracking posting media sosial per event
-// -----------------------------------------------------------------------------
 model kalender_konten {
-  id               Int  @id @default(autoincrement())
+  id               Int       @id @default(autoincrement())
   event_id         Int
   ditugaskan_ke_id Int?
-
-  platform         String // "instagram" | "tiktok" | "facebook" | "whatsapp" | "youtube"
-  jenis_konten     String // "feed" | "story" | "reels" | "broadcast" | "video"
-  caption          String?   @db.Text
+  platform         String
+  jenis_konten     String
+  caption          String?
   url_media        String?
-  hashtag          String?   @db.Text
+  hashtag          String?
   dijadwalkan_pada DateTime?
   diterbitkan_pada DateTime?
-  reach            Int? // estimasi jangkauan
-  engagement       Int? // jumlah interaksi
+  reach            Int?
+  engagement       Int?
   status           String    @default("ide")
-  // "ide" | "dibuat" | "review" | "terjadwal" | "tayang" | "batal"
-
-  // Relasi
-  event         event   @relation(fields: [event_id], references: [id], onDelete: Cascade)
-  ditugaskan_ke m_user? @relation(fields: [ditugaskan_ke_id], references: [id], onDelete: SetNull)
-
-  dibuat_pada     DateTime @default(now())
-  diperbarui_pada DateTime @updatedAt
+  dibuat_pada      DateTime  @default(now())
+  diperbarui_pada  DateTime  @updatedAt
+  ditugaskan_ke    m_user?   @relation(fields: [ditugaskan_ke_id], references: [id])
+  event            event     @relation(fields: [event_id], references: [id], onDelete: Cascade)
 
   @@index([event_id])
   @@index([ditugaskan_ke_id])

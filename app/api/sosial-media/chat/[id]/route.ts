@@ -87,7 +87,7 @@ export const PUT = withAuth(
       // Validate the status input
       const schemaStatus = z.object({
         status: z.enum(STATUS_CHAT, {
-          required_error: "Status wajib diisi",
+          message: "Status wajib diisi",
         }),
       });
 
@@ -95,7 +95,7 @@ export const PUT = withAuth(
       if (!parsed.success) {
         return errorResponse(
           400,
-          parsed.error.errors[0].message,
+          parsed.error.issues[0].message,
           "VALIDATION_ERROR"
         );
       }

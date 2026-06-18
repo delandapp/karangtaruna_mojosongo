@@ -42,7 +42,7 @@ export function ModalPutuskanAkun({
       onOpenChange(false);
     } catch (error: any) {
       toast.error("Gagal memutuskan akun", {
-        description: error?.data?.message || "Terjadi kesalahan pada sistem",
+        description: error?.data?.error?.message || error?.data?.message || "Terjadi kesalahan pada sistem",
       });
     } finally {
       setIsSubmitting(false);

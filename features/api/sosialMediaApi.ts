@@ -62,6 +62,17 @@ export const sosialMediaApi = createApi({
       }),
       invalidatesTags: ["AkunSosmed"],
     }),
+    sinkronisasiAkun: builder.mutation<ApiResponse<any>, number | { id: number; method?: "qr" | "pairing" }>({
+      query: (arg) => {
+        const id = typeof arg === "number" ? arg : arg.id;
+        const method = typeof arg === "number" ? "qr" : (arg.method || "qr");
+        return {
+          url: `/akun/${id}/sync?method=${method}`,
+          method: "POST",
+        };
+      },
+      invalidatesTags: ["AkunSosmed", "Konten", "Chat", "Analitik"],
+    }),
 
     // ─── Konten ──────────────────────────────────────────────────────────────
     getDaftarKonten: builder.query<ApiResponse<Konten[]>, KontenFilter>({
@@ -193,6 +204,7 @@ export const {
   useHubungkanAkunMutation,
   usePutuskanAkunMutation,
   usePerbaruiTokenMutation,
+  useSinkronisasiAkunMutation,
   useGetDaftarKontenQuery,
   useGetKontenByIdQuery,
   useBuatKontenMutation,

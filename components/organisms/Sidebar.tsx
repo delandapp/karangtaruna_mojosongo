@@ -30,6 +30,13 @@ import {
   Tag,
   LayoutList,
 } from "lucide-react";
+import {
+  FaFacebook,
+  FaInstagram,
+  FaTiktok,
+  FaXTwitter,
+  FaWhatsapp,
+} from "react-icons/fa6";
 
 interface SidebarProps {
   className?: string;
@@ -50,6 +57,64 @@ const BERITA_NAV = [
       { href: "/dashboard/berita/buat", label: "Tulis Berita" },
       { href: "/dashboard/berita/kategori", label: "Kategori" },
       { href: "/dashboard/berita/tag", label: "Tag" },
+    ],
+  },
+];
+
+const SOSMED_NAV = [
+  {
+    href: "/dashboard/instagram/content",
+    icon: FaInstagram,
+    label: "Instagram",
+    subItems: [
+      { href: "/dashboard/instagram/login", label: "Koneksi Akun" },
+      { href: "/dashboard/instagram/content", label: "Konten & Kalender" },
+      { href: "/dashboard/instagram/chat", label: "Pesan & DMs" },
+      { href: "/dashboard/instagram/analytic", label: "Analitik" },
+    ],
+  },
+  {
+    href: "/dashboard/facebook/content",
+    icon: FaFacebook,
+    label: "Facebook",
+    subItems: [
+      { href: "/dashboard/facebook/login", label: "Koneksi Akun" },
+      { href: "/dashboard/facebook/content", label: "Konten & Kalender" },
+      { href: "/dashboard/facebook/chat", label: "Pesan & DMs" },
+      { href: "/dashboard/facebook/analytic", label: "Analitik" },
+    ],
+  },
+  {
+    href: "/dashboard/tiktok/content",
+    icon: FaTiktok,
+    label: "TikTok",
+    subItems: [
+      { href: "/dashboard/tiktok/login", label: "Koneksi Akun" },
+      { href: "/dashboard/tiktok/content", label: "Konten & Kalender" },
+      { href: "/dashboard/tiktok/chat", label: "Pesan & DMs" },
+      { href: "/dashboard/tiktok/analytic", label: "Analitik" },
+    ],
+  },
+  {
+    href: "/dashboard/twitter/content",
+    icon: FaXTwitter,
+    label: "Twitter (X)",
+    subItems: [
+      { href: "/dashboard/twitter/login", label: "Koneksi Akun" },
+      { href: "/dashboard/twitter/content", label: "Konten & Kalender" },
+      { href: "/dashboard/twitter/chat", label: "Pesan & DMs" },
+      { href: "/dashboard/twitter/analytic", label: "Analitik" },
+    ],
+  },
+  {
+    href: "/dashboard/whatsapp/content",
+    icon: FaWhatsapp,
+    label: "WhatsApp",
+    subItems: [
+      { href: "/dashboard/whatsapp/login", label: "Koneksi Akun" },
+      { href: "/dashboard/whatsapp/content", label: "Konten & Kalender" },
+      { href: "/dashboard/whatsapp/chat", label: "Pesan & DMs" },
+      { href: "/dashboard/whatsapp/analytic", label: "Analitik" },
     ],
   },
 ];
@@ -181,6 +246,20 @@ export function Sidebar({ className }: SidebarProps) {
           )}
           <div className="flex flex-col gap-0.5">
             {BERITA_NAV.map((item) => (
+              <NavItem key={item.href} {...item} collapsed={collapsed} />
+            ))}
+          </div>
+        </div>
+
+        {/* Media Sosial */}
+        <div className="mt-5">
+          {!collapsed && (
+            <span className="mb-2 block px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+              Media Sosial
+            </span>
+          )}
+          <div className="flex flex-col gap-0.5">
+            {SOSMED_NAV.map((item) => (
               <NavItem key={item.href} {...item} collapsed={collapsed} />
             ))}
           </div>

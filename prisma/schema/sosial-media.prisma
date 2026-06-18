@@ -1,151 +1,129 @@
-// ─── Sosial Media Models ──────────────────────────────────────────────────────
-// Tabel-tabel untuk fitur Dashboard Sosial Media
-// Konvensi: m_ = master, c_ = child, r_ = pivot/relasi
-
-// ─── Master: Platform Sosial Media ───────────────────────────────────────────
 model m_platform {
-  id             Int       @id @default(autoincrement())
-  nama           String // tiktok | facebook | instagram | whatsapp | twitter
-  slug           String    @unique
-  ikon_url       String?
-  aktif          Boolean   @default(true)
-  dibuat_pada    DateTime  @default(now())
-  diperbarui_pada DateTime @updatedAt
-  dihapus_pada   DateTime?
-
-  akun    m_akun_sosmed[]
-  konten  r_konten_platform[]
+  id              Int                 @id @default(autoincrement())
+  nama            String
+  slug            String              @unique
+  ikon_url        String?
+  aktif           Boolean             @default(true)
+  dibuat_pada     DateTime            @default(now())
+  diperbarui_pada DateTime            @updatedAt
+  dihapus_pada    DateTime?
+  akun            m_akun_sosmed[]
+  konten          r_konten_platform[]
 }
 
-// ─── Master: Akun Sosial Media ───────────────────────────────────────────────
 model m_akun_sosmed {
-  id               Int       @id @default(autoincrement())
+  id               Int          @id @default(autoincrement())
   platform_id      Int
   nama_akun        String
   username         String
-  access_token     String    @db.Text
-  refresh_token    String?   @db.Text
+  access_token     String
+  refresh_token    String?
   token_expires_at DateTime?
-  status           String    @default("terhubung") // terhubung | terputus | expired
-  dibuat_pada      DateTime  @default(now())
-  diperbarui_pada  DateTime  @updatedAt
+  status           String       @default("terhubung")
+  dibuat_pada      DateTime     @default(now())
+  diperbarui_pada  DateTime     @updatedAt
   dihapus_pada     DateTime?
-
-  platform  m_platform  @relation(fields: [platform_id], references: [id])
-  konten    m_konten[]
-  chat      m_chat[]
-  analitik  m_analitik[]
+  platform         m_platform   @relation(fields: [platform_id], references: [id])
+  analitik         m_analitik[]
+  chat             m_chat[]
+  konten           m_konten[]
 }
 
-// ─── Master: Konten / Postingan ──────────────────────────────────────────────
 model m_konten {
-  id               Int       @id @default(autoincrement())
+  id               Int                 @id @default(autoincrement())
   akun_id          Int
   judul            String?
-  caption          String?   @db.Text
-  tipe_konten      String // post | story | reels | tweet
-  status           String    @default("draft") // draft | scheduled | published | failed
+  caption          String?
+  tipe_konten      String
+  status           String              @default("draft")
   dijadwalkan_pada DateTime?
   diposting_pada   DateTime?
-  dibuat_pada      DateTime  @default(now())
-  diperbarui_pada  DateTime  @updatedAt
+  dibuat_pada      DateTime            @default(now())
+  diperbarui_pada  DateTime            @updatedAt
   dihapus_pada     DateTime?
-
-  akun      m_akun_sosmed       @relation(fields: [akun_id], references: [id])
-  media     c_media_konten[]
-  jadwal    c_jadwal_konten[]
-  platform  r_konten_platform[]
+  jadwal           c_jadwal_konten[]
+  media            c_media_konten[]
+  akun             m_akun_sosmed       @relation(fields: [akun_id], references: [id])
+  platform         r_konten_platform[]
 }
 
-// ─── Child: Media Konten (gambar/video lampiran) ─────────────────────────────
 model c_media_konten {
-  id             Int       @id @default(autoincrement())
-  konten_id      Int
-  url            String
-  tipe_media     String // image | video | document
-  urutan         Int       @default(0)
-  dibuat_pada    DateTime  @default(now())
-  diperbarui_pada DateTime @updatedAt
-  dihapus_pada   DateTime?
-
-  konten  m_konten  @relation(fields: [konten_id], references: [id])
-}
-
-// ─── Child: Jadwal Konten ────────────────────────────────────────────────────
-model c_jadwal_konten {
-  id             Int       @id @default(autoincrement())
-  konten_id      Int
-  waktu_posting  DateTime
-  status_job     String    @default("pending") // pending | running | done | failed
-  pesan_error    String?   @db.Text
-  dibuat_pada    DateTime  @default(now())
-  diperbarui_pada DateTime @updatedAt
-  dihapus_pada   DateTime?
-
-  konten  m_konten  @relation(fields: [konten_id], references: [id])
-}
-
-// ─── Master: Chat / Pesan Masuk ──────────────────────────────────────────────
-model m_chat {
   id              Int       @id @default(autoincrement())
-  akun_id         Int
-  sender_id       String // ID pengirim dari platform
-  sender_nama     String
-  pesan           String    @db.Text
-  sudah_dibaca    Boolean   @default(false)
-  status          String    @default("baru") // baru | dijawab | diarsipkan
-  platform_msg_id String? // ID pesan asli dari platform
+  konten_id       Int
+  url             String
+  tipe_media      String
+  urutan          Int       @default(0)
   dibuat_pada     DateTime  @default(now())
   diperbarui_pada DateTime  @updatedAt
   dihapus_pada    DateTime?
-
-  akun     m_akun_sosmed    @relation(fields: [akun_id], references: [id])
-  balasan  c_balasan_chat[]
+  konten          m_konten  @relation(fields: [konten_id], references: [id])
 }
 
-// ─── Child: Balasan Chat ─────────────────────────────────────────────────────
+model c_jadwal_konten {
+  id              Int       @id @default(autoincrement())
+  konten_id       Int
+  waktu_posting   DateTime
+  status_job      String    @default("pending")
+  pesan_error     String?
+  dibuat_pada     DateTime  @default(now())
+  diperbarui_pada DateTime  @updatedAt
+  dihapus_pada    DateTime?
+  konten          m_konten  @relation(fields: [konten_id], references: [id])
+}
+
+model m_chat {
+  id              Int              @id @default(autoincrement())
+  akun_id         Int
+  sender_id       String
+  sender_nama     String
+  pesan           String
+  sudah_dibaca    Boolean          @default(false)
+  status          String           @default("baru")
+  platform_msg_id String?
+  dibuat_pada     DateTime         @default(now())
+  diperbarui_pada DateTime         @updatedAt
+  dihapus_pada    DateTime?
+  balasan         c_balasan_chat[]
+  akun            m_akun_sosmed    @relation(fields: [akun_id], references: [id])
+}
+
 model c_balasan_chat {
-  id             Int       @id @default(autoincrement())
-  chat_id        Int
-  isi_balasan    String    @db.Text
-  dikirim_oleh   String // user_id atau "system"
-  berhasil       Boolean   @default(false)
-  dibuat_pada    DateTime  @default(now())
-  diperbarui_pada DateTime @updatedAt
-  dihapus_pada   DateTime?
-
-  chat  m_chat  @relation(fields: [chat_id], references: [id])
+  id              Int       @id @default(autoincrement())
+  chat_id         Int
+  isi_balasan     String
+  dikirim_oleh    String
+  berhasil        Boolean   @default(false)
+  dibuat_pada     DateTime  @default(now())
+  diperbarui_pada DateTime  @updatedAt
+  dihapus_pada    DateTime?
+  chat            m_chat    @relation(fields: [chat_id], references: [id])
 }
 
-// ─── Master: Analitik (snapshot harian) ──────────────────────────────────────
 model m_analitik {
-  id             Int       @id @default(autoincrement())
-  akun_id        Int
-  tanggal        DateTime
-  followers      Int       @default(0)
-  reach          Int       @default(0)
-  impressions    Int       @default(0)
-  engagement     Int       @default(0)
-  likes          Int       @default(0)
-  komentar       Int       @default(0)
-  share          Int       @default(0)
-  dibuat_pada    DateTime  @default(now())
-  diperbarui_pada DateTime @updatedAt
-  dihapus_pada   DateTime?
-
-  akun  m_akun_sosmed  @relation(fields: [akun_id], references: [id])
+  id              Int           @id @default(autoincrement())
+  akun_id         Int
+  tanggal         DateTime
+  followers       Int           @default(0)
+  reach           Int           @default(0)
+  impressions     Int           @default(0)
+  engagement      Int           @default(0)
+  likes           Int           @default(0)
+  komentar        Int           @default(0)
+  share           Int           @default(0)
+  dibuat_pada     DateTime      @default(now())
+  diperbarui_pada DateTime      @updatedAt
+  dihapus_pada    DateTime?
+  akun            m_akun_sosmed @relation(fields: [akun_id], references: [id])
 }
 
-// ─── Pivot: Konten × Platform (multi-platform posting) ───────────────────────
 model r_konten_platform {
-  id               Int       @id @default(autoincrement())
+  id               Int        @id @default(autoincrement())
   konten_id        Int
   platform_id      Int
-  external_post_id String? // ID postingan di platform asli
-  dibuat_pada      DateTime  @default(now())
-  diperbarui_pada  DateTime  @updatedAt
+  external_post_id String?
+  dibuat_pada      DateTime   @default(now())
+  diperbarui_pada  DateTime   @updatedAt
   dihapus_pada     DateTime?
-
-  konten    m_konten    @relation(fields: [konten_id], references: [id])
-  platform  m_platform  @relation(fields: [platform_id], references: [id])
+  konten           m_konten   @relation(fields: [konten_id], references: [id])
+  platform         m_platform @relation(fields: [platform_id], references: [id])
 }

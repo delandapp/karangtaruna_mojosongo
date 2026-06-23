@@ -1,0 +1,40 @@
+model m_qr_code {
+  id                  Int       @id @default(autoincrement())
+  dibuat_oleh_id      Int?
+  judul               String
+  konten              String    @db.Text
+  tipe_konten         String    // url | teks | email | telepon | wifi | vcard
+  
+  // Styling QR
+  warna_depan         String    @default("#000000")
+  warna_belakang      String    @default("#FFFFFF")
+  gaya_titik          String    @default("square")    // square | rounded | dots | classy | classy-rounded | extra-rounded
+  gaya_sudut_luar     String    @default("square")    // square | extra-rounded | dot
+  gaya_sudut_dalam    String    @default("square")    // square | dot
+  warna_sudut_luar    String?
+  warna_sudut_dalam   String?
+  
+  // Logo tengah
+  logo_url            String?
+  logo_ukuran         Int       @default(20)
+  logo_margin         Int       @default(5)
+  logo_hapus_bg       Boolean   @default(true)
+  
+  // Ukuran & margin
+  ukuran              Int       @default(300)
+  margin              Int       @default(10)
+  
+  // Level koreksi error
+  level_koreksi       String    @default("M")         // L | M | Q | H
+  
+  // File hasil
+  gambar_url          String?
+  
+  dibuat_pada         DateTime  @default(now())
+  diperbarui_pada     DateTime  @updatedAt
+  dihapus_pada        DateTime?
+
+  dibuat_oleh         m_user?   @relation(fields: [dibuat_oleh_id], references: [id])
+
+  @@index([dibuat_oleh_id])
+}

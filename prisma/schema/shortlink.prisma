@@ -1,0 +1,35 @@
+model m_shortlink {
+  id               Int                  @id @default(autoincrement())
+  judul            String
+  slug             String               @unique
+  url_tujuan       String
+  deskripsi        String?
+  is_aktif         Boolean              @default(true)
+  kedaluwarsa_pada DateTime?
+  total_klik       Int                  @default(0)
+  dibuat_oleh_id   Int?
+  dibuat_pada      DateTime             @default(now())
+  diperbarui_pada  DateTime             @updatedAt
+  dihapus_pada     DateTime?
+
+  dibuat_oleh      m_user?              @relation(fields: [dibuat_oleh_id], references: [id])
+  klik             c_shortlink_click[]
+
+  @@index([slug])
+  @@index([is_aktif])
+  @@index([dibuat_oleh_id])
+}
+
+model c_shortlink_click {
+  id              Int          @id @default(autoincrement())
+  shortlink_id    Int
+  ip_address      String?
+  user_agent      String?
+  referer         String?
+  dibuat_pada     DateTime     @default(now())
+
+  shortlink       m_shortlink  @relation(fields: [shortlink_id], references: [id], onDelete: Cascade)
+
+  @@index([shortlink_id])
+  @@index([dibuat_pada])
+}

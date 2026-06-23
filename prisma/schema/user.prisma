@@ -79,6 +79,9 @@ model m_user {
   transaksi_disetujui  transaksi_keuangan[]      @relation("transaksi_disetujui_oleh")
   tugas_dibuat         tugas_event[]             @relation("tugas_dibuat_oleh")
   tugas_ditugaskan     tugas_event[]             @relation("tugas_ditugaskan_ke")
+  shortlink_dibuat     m_shortlink[]
+  qrcode_dibuat        m_qr_code[]
+  linktree_dibuat      m_linktree[]
 
   @@index([m_jabatan_id])
   @@index([m_level_id])

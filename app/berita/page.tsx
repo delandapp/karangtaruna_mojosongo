@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import NewsPage from "@/pages/NewsPage";
+import NewsPage from "@/views/NewsPage";
 
 export const metadata: Metadata = {
   title: "Berita Terkini | Karang Taruna Mojosongo",

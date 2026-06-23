@@ -15,6 +15,9 @@ import { eproposalApi } from "@/features/api/eproposalApi";
 import { storageApi } from "@/features/api/storageApi";
 import { beritaApi } from "@/features/api/beritaApi";
 import { sosialMediaApi } from "@/features/api/sosialMediaApi";
+import { shortlinkApi } from "@/features/api/shortlinkApi";
+import { qrCodeApi } from "@/features/api/qrCodeApi";
+import { linktreeApi } from "@/features/api/linktreeApi";
 
 import { wilayahApi } from "@/features/api/wilayahApi";
 import { perusahaanApi } from "@/features/api/perusahaanApi";
@@ -41,6 +44,9 @@ export const store = configureStore({
         [storageApi.reducerPath]: storageApi.reducer,
         [beritaApi.reducerPath]: beritaApi.reducer,
         [sosialMediaApi.reducerPath]: sosialMediaApi.reducer,
+        [shortlinkApi.reducerPath]: shortlinkApi.reducer,
+        [qrCodeApi.reducerPath]: qrCodeApi.reducer,
+        [linktreeApi.reducerPath]: linktreeApi.reducer,
         auth: authReducer,
     },
     middleware: (getDefaultMiddleware) =>
@@ -62,7 +68,10 @@ export const store = configureStore({
             eproposalApi.middleware,
             storageApi.middleware,
             beritaApi.middleware,
-            sosialMediaApi.middleware
+            sosialMediaApi.middleware,
+            shortlinkApi.middleware,
+            qrCodeApi.middleware,
+            linktreeApi.middleware
         ),
 });
 

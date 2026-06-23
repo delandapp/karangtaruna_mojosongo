@@ -1,5 +1,5 @@
 import { generateMetadata } from "@/lib/seo";
-import Home from "@/pages/Home";
+import Home from "@/views/Home";
 
 export const metadata = generateMetadata({
   title: "Beranda",

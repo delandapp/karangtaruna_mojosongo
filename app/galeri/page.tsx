@@ -1,5 +1,5 @@
 import { generateMetadata } from "@/lib/seo";
-import GalleryPage from "@/pages/GalleryPage";
+import GalleryPage from "@/views/GalleryPage";
 
 export const metadata = generateMetadata({
   title: "Galeri Kegiatan",

@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import NewsDetailPage from "@/pages/NewsDetailPage";
+import NewsDetailPage from "@/views/NewsDetailPage";
 
 interface Props {
   params: Promise<{ slug: string }>;

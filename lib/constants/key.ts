@@ -127,6 +127,14 @@ export const REDIS_KEYS = {
     ALL_PREFIX: "karangtaruna_news:tag:all:*",
     SINGLE: (id: number) => `karangtaruna_news:tag:${id}`,
   },
+
+  // ── Shortlink ──────────────────────────────────────────────────────────
+  SHORTLINK: {
+    ALL: "karangtaruna_master:shortlink:all",
+    ALL_PREFIX: "karangtaruna_master:shortlink:all:*",
+    SINGLE: (id: number) => `karangtaruna_master:shortlink:${id}`,
+    SINGLE_BY_SLUG: (slug: string) => `karangtaruna_master:shortlink:slug:${slug}`,
+  },
 };
 
 export const S3_BUCKETS = {
@@ -134,7 +142,8 @@ export const S3_BUCKETS = {
   COVER_E_PROPOSAL: "assets-cover-sponsorship-karang-taruna",
   SOUND_E_PROPOSAL: "assets-music-sponsorship-karang-taruna",
   BERITA: "assets-berita-karang-taruna",
-  NOTA: "assets-nota-karang-taruna"
+  NOTA: "assets-nota-karang-taruna",
+  LINKTREE: "assets-linktree-karang-taruna"
 };
 
 // Global cache TTL in seconds (1 Hour by default)
@@ -239,6 +248,10 @@ export const ELASTIC_INDICES = {
   EPROPOSAL: "karangtaruna_m_eproposal_index",
   EPROPOSAL_PENGATURAN: "karangtaruna_c_eproposal_pengaturan_index",
   EPROPOSAL_DAFTAR_ISI: "karangtaruna_c_eproposal_daftar_isi_index",
+
+  // ── Shortlink ──────────────────────────────────────────────────────────
+  SHORTLINK: "karangtaruna_m_shortlink_index",
+  SHORTLINK_CLICK: "karangtaruna_c_shortlink_click_index",
 };
 
 /** All Elasticsearch index names for bulk operations */

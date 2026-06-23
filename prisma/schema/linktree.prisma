@@ -1,0 +1,94 @@
+model m_linktree {
+  id                  Int       @id @default(autoincrement())
+  dibuat_oleh_id      Int?
+  slug                String    @unique
+  judul               String
+  bio                 String?
+  foto_profil_url     String?
+  tema                String    @default("minimal-light")
+  aktif               Boolean   @default(true)
+  
+  // Kustomisasi tema & latar
+  warna_primer        String?
+  warna_latar         String?
+  font_kustom         String?
+  bg_image_url        String?   // S3 background image
+  
+  // Kustomisasi Tombol (Profile-wide)
+  gaya_tombol         String?   // solid | outline | soft | brutalist | double-border | shadow-offset | rounded-none | rounded-sm | rounded-md | rounded-lg | rounded-xl | rounded-full | animated-glow
+  animasi_tombol      String?   // none | pulse | bounce | float | wobble | glow
+  warna_tombol_latar  String?
+  warna_tombol_teks   String?
+  warna_tombol_border String?
+  border_radius_tombol String?
+  
+  // Footer Sosial Media
+  sosmed_instagram    String?
+  sosmed_tiktok       String?
+  sosmed_whatsapp     String?
+  sosmed_facebook     String?
+  sosmed_youtube      String?
+  sosmed_github       String?
+  sosmed_email        String?
+  sosmed_telepon      String?
+  
+  // SEO & meta
+  meta_judul          String?
+  meta_deskripsi      String?
+  
+  dibuat_pada         DateTime  @default(now())
+  diperbarui_pada     DateTime  @updatedAt
+  dihapus_pada        DateTime?
+
+  dibuat_oleh         m_user?   @relation(fields: [dibuat_oleh_id], references: [id])
+  links               c_link_linktree[]
+  klik                c_klik_linktree[]
+
+  @@index([slug])
+  @@index([dibuat_oleh_id])
+}
+
+model c_link_linktree {
+  id               Int       @id @default(autoincrement())
+  linktree_id      Int
+  judul            String
+  url              String    @db.Text
+  ikon             String?
+  warna_ikon       String?
+  urutan           Int       @default(0)
+  aktif            Boolean   @default(true)
+  
+  // Override kustomisasi per link
+  warna_latar      String?   // override background button per link
+  warna_teks       String?   // override teks button per link
+  warna_border     String?   // override border button per link
+  animasi          String?   // override animasi per link
+  
+  dibuat_pada      DateTime  @default(now())
+  diperbarui_pada  DateTime  @updatedAt
+  dihapus_pada     DateTime?
+
+  linktree         m_linktree @relation(fields: [linktree_id], references: [id])
+
+  @@index([linktree_id])
+}
+
+model c_klik_linktree {
+  id               Int       @id @default(autoincrement())
+  linktree_id      Int
+  link_id          Int?
+  ip_address       String?
+  user_agent       String?   @db.Text
+  referer          String?
+  negara           String?
+  perangkat        String?
+  diklik_pada      DateTime  @default(now())
+  dibuat_pada      DateTime  @default(now())
+  diperbarui_pada  DateTime  @updatedAt
+  dihapus_pada     DateTime?
+
+  linktree         m_linktree @relation(fields: [linktree_id], references: [id])
+
+  @@index([linktree_id])
+  @@index([dibuat_pada])
+}

@@ -29,6 +29,9 @@ import {
   Newspaper,
   Tag,
   LayoutList,
+  Link2,
+  QrCode,
+  FolderTree,
 } from "lucide-react";
 import {
   FaFacebook,
@@ -159,6 +162,21 @@ const TOOLS_NAV = [
       { href: "/dashboard/rapat", label: "Rapat" },
       { href: "/dashboard/notulen", label: "Notulen" },
     ],
+  },
+  {
+    href: "/dashboard/shortlink",
+    icon: Link2,
+    label: "Shortlink",
+  },
+  {
+    href: "/dashboard/qr-code",
+    icon: QrCode,
+    label: "QR Code",
+  },
+  {
+    href: "/dashboard/linktree",
+    icon: FolderTree,
+    label: "Linktree",
   },
 ];
 

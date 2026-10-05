@@ -60,7 +60,7 @@ describe("GET /api/organisasi (list)", () => {
     vi.mocked(mockPrisma.m_organisasi.count).mockResolvedValueOnce(1);
 
     const { GET } = await import("@/app/api/organisasi/route");
-    const response = await GET(buildRequest(), {} as any);
+    const response = await GET(buildRequest());
     const json = await (response as any).json();
 
     expect(json.success).toBe(true);
@@ -75,7 +75,7 @@ describe("GET /api/organisasi (list)", () => {
     } as any);
 
     const { GET } = await import("@/app/api/organisasi/route");
-    const response = await GET(buildRequest(), {} as any);
+    const response = await GET(buildRequest());
     const json = await (response as any).json();
 
     expect(json.success).toBe(true);
@@ -86,7 +86,7 @@ describe("GET /api/organisasi (list)", () => {
     mockCheckAccess.mockResolvedValueOnce(false);
 
     const { GET } = await import("@/app/api/organisasi/route");
-    const response = await GET(buildRequest(), {} as any);
+    const response = await GET(buildRequest());
     expect((response as any).status).toBe(403);
   });
 
@@ -95,7 +95,7 @@ describe("GET /api/organisasi (list)", () => {
     vi.mocked(mockPrisma.m_organisasi.count).mockResolvedValueOnce(0);
 
     const { GET } = await import("@/app/api/organisasi/route");
-    await GET(buildRequest({}, { search: "Taruna" }), {} as any);
+    await GET(buildRequest({}, { search: "Taruna" }));
 
     expect(mockPrisma.m_organisasi.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -128,15 +128,14 @@ describe("POST /api/organisasi (create)", () => {
     } as any);
 
     const { POST } = await import("@/app/api/organisasi/route");
-    const response = await POST(buildRequest(validBody), {} as any);
+    const response = await POST(buildRequest(validBody));
     expect((response as any).status).toBe(201);
   });
 
   it("returns 400 when nama_org is too short", async () => {
     const { POST } = await import("@/app/api/organisasi/route");
     const response = await POST(
-      buildRequest({ ...validBody, nama_org: "AB" }),
-      {} as any
+      buildRequest({ ...validBody, nama_org: "AB" })
     );
     expect((response as any).status).toBe(400);
   });
@@ -144,21 +143,21 @@ describe("POST /api/organisasi (create)", () => {
   it("returns 400 when kode_wilayah_induk_provinsi is missing", async () => {
     const { POST } = await import("@/app/api/organisasi/route");
     const { kode_wilayah_induk_provinsi, ...bad } = validBody;
-    const response = await POST(buildRequest(bad), {} as any);
+    const response = await POST(buildRequest(bad));
     expect((response as any).status).toBe(400);
   });
 
   it("returns 403 when user lacks write access", async () => {
     mockCheckAccess.mockResolvedValueOnce(false);
     const { POST } = await import("@/app/api/organisasi/route");
-    const response = await POST(buildRequest(validBody), {} as any);
+    const response = await POST(buildRequest(validBody));
     expect((response as any).status).toBe(403);
   });
 
   it("invalidates cache after successful create", async () => {
     vi.mocked(mockPrisma.m_organisasi.create).mockResolvedValueOnce({ ...sampleOrganisasi, id: 3 } as any);
     const { POST } = await import("@/app/api/organisasi/route");
-    await POST(buildRequest(validBody), {} as any);
+    await POST(buildRequest(validBody));
     expect(mockInvalidateCache).toHaveBeenCalled();
   });
 });

@@ -63,14 +63,22 @@ export default function Logo({
 
   /* ── Logo image ── */
   const logoImage = (
-    <Image
-      src="/image/logo/logo.png"
-      alt={`${title} — ${subtitle}`}
-      width={size}
-      height={size}
-      className="object-contain shrink-0 rounded-full"
-      priority
-    />
+    <div
+      className={cn(
+        "relative rounded-full shrink-0 flex items-center justify-center overflow-hidden bg-white shadow-md ring-2 ring-emerald-500/30 transition-all duration-300 group-hover:ring-emerald-500/60 group-hover:scale-105",
+        isDark ? "ring-white/30" : "ring-emerald-500/30 shadow-emerald-500/10"
+      )}
+      style={{ width: size, height: size }}
+    >
+      <Image
+        src="/image/logo/logo.png"
+        alt={`${title} — ${subtitle}`}
+        width={size}
+        height={size}
+        className="object-contain p-0.5 rounded-full"
+        priority
+      />
+    </div>
   );
 
   /* ── Variant: logo only ── */

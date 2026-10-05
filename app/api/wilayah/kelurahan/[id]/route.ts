@@ -1,11 +1,9 @@
-import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { kelurahanSchema } from "@/lib/validations/wilayah.schema";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache } from "@/lib/redis";
-import { REDIS_KEYS, ELASTIC_INDICES } from "@/lib/constants";
-import { getDocument } from "@/lib/elasticsearch";
+import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
+import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { checkUserAccess } from "@/lib/rbac";
 
@@ -24,9 +22,30 @@ export const GET = withAuth(async (req: AuthenticatedRequest, { params }: { para
     const cachedData = await getCache(cacheKey);
     if (cachedData) return successResponse(cachedData, 200);
 
-    const data = await getDocument(ELASTIC_INDICES.KELURAHAN, id);
+    const data = await prisma.m_kelurahan.findUnique({
+      where: { id },
+      include: {
+        m_kecamatan: {
+          select: {
+            id: true,
+            nama: true,
+            m_kota_id: true,
+            m_kota: {
+              select: {
+                id: true,
+                nama: true,
+                m_provinsi_id: true,
+                m_provinsi: { select: { id: true, nama: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
     if (!data) return errorResponse(404, "Kelurahan tidak ditemukan", "NOT_FOUND");
 
+    await setCache(cacheKey, data, DEFAULT_CACHE_TTL);
     return successResponse(data, 200);
   } catch (error) {
     return handleApiError(error);
@@ -67,9 +86,19 @@ export const PUT = withAuth(async (req: AuthenticatedRequest, { params }: { para
         m_kecamatan_id: validatedData.m_kecamatan_id,
       },
       include: {
-        m_kecamatan: { select: { nama: true, m_kota_id: true, m_kota: { select: { m_provinsi_id: true } } } }
-      }
+        m_kecamatan: {
+          select: {
+            nama: true,
+            m_kota_id: true,
+            m_kota: { select: { m_provinsi_id: true } },
+          },
+        },
+      },
     });
+
+    await invalidateCachePrefix(REDIS_KEYS.KELURAHAN.SINGLE(id));
+    await invalidateCachePrefix(REDIS_KEYS.KELURAHAN.ALL_PREFIX);
+
     return successResponse(updatedData, 200);
   } catch (error) {
     return handleApiError(error);
@@ -88,6 +117,10 @@ export const DELETE = withAuth(async (req: AuthenticatedRequest, { params }: { p
     if (isNaN(id)) return errorResponse(400, "ID tidak valid", "BAD_REQUEST");
 
     await prisma.m_kelurahan.delete({ where: { id } });
+
+    await invalidateCachePrefix(REDIS_KEYS.KELURAHAN.SINGLE(id));
+    await invalidateCachePrefix(REDIS_KEYS.KELURAHAN.ALL_PREFIX);
+
     return successResponse(null, 200);
   } catch (error) {
     return handleApiError(error);

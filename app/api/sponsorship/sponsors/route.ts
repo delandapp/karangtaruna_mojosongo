@@ -7,12 +7,7 @@ import {
 } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import { DEFAULT_CACHE_TTL, ELASTIC_INDICES } from "@/lib/constants";
-import {
-  searchDocuments,
-  indexDocument,
-  deleteDocument,
-} from "@/lib/elasticsearch";
+import { DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
 import { sponsorSchema } from "@/lib/validations/sponsorship.schema";

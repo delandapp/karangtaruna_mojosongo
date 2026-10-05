@@ -118,9 +118,7 @@ export function FormKonten({ initialData, onSuccess, onCancel }: FormKontenProps
           result?.data?.s3_url ||
           "";
 
-        const url = rawUrl.startsWith("/")
-          ? `${(process.env.NEXT_PUBLIC_S3_API_URL || "").replace(/\/api\/v1\/?$/, "")}${rawUrl}`
-          : rawUrl;
+        const url = rawUrl;
 
         if (url) {
           const updated = [...uploadedMedia, url];

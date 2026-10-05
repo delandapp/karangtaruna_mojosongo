@@ -1,4 +1,3 @@
-import { indexDocument, deleteDocument } from "@/lib/elasticsearch";
 import { invalidateCachePrefix } from "@/lib/redis";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";

@@ -34,14 +34,12 @@ export interface NewsViewedPayload {
 /**
  * Stub: produceNewsPublished
  * Sebelumnya memproduce event ke Kafka. Sekarang menjadi no-op.
- * Indexing ke Elasticsearch dilakukan langsung dari API route.
  */
 export async function produceNewsPublished(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _payload: NewsPublishedPayload,
 ): Promise<void> {
-  // No-op: Kafka telah dihapus dari project ini.
-  // ES indexing dilakukan langsung di API route berita.
+  // No-op: Kafka dan sistem pubsub eksternal telah dihapus.
 }
 
 /**

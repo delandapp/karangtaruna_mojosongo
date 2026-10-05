@@ -49,7 +49,7 @@ export async function POST(
     const isCounted = await checkAndMarkView(certJwt, beritaId);
 
     // ── 3. Buffer view count jika ini view baru ──────────────────────────
-    // Flush ke DB + Elasticsearch dilakukan setiap 10 detik oleh view-counter worker
+    // Flush ke DB dilakukan setiap 10 detik oleh view-counter worker
     if (isCounted) {
       bufferView(beritaId);
     }

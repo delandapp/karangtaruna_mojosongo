@@ -1,3 +1,5 @@
+"use client";
+
 import React, {
   forwardRef,
   useCallback,
@@ -11,6 +13,7 @@ import {
   motion,
   AnimatePresence,
   Transition,
+  useInView,
   type VariantLabels,
   type Target,
   type TargetAndTransition,
@@ -194,7 +197,6 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>(
     );
 
     const containerRef = useRef<HTMLElement>(null);
-    const { useInView } = require("framer-motion");
     const inView = useInView(containerRef, { once: false, amount: 0.1 });
 
     useEffect(() => {

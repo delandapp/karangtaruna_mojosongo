@@ -98,7 +98,7 @@ export interface Berita {
   c_berita_cover?: BeritaCover[];
 }
 
-// Berita card (dari Elasticsearch — portal publik)
+// Berita card (portal publik)
 export interface BeritaCard {
   id: number;
   judul: string;
@@ -112,7 +112,7 @@ export interface BeritaCard {
   trending_score: number;
   is_featured: boolean;
   seo_slug: string;
-  // Dari ES detail (slug endpoint)
+  // Detail berita (slug endpoint)
   konten?: string;
   seo_description?: string | null;
   keywords?: string[];

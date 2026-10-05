@@ -19,5 +19,9 @@
     "lib": "@/lib",
     "hooks": "@/hooks"
   },
-  "registries": {}
+  "registries": {
+    "@smoothui": "https://smoothui.dev/r/{name}.json",
+    "@react-bits": "https://reactbits.dev/r/{name}.json",
+    "@eldoraui": "https://eldoraui.site/r/{name}.json"
+  }
 }

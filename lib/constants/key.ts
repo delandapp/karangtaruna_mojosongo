@@ -137,7 +137,7 @@ export const REDIS_KEYS = {
   },
 };
 
-export const S3_BUCKETS = {
+export const STORAGE_BUCKETS = {
   E_PROPOSAL: "assets-proposal-sponsorship-karang-taruna",
   COVER_E_PROPOSAL: "assets-cover-sponsorship-karang-taruna",
   SOUND_E_PROPOSAL: "assets-music-sponsorship-karang-taruna",
@@ -146,113 +146,8 @@ export const S3_BUCKETS = {
   LINKTREE: "assets-linktree-karang-taruna"
 };
 
+export const S3_BUCKETS = STORAGE_BUCKETS;
+
 // Global cache TTL in seconds (1 Hour by default)
 export const DEFAULT_CACHE_TTL = 3600;
 
-// ============================================================================
-// Elasticsearch Indices
-// Format: karangtaruna_{table}_index
-// ============================================================================
-export const ELASTIC_INDICES = {
-  // ── User & Access Management ──────────────────────────────────────────
-  USERS: "karangtaruna_m_user_index",
-  LEVELS: "karangtaruna_m_level_index",
-  JABATANS: "karangtaruna_m_jabatan_index",
-  HAK_AKSES: "karangtaruna_m_hak_akses_index",
-  HAK_AKSES_RULE: "karangtaruna_m_hak_akses_rule_index",
-
-  // ── Organisasi ────────────────────────────────────────────────────────
-  ORGANISASI: "karangtaruna_m_organisasi_index",
-
-  // ── Event Management ─────────────────────────────────────────────────
-  EVENTS: "karangtaruna_event_index",
-  PANITIA: "karangtaruna_anggota_panitia_index",
-  RUNDOWN: "karangtaruna_rundown_acara_index",
-  TUGAS: "karangtaruna_tugas_event_index",
-  RAPAT: "karangtaruna_rapat_index",
-  NOTULEN: "karangtaruna_notulen_index",
-
-  // ── Keuangan ──────────────────────────────────────────────────────────
-  ANGGARAN: "karangtaruna_anggaran_index",
-  ITEM_ANGGARAN: "karangtaruna_item_anggaran_index",
-  TRANSAKSI_KEUANGAN: "karangtaruna_transaksi_keuangan_index",
-
-  // ── Wilayah ───────────────────────────────────────────────────────────
-  PROVINSI: "karangtaruna_m_provinsi_index",
-  KOTA: "karangtaruna_m_kota_index",
-  KECAMATAN: "karangtaruna_m_kecamatan_index",
-  KELURAHAN: "karangtaruna_m_kelurahan_index",
-
-  // ── Sponsorship & Perusahaan ──────────────────────────────────────────
-  KATEGORI_BRAND: "karangtaruna_m_kategori_brand_index",
-  BIDANG_BRAND: "karangtaruna_m_bidang_brand_index",
-  BRAND: "karangtaruna_m_brand_index",
-  SKALA_PERUSAHAAN: "karangtaruna_m_skala_perusahaan_index",
-  SEKTOR_INDUSTRI: "karangtaruna_m_sektor_industri_index",
-  PERUSAHAAN: "karangtaruna_m_perusahaan_index",
-  KATEGORI_SPONSOR: "karangtaruna_m_kategori_sponsor_index",
-  SPONSOR: "karangtaruna_m_sponsor_index",
-  EVENT_SPONSOR: "karangtaruna_event_sponsor_index",
-  PROPOSAL_SPONSOR: "karangtaruna_proposal_sponsor_index",
-
-  // ── Logistik ──────────────────────────────────────────────────────────
-  VENDOR: "karangtaruna_m_vendor_index",
-  VENUE: "karangtaruna_m_venue_index",
-  INVENTARIS: "karangtaruna_m_inventaris_index",
-  EVENT_VENDOR: "karangtaruna_event_vendor_index",
-  EVENT_VENUE: "karangtaruna_event_venue_index",
-
-  // ── Pendaftaran ───────────────────────────────────────────────────────
-  KATEGORI_PENDAFTARAN: "karangtaruna_kategori_pendaftaran_index",
-  PENDAFTARAN: "karangtaruna_pendaftaran_index",
-  HASIL_LOMBA: "karangtaruna_hasil_lomba_index",
-
-  // ── Berita ────────────────────────────────────────────────────────────────
-  KATEGORI_BERITA: "karangtaruna_m_kategori_berita_index",
-  BERITA: "karangtaruna_berita_index",
-  TAG_BERITA: "karangtaruna_m_tag_berita_index",
-  KALENDER_KONTEN: "karangtaruna_kalender_konten_index",
-
-  // ── Sistem ────────────────────────────────────────────────────────────
-  NOTIFIKASI: "karangtaruna_notifikasi_index",
-  LOG_AUDIT: "karangtaruna_log_audit_index",
-
-  // ── Feedback ──────────────────────────────────────────────────────────
-  SURVEI_KEPUASAN: "karangtaruna_survei_kepuasan_index",
-  RESPON_SURVEI: "karangtaruna_respon_survei_index",
-  SARAN_MASUKAN: "karangtaruna_saran_masukan_index",
-
-  // ── Tiket ─────────────────────────────────────────────────────────────
-  JENIS_TIKET: "karangtaruna_jenis_tiket_index",
-  TIKET_ORDER: "karangtaruna_tiket_order_index",
-  TIKET_TERBIT: "karangtaruna_tiket_terbit_index",
-
-  // ── Dokumen & Surat ───────────────────────────────────────────────────
-  JENIS_SURAT: "karangtaruna_m_jenis_surat_index",
-  SURAT: "karangtaruna_surat_index",
-  DOKUMEN: "karangtaruna_dokumen_index",
-  LAPORAN: "karangtaruna_laporan_index",
-
-  // ── Dokumentasi ───────────────────────────────────────────────────────
-  MEDIA_GALERI: "karangtaruna_media_galeri_index",
-
-  // ── Sekolah ───────────────────────────────────────────────────────────
-  SEKOLAH: "karangtaruna_m_sekolah_index",
-  SEKOLAH_DETAIL: "karangtaruna_m_sekolah_detail_index",
-  SEKOLAH_FOTO: "karangtaruna_m_sekolah_foto_index",
-
-  // ── Jenjang ───────────────────────────────────────────────────────────
-  JENJANG: "karangtaruna_m_jenjang_index",
-
-  // ── E-Proposal ────────────────────────────────────────────────────────
-  EPROPOSAL: "karangtaruna_m_eproposal_index",
-  EPROPOSAL_PENGATURAN: "karangtaruna_c_eproposal_pengaturan_index",
-  EPROPOSAL_DAFTAR_ISI: "karangtaruna_c_eproposal_daftar_isi_index",
-
-  // ── Shortlink ──────────────────────────────────────────────────────────
-  SHORTLINK: "karangtaruna_m_shortlink_index",
-  SHORTLINK_CLICK: "karangtaruna_c_shortlink_click_index",
-};
-
-/** All Elasticsearch index names for bulk operations */
-export const ALL_ELASTIC_INDICES: string[] = Object.values(ELASTIC_INDICES);

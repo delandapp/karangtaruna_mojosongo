@@ -1,4 +1,3 @@
-import { indexDocument, deleteDocument } from "@/lib/elasticsearch";
 import { prisma } from "@/lib/prisma";
 import { updateRundownSchema } from "@/lib/validations/rundown.schema";
 import { successResponse, errorResponse } from "@/lib/api-response";

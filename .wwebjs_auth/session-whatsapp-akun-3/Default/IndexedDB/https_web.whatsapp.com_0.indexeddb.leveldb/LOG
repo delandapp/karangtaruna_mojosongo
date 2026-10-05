@@ -1,3 +1,30 @@
-2026/06/18-13:20:33.071 5900 Reusing MANIFEST D:\PROGRAMMING\Karang Taruna Mojosongo\karangtaruna_mojosongo\.wwebjs_auth\session-whatsapp-akun-3\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
-2026/06/18-13:20:33.071 5900 Recovering log #6
-2026/06/18-13:20:33.094 5900 Reusing old log D:\PROGRAMMING\Karang Taruna Mojosongo\karangtaruna_mojosongo\.wwebjs_auth\session-whatsapp-akun-3\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/000006.log 
+2026/06/25-14:22:25.549 7a3c Reusing MANIFEST D:\PROGRAMMING\Karang Taruna Mojosongo\karangtaruna_mojosongo\.wwebjs_auth\session-whatsapp-akun-3\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/06/25-14:22:25.550 7a3c Recovering log #6
+2026/06/25-14:22:27.236 7a3c Reusing old log D:\PROGRAMMING\Karang Taruna Mojosongo\karangtaruna_mojosongo\.wwebjs_auth\session-whatsapp-akun-3\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/000006.log 
+2026/06/25-14:22:27.312 7a3c Level-0 table #11: started
+2026/06/25-14:22:27.483 7a3c Level-0 table #11: 1064335 bytes OK
+2026/06/25-14:22:27.821 7a3c Delete type=0 #6
+2026/06/25-14:22:29.408 7a3c Compacting 1@1 + 1@2 files
+2026/06/25-14:22:29.666 7a3c Generated table #12@1: 25319 keys, 1047481 bytes
+2026/06/25-14:22:29.676 7a3c Compacted 1@1 + 1@2 files => 1047481 bytes
+2026/06/25-14:22:29.713 7a3c compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/06/25-14:22:29.713 7a3c Delete type=2 #8
+2026/06/25-14:22:29.713 7a3c Delete type=2 #11
+2026/06/25-14:22:33.471 8650 Level-0 table #14: started
+2026/06/25-14:22:33.571 8650 Level-0 table #14: 962106 bytes OK
+2026/06/25-14:22:33.607 8650 Delete type=0 #10
+2026/06/25-14:22:33.665 7a3c Compacting 1@1 + 1@2 files
+2026/06/25-14:22:33.838 7a3c Generated table #15@1: 28125 keys, 1190261 bytes
+2026/06/25-14:22:33.838 7a3c Compacted 1@1 + 1@2 files => 1190261 bytes
+2026/06/25-14:22:33.887 7a3c compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/06/25-14:22:33.887 7a3c Delete type=2 #12
+2026/06/25-14:22:33.887 7a3c Delete type=2 #14
+2026/06/25-14:23:35.741 8650 Level-0 table #17: started
+2026/06/25-14:23:35.880 8650 Level-0 table #17: 1062761 bytes OK
+2026/06/25-14:23:35.903 8650 Delete type=0 #13
+2026/06/25-14:27:31.235 7a3c Compacting 1@1 + 1@2 files
+2026/06/25-14:27:31.453 7a3c Generated table #18@1: 28745 keys, 1265019 bytes
+2026/06/25-14:27:31.453 7a3c Compacted 1@1 + 1@2 files => 1265019 bytes
+2026/06/25-14:27:31.469 7a3c compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/06/25-14:27:31.470 7a3c Delete type=2 #15
+2026/06/25-14:27:31.470 7a3c Delete type=2 #17

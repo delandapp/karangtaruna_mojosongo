@@ -1,86 +1,76 @@
 "use client";
 
 import React, { useEffect } from "react";
-import CardNav from "@/components/organisms/cards/NavCard";
+import { LandingNavbar } from "@/components/organisms/landing/LandingNavbar";
 import { HeroSection } from "@/components/organisms/landing/HeroSection";
+import { MediaPartnerSection } from "@/components/organisms/landing/MediaPartnerSection";
 import { GallerySection } from "@/components/organisms/landing/GallerySection";
 import { FeatureSection } from "@/components/organisms/landing/FeatureSection";
+import { SponsorshipSection } from "@/components/organisms/landing/SponsorshipSection";
 import { CtaSection } from "@/components/organisms/landing/CtaSection";
+import { LandingFooter } from "@/components/organisms/landing/LandingFooter";
 import { SectionIndicator } from "@/components/atoms/SectionIndicator";
 import { trackPageView } from "@/lib/analytics";
 import { useLenis } from "@/lib/hooks/useLenis";
-import { useSmoothScroll } from "@/lib/hooks/useSmoothScroll";
 
 const LANDING_SECTIONS = [
   { id: "hero", label: "Beranda" },
+  { id: "mitra", label: "Media Partner" },
+  { id: "galeri", label: "Galeri Dokumentasi" },
+  { id: "fitur", label: "Program Kerja" },
+  { id: "sponsorship", label: "Sponsorship" },
+  { id: "cta", label: "Kolaborasi" },
 ];
 
 export function LandingTemplate() {
   useLenis(); // Initialize lenis smooth scroll
 
-  const { scrollTo } = useSmoothScroll();
-
   useEffect(() => {
     trackPageView("/");
   }, []);
 
-  const navItems = [
-    {
-      label: "Home",
-      bgColor: "var(--color-primary-600)",
-      textColor: "#fff",
-      links: [
-        { label: "Halaman Utama", href: "/", ariaLabel: "Home" }
-      ]
-    },
-    {
-      label: "Program",
-      bgColor: "var(--color-primary-500)",
-      textColor: "#fff",
-      links: [
-        { label: "Lihat Semua Program", href: "#program", ariaLabel: "Program" }
-      ]
-    },
-    {
-      label: "Berita",
-      bgColor: "var(--color-accent-500)",
-      textColor: "#fff",
-      links: [
-        { label: "Kabar Terbaru", href: "/berita", ariaLabel: "Berita" }
-      ]
-    },
-    {
-      label: "Galeri",
-      bgColor: "var(--color-n-800)",
-      textColor: "#fff",
-      links: [
-        { label: "Dokumentasi Foto", href: "#galeri", ariaLabel: "Galeri" }
-      ]
-    }
-  ];
-
   return (
-    <div className="relative w-full min-h-screen bg-background text-foreground">
+    <div className="relative w-full min-h-screen bg-slate-50 dark:bg-n-950 text-slate-900 dark:text-slate-50 selection:bg-emerald-500 selection:text-white overflow-x-clip">
+      {/* Floating Section Progress Indicator */}
       <SectionIndicator sections={LANDING_SECTIONS} />
-      
-      <CardNav 
-        logo="/image/logo/logo.png"
-        logoAlt="Karang Taruna Mojosongo"
-        items={navItems}
-        baseColor="var(--color-background)"
-        menuColor="var(--color-foreground)"
-        buttonBgColor="var(--color-primary-500)"
-        buttonTextColor="#ffffff"
-        ctaLabel="Bergabung"
-      />
-      
-      <main className="flex flex-col w-full">
-        <HeroSection />
-        <GallerySection />
-        <FeatureSection />
-        <CtaSection />
+
+      {/* Floating iOS 27 Glassmorphic Navbar */}
+      <LandingNavbar />
+
+      <main className="flex flex-col w-full relative z-10">
+        {/* 1. Hero Section (iOS 27 glassmorphic aesthetic, floating metrics & dynamic cards) */}
+        <section id="hero" className="w-full">
+          <HeroSection />
+        </section>
+
+        {/* 2. Media Partner Section (14 official collaborated media partners infinite ticker) */}
+        <section id="mitra" className="w-full">
+          <MediaPartnerSection />
+        </section>
+
+        {/* 3. Gallery Section (Dokumentasi Turun Kebawah 2026, Merti Desa, Karawitan Walikota) */}
+        <section id="galeri" className="w-full">
+          <GallerySection />
+        </section>
+
+        {/* 4. Youth Feature & Community Program */}
+        <section id="fitur" className="w-full">
+          <FeatureSection />
+        </section>
+
+        {/* 5. Sponsorship Highlights & Demographic Data */}
+        <section id="sponsorship" className="w-full">
+          <SponsorshipSection />
+        </section>
+
+        {/* 6. Collaboration CTA */}
+        <section id="cta" className="w-full">
+          <CtaSection />
+        </section>
       </main>
 
+      {/* Modern Footer with complete links & official social handles */}
+      <LandingFooter />
     </div>
   );
 }

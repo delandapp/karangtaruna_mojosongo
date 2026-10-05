@@ -152,9 +152,7 @@ function CoverUpload({
         result?.data?.s3_url ||
         result?.data?.Location ||
         "";
-      const url = rawUrl.startsWith("/")
-        ? `${(process.env.NEXT_PUBLIC_S3_API_URL || "https://s3-api.mediatamaedu.com/api/v1/").replace(/\/api\/v1\/?$/, "")}${rawUrl}`
-        : rawUrl;
+      const url = rawUrl;
       if (url) {
         onChange(url);
         setPreview(url);
@@ -163,7 +161,7 @@ function CoverUpload({
         toast.error("Upload berhasil tapi URL tidak ditemukan");
       }
     } catch {
-      toast.error("Gagal upload cover", { description: "Periksa koneksi atau konfigurasi S3" });
+      toast.error("Gagal upload cover", { description: "Periksa file yang diunggah" });
     }
   }, [uploadFile, onChange]);
 

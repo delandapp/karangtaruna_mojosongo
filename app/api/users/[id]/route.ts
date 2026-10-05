@@ -1,11 +1,10 @@
-import { indexDocument, deleteDocument } from "@/lib/elasticsearch";
 import { invalidateCachePrefix } from "@/lib/redis";
 import { prisma } from "@/lib/prisma";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 
-import { REDIS_KEYS, ELASTIC_INDICES } from "@/lib/constants";
+import { REDIS_KEYS } from "@/lib/constants";
 import bcrypt from "bcrypt";
 import { z } from "zod";
 
@@ -153,7 +152,6 @@ export const PUT = withAuth(
 
       // Invalidate cache
       await invalidateCachePrefix(REDIS_KEYS.USERS.SINGLE(userId));
-      await indexDocument(ELASTIC_INDICES.USERS, String(updated.id), updated);
       await invalidateCachePrefix(REDIS_KEYS.USERS.ALL_PREFIX);
       return successResponse(updated, 200);
     } catch (error) {
@@ -215,7 +213,6 @@ export const DELETE = withAuth(
 
       // Invalidate cache
       await invalidateCachePrefix(REDIS_KEYS.USERS.SINGLE(userId));
-      await deleteDocument(ELASTIC_INDICES.USERS, userId);
       await invalidateCachePrefix(REDIS_KEYS.USERS.ALL_PREFIX);
       return successResponse(null, 200);
     } catch (error) {

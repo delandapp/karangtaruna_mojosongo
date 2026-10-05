@@ -54,9 +54,7 @@ echo ""
 # ── [2/3] Database Seeder ──────────────────────────────────────────────────────
 echo "🌱 [2/3] Menjalankan database seeder..."
 echo "   ℹ️  Seeder akan:"
-echo "      • Mengosongkan semua Elasticsearch indices"
 echo "      • Mengisi ulang data master ke database"
-echo "      • Bulk reindex semua data ke Elasticsearch"
 echo "      • Invalidasi semua Redis cache"
 echo ""
 

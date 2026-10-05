@@ -30,7 +30,7 @@ describe("GET /api/wilayah/provinsi", () => {
     mockGetCache.mockResolvedValueOnce(cachedData);
 
     const { GET } = await import("@/app/api/wilayah/provinsi/route");
-    const response = await GET(buildRequest(), {} as any);
+    const response = await GET(buildRequest());
     const json = await (response as any).json();
 
     expect(json.success).toBe(true);
@@ -47,7 +47,7 @@ describe("GET /api/wilayah/provinsi", () => {
     vi.mocked(mockPrisma.m_provinsi.findMany).mockResolvedValueOnce(dbData as any);
 
     const { GET } = await import("@/app/api/wilayah/provinsi/route");
-    const response = await GET(buildRequest(), {} as any);
+    const response = await GET(buildRequest());
     const json = await (response as any).json();
 
     expect(json.success).toBe(true);
@@ -66,7 +66,7 @@ describe("GET /api/wilayah/kota", () => {
     vi.mocked(mockPrisma.m_kota.findMany).mockResolvedValueOnce(dbData as any);
 
     const { GET } = await import("@/app/api/wilayah/kota/route");
-    const response = await GET(buildRequest(), {} as any);
+    const response = await GET(buildRequest());
     const json = await (response as any).json();
 
     expect(json.success).toBe(true);
@@ -80,7 +80,7 @@ describe("GET /api/wilayah/kota", () => {
     vi.mocked(mockPrisma.m_kota.findMany).mockResolvedValueOnce([] as any);
 
     const { GET } = await import("@/app/api/wilayah/kota/route");
-    await GET(buildRequest({ provinsi_kode: "030000" }), {} as any);
+    await GET(buildRequest({ provinsi_kode: "030000" }));
 
     expect(mockPrisma.m_kota.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -94,7 +94,7 @@ describe("GET /api/wilayah/kota", () => {
     mockGetCache.mockResolvedValueOnce(cached);
 
     const { GET } = await import("@/app/api/wilayah/kota/route");
-    const response = await GET(buildRequest({ provinsi_kode: "030000" }), {} as any);
+    const response = await GET(buildRequest({ provinsi_kode: "030000" }));
     const json = await (response as any).json();
     expect(json.data).toEqual(cached);
     expect(mockPrisma.m_kota.findMany).not.toHaveBeenCalled();
@@ -110,7 +110,7 @@ describe("GET /api/wilayah/kecamatan", () => {
     vi.mocked(mockPrisma.m_kecamatan.findMany).mockResolvedValueOnce([] as any);
 
     const { GET } = await import("@/app/api/wilayah/kecamatan/route");
-    await GET(buildRequest({ kota_kode: "030110" }), {} as any);
+    await GET(buildRequest({ kota_kode: "030110" }));
 
     expect(mockPrisma.m_kecamatan.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -124,7 +124,7 @@ describe("GET /api/wilayah/kecamatan", () => {
     vi.mocked(mockPrisma.m_kecamatan.findMany).mockResolvedValueOnce([] as any);
 
     const { GET } = await import("@/app/api/wilayah/kecamatan/route");
-    await GET(buildRequest(), {} as any);
+    await GET(buildRequest());
 
     expect(mockPrisma.m_kecamatan.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: {} })
@@ -141,7 +141,7 @@ describe("GET /api/wilayah/kelurahan", () => {
     vi.mocked(mockPrisma.m_kelurahan.findMany).mockResolvedValueOnce([] as any);
 
     const { GET } = await import("@/app/api/wilayah/kelurahan/route");
-    await GET(buildRequest({ kecamatan_kode: "03011001" }), {} as any);
+    await GET(buildRequest({ kecamatan_kode: "03011001" }));
 
     expect(mockPrisma.m_kelurahan.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -155,7 +155,7 @@ describe("GET /api/wilayah/kelurahan", () => {
     vi.mocked(mockPrisma.m_kelurahan.findMany).mockResolvedValueOnce([] as any);
 
     const { GET } = await import("@/app/api/wilayah/kelurahan/route");
-    await GET(buildRequest(), {} as any);
+    await GET(buildRequest());
 
     expect(mockPrisma.m_kelurahan.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: {} })

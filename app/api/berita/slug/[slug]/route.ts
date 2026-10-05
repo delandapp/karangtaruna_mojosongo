@@ -7,7 +7,7 @@ import { getBeritaBySlug } from "@/lib/news/news-query.service";
  * GET /api/berita/slug/[slug]
  *
  * Ambil detail berita berdasarkan SEO slug untuk halaman artikel publik.
- * Data diambil dari Elasticsearch (cache Redis 10 menit).
+ * Data diambil dari database (cache Redis 10 menit).
  *
  * Digunakan oleh: halaman detail artikel, Open Graph metadata, SSR/SSG.
  */

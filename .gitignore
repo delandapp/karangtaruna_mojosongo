@@ -23,6 +23,9 @@
 # misc
 .DS_Store
 *.pem
+.wwebjs_auth/
+/public/uploads/*
+!/public/uploads/.gitkeep
 
 # debug
 npm-debug.log*

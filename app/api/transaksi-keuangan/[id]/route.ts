@@ -2,9 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { updateTransaksiKeuanganSchema } from "@/lib/validations/keuangan.schema";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { getCache } from "@/lib/redis";
-import { ELASTIC_INDICES } from "@/lib/constants";
-import { getDocument } from "@/lib/elasticsearch";
+import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
+import { DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 import { checkUserAccess } from "@/lib/rbac";
 
@@ -26,10 +25,17 @@ export const GET = withAuth(async (req: AuthenticatedRequest, props: RouteProps)
     const cached = await getCache<any>(cacheKey);
     if (cached) return successResponse(cached, 200);
 
-    // 2. Ambil dari Elasticsearch
-    const transaksi = await getDocument(ELASTIC_INDICES.TRANSAKSI_KEUANGAN, id);
+    const transaksi = await prisma.transaksi_keuangan.findUnique({
+      where: { id },
+      include: {
+        dicatat_oleh: { select: { id: true, nama_lengkap: true } },
+        disetujui_oleh: { select: { id: true, nama_lengkap: true } },
+        item_anggaran: true,
+      },
+    });
     if (!transaksi) return errorResponse(404, "Transaksi tidak ditemukan", "NOT_FOUND");
 
+    await setCache(cacheKey, transaksi, DEFAULT_CACHE_TTL);
     return successResponse(transaksi, 200);
   } catch (error) {
     return handleApiError(error);
@@ -91,7 +97,8 @@ export const PUT = withAuth(async (req: AuthenticatedRequest, props: RouteProps)
         disetujui_oleh: { select: { id: true, nama_lengkap: true } },
       },
     });
-    // NOTE: Ideally trigger recalculation of total_pemasukan_realisasi / pengeluaran_realisasi here using Prisma hooks or raw aggregation queries.
+
+    await invalidateCachePrefix(`transaksi_keuangan:${id}`);
     
     return successResponse(transaksi, 200);
   } catch (error) {
@@ -116,6 +123,8 @@ export const DELETE = withAuth(async (req: AuthenticatedRequest, props: RoutePro
     if (!existing) return errorResponse(404, "Transaksi tidak ditemukan", "NOT_FOUND");
 
     await prisma.transaksi_keuangan.delete({ where: { id } });
+
+    await invalidateCachePrefix(`transaksi_keuangan:${id}`);
     return successResponse(null, 200);
   } catch (error) {
     return handleApiError(error);

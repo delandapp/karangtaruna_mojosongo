@@ -5,14 +5,8 @@ import { handleApiError } from "@/lib/error-handler";
 import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
 import {
   REDIS_KEYS,
-  ELASTIC_INDICES,
   DEFAULT_CACHE_TTL,
 } from "@/lib/constants";
-import {
-  getDocument,
-  indexDocument,
-  deleteDocument,
-} from "@/lib/elasticsearch";
 
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
@@ -41,8 +35,14 @@ export const GET = withAuth(
       const cached = await getCache<unknown>(cacheKey);
       if (cached) return successResponse(cached, 200);
 
-      // 2. Ambil dari Elasticsearch
-      const event = await getDocument(ELASTIC_INDICES.EVENTS, String(eventId));
+      // 2. Ambil dari Prisma database
+      const event = await prisma.event.findUnique({
+        where: { id: eventId },
+        include: {
+          organisasi: { select: { id: true, nama_org: true } },
+          dibuat_oleh: { select: { id: true, nama_lengkap: true } },
+        },
+      });
       if (!event) {
         return errorResponse(404, "Event tidak ditemukan", "NOT_FOUND");
       }
@@ -149,7 +149,6 @@ export const PUT = withAuth(
 
       // Invalidate cache
       await invalidateCachePrefix(REDIS_KEYS.EVENTS.SINGLE(eventId));
-      await indexDocument(ELASTIC_INDICES.EVENTS, String(updated.id), updated);
       await invalidateCachePrefix(REDIS_KEYS.EVENTS.ALL_PREFIX);
       return successResponse(updated, 200);
     } catch (error) {
@@ -196,7 +195,6 @@ export const DELETE = withAuth(
 
       // Invalidate cache
       await invalidateCachePrefix(REDIS_KEYS.EVENTS.SINGLE(eventId));
-      await deleteDocument(ELASTIC_INDICES.EVENTS, String(eventId));
       await invalidateCachePrefix(REDIS_KEYS.EVENTS.ALL_PREFIX);
       return successResponse(null, 200);
     } catch (error) {

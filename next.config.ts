@@ -11,7 +11,6 @@ const nextConfig: NextConfig = {
     "puppeteer",
     "puppeteer-core",
     "unzipper",
-    "@aws-sdk/client-s3",
   ],
   images: {
     remotePatterns: [

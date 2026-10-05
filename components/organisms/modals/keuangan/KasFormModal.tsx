@@ -217,9 +217,7 @@ export function KasFormModal({
           result?.data?.s3_url ||
           result?.data?.Location ||
           "";
-        const url = rawUrl.startsWith("/")
-          ? `${(process.env.NEXT_PUBLIC_S3_API_URL || "https://s3-api.mediatamaedu.com/api/v1/").replace(/\/api\/v1\/?$/, "")}${rawUrl}`
-          : rawUrl;
+        const url = rawUrl;
         if (url) {
           setUploadedImages((prev) => [...prev, url]);
           toast.success(`Berhasil mengunggah ${file.name}`);
@@ -252,9 +250,7 @@ export function KasFormModal({
           result?.data?.s3_url ||
           result?.data?.Location ||
           "";
-        const url = rawUrl.startsWith("/")
-          ? `${(process.env.NEXT_PUBLIC_S3_API_URL || "https://s3-api.mediatamaedu.com/api/v1/").replace(/\/api\/v1\/?$/, "")}${rawUrl}`
-          : rawUrl;
+        const url = rawUrl;
         if (url) {
           setUploadedImages((prev) => [...prev, url]);
           toast.success(`Berhasil mengunggah ${file.name}`);

@@ -5,8 +5,6 @@
 #
 #   docker build \
 #     --build-arg NEXT_PUBLIC_API_URL=https://ktimojosongo.my.id/api \
-#     --build-arg NEXT_PUBLIC_S3_API_URL=https://s3-api.mediatamaedu.com/api/v1 \
-#     --build-arg NEXT_PUBLIC_S3_API_KEY=423c4122eb8748b0c8a9ed2d6abec519c7c19da945cc7412f2386ff8762d2e2b \
 #     -t delandapp/karang_taruna:latest .
 #
 # Push ke Docker Hub:
@@ -65,12 +63,8 @@ COPY . .
 # Variabel ini "di-bake" ke dalam JavaScript bundle oleh Next.js.
 # Default value = nilai production dari .env.production
 ARG NEXT_PUBLIC_API_URL=https://ktimojosongo.my.id/api
-ARG NEXT_PUBLIC_S3_API_URL=https://s3-api.mediatamaedu.com/api/v1
-ARG NEXT_PUBLIC_S3_API_KEY=423c4122eb8748b0c8a9ed2d6abec519c7c19da945cc7412f2386ff8762d2e2b
 
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_S3_API_URL=$NEXT_PUBLIC_S3_API_URL
-ENV NEXT_PUBLIC_S3_API_KEY=$NEXT_PUBLIC_S3_API_KEY
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
@@ -114,8 +108,11 @@ COPY --chown=nextjs:nodejs --from=builder /app/package.json     ./package.json
 COPY --chown=nextjs:nodejs --from=builder /app/prisma           ./prisma
 COPY --chown=nextjs:nodejs --from=builder /app/prisma.config.ts ./prisma.config.ts
 
-# ── Lib (dibutuhkan seed.ts: elasticsearch, redis, dll.) ───────────────────────
+# ── Lib (dibutuhkan seed.ts: redis, dll.) ─────────────────────────────────────
 COPY --chown=nextjs:nodejs --from=builder /app/lib              ./lib
+
+# ── Pastikan folder storage uploads dibuat dengan kepemilikan user nextjs ──────
+RUN mkdir -p ./public/uploads && chown -R nextjs:nodejs ./public/uploads
 
 # ── Data JSON untuk seed (kategori sponsor, perusahaan, dll.) ──────────────────
 COPY --chown=nextjs:nodejs --from=builder /app/documentation/data_json ./documentation/data_json

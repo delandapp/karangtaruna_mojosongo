@@ -138,9 +138,7 @@ export const TabEProposal: React.FC<TabEProposalProps> = ({ eventId }) => {
           res.data?.url ||
           res.data?.fileUrl ||
           (typeof res.data === "string" ? res.data : "");
-        file_pdf_url = rawUrl.startsWith("/")
-          ? `${(process.env.NEXT_PUBLIC_S3_API_URL || "https://s3-api.mediatamaedu.com/api/v1/").replace(/\/api\/v1\/?$/, "")}${rawUrl}`
-          : rawUrl;
+        file_pdf_url = rawUrl;
       }
 
       // Upload Cover if new file selected
@@ -164,9 +162,7 @@ export const TabEProposal: React.FC<TabEProposalProps> = ({ eventId }) => {
           res.data?.url ||
           res.data?.fileUrl ||
           (typeof res.data === "string" ? res.data : "");
-        cover_url = rawUrl.startsWith("/")
-          ? `${(process.env.NEXT_PUBLIC_S3_API_URL || "https://s3-api.mediatamaedu.com/api/v1/").replace(/\/api\/v1\/?$/, "")}${rawUrl}`
-          : rawUrl;
+        cover_url = rawUrl;
       }
 
       // Upload Music if new file selected
@@ -191,9 +187,7 @@ export const TabEProposal: React.FC<TabEProposalProps> = ({ eventId }) => {
           res.data?.url ||
           res.data?.fileUrl ||
           (typeof res.data === "string" ? res.data : "");
-        bg_music_url = rawUrl.startsWith("/")
-          ? `${(process.env.NEXT_PUBLIC_S3_API_URL || "https://s3-api.mediatamaedu.com/api/v1/").replace(/\/api\/v1\/?$/, "")}${rawUrl}`
-          : rawUrl;
+        bg_music_url = rawUrl;
       }
 
       if (!file_pdf_url) {

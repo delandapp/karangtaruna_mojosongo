@@ -1,3 +1,6 @@
-2026/06/18-13:20:31.787 7180 Reusing MANIFEST D:\PROGRAMMING\Karang Taruna Mojosongo\karangtaruna_mojosongo\.wwebjs_auth\session-whatsapp-akun-3\Default\Local Storage\leveldb/MANIFEST-000001
-2026/06/18-13:20:31.794 7180 Recovering log #3
-2026/06/18-13:20:31.796 7180 Reusing old log D:\PROGRAMMING\Karang Taruna Mojosongo\karangtaruna_mojosongo\.wwebjs_auth\session-whatsapp-akun-3\Default\Local Storage\leveldb/000003.log 
+2026/06/25-14:22:24.615 9230 Reusing MANIFEST D:\PROGRAMMING\Karang Taruna Mojosongo\karangtaruna_mojosongo\.wwebjs_auth\session-whatsapp-akun-3\Default\Local Storage\leveldb/MANIFEST-000001
+2026/06/25-14:22:24.622 9230 Recovering log #3
+2026/06/25-14:22:24.678 9230 Reusing old log D:\PROGRAMMING\Karang Taruna Mojosongo\karangtaruna_mojosongo\.wwebjs_auth\session-whatsapp-akun-3\Default\Local Storage\leveldb/000003.log 
+2026/06/25-14:23:24.694 5868 Level-0 table #5: started
+2026/06/25-14:23:24.711 5868 Level-0 table #5: 18637 bytes OK
+2026/06/25-14:23:24.734 5868 Delete type=0 #3

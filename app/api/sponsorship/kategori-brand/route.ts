@@ -1,4 +1,3 @@
-import { indexDocument, deleteDocument } from "@/lib/elasticsearch";
 import { prisma } from "@/lib/prisma";
 import { createKategoriBrandSchema } from "@/lib/validations/sponsorship.schema";
 import {

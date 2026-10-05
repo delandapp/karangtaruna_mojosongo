@@ -25,6 +25,49 @@ export interface GalleryAlbum {
 
 export const galleryAlbums: GalleryAlbum[] = [
   {
+    id: "turun-kebawah-2026",
+    title: "Dokumentasi Turun Kebawah 2026",
+    description: "Aksi nyata pengurus Karang Taruna Kelurahan Mojosongo menyapa warga dan berdialog langsung dengan pemuda di seluruh RW untuk menyerap aspirasi.",
+    date: "12 Feb 2026",
+    location: "Wilayah Kelurahan Mojosongo, Surakarta",
+    category: "sosial",
+    cover: "/gallery/turun-kebawah-2026/cover.jpg",
+    photos: [
+      { src: "/gallery/turun-kebawah-2026/cover.jpg", alt: "Turun Kebawah Pemuda Mojosongo 2026" },
+    ],
+    photoCount: 1,
+  },
+  {
+    id: "merti-desa-mojosongo",
+    title: "Dokumentasi Merti Desa Mojosongo",
+    description: "Kirab budaya agung dan tradisi Merti Desa Mojosongo sebagai wujud syukur, pelestarian kearifan lokal, dan mempererat kerukunan seluruh elemen masyarakat.",
+    date: "25 Jan 2026",
+    location: "Kelurahan Mojosongo, Jebres, Surakarta",
+    category: "seni-budaya",
+    cover: "/gallery/merti-desa-mojosongo/cover.JPG",
+    photos: [
+      { src: "/gallery/merti-desa-mojosongo/cover.JPG", alt: "Cover Merti Desa Mojosongo" },
+      { src: "/gallery/merti-desa-mojosongo/foto-kti-mertidesa2026-1.JPG", alt: "Kirab Budaya Merti Desa 1" },
+      { src: "/gallery/merti-desa-mojosongo/foto-kti-mertidesa2026-2.JPG", alt: "Kirab Budaya Merti Desa 2" },
+      { src: "/gallery/merti-desa-mojosongo/foto-kti-mertidesa2026-3.JPG", alt: "Warga dan Pemuda Merti Desa 3" },
+    ],
+    photoCount: 4,
+  },
+  {
+    id: "karawitan-rumah-dinas-walikota",
+    title: "Dokumentasi Karawitan Rumah Dinas Walikota",
+    description: "Pentas seni gamelan Jawa persembahan sanggar Karawitan Karang Taruna Mojosongo di hadapan Walikota Surakarta di Loji Gandrung.",
+    date: "18 Jan 2026",
+    location: "Loji Gandrung (Rumah Dinas Walikota Surakarta)",
+    category: "seni-budaya",
+    cover: "/gallery/karawitan-rumah-dinas-walikota/cover.JPG",
+    photos: [
+      { src: "/gallery/karawitan-rumah-dinas-walikota/cover.JPG", alt: "Pentas Karawitan Loji Gandrung" },
+      { src: "/gallery/karawitan-rumah-dinas-walikota/foto-kti-karawitan-rumah-dinas.JPG", alt: "Penabuh Gamelan Pemuda Mojosongo" },
+    ],
+    photoCount: 2,
+  },
+  {
     id: "festival-ramadhan-2026",
     title: "Festival Ramadhan 2026",
     description: "Perayaan Festival Ramadhan penuh semangat bersama warga Mojosongo dengan berbagai kegiatan islami dan bazaar.",

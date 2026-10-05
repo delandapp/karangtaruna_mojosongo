@@ -12,7 +12,18 @@ const connectionString = process.env.NODE_ENV !== "production" && process.env.DI
   ? process.env.DIRECT_URL 
   : process.env.DATABASE_URL;
 
-const pool = globalForPrisma.pool ?? new Pool({ connectionString });
+const pool =
+  globalForPrisma.pool ??
+  new Pool({
+    connectionString,
+    connectionTimeoutMillis: 10000,
+    idleTimeoutMillis: 30000,
+  });
+
+pool.on("error", (err) => {
+  console.error("[PG_POOL_ERROR] Unexpected error on idle client", err);
+});
+
 const adapter = new PrismaPg(pool);
 
 export const prisma =

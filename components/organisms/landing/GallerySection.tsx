@@ -1,368 +1,286 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ChevronLeft, ChevronRight, Calendar, MapPin, Images } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { galleryAlbums } from "@/lib/data/gallery";
+import {
+  Calendar,
+  MapPin,
+  Images,
+  ArrowRight,
+  Maximize2,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  Camera,
+} from "lucide-react";
+import { galleryAlbums, GalleryAlbum } from "@/lib/data/gallery";
 import { cn } from "@/lib/utils";
-import BlurText from "@/components/react-bits/text-blur";
 
-gsap.registerPlugin(ScrollTrigger);
-
-// Hanya tampilkan 4 album terbaru di landing page
-const FEATURED_ALBUMS = galleryAlbums.slice(0, 4);
-
-// ──────────────────────────────────────────────
 export function GallerySection() {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
-  const [currentSlide, setCurrentSlide] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState<string>("semua");
+  const [activeModalAlbum, setActiveModalAlbum] = useState<GalleryAlbum | null>(null);
+  const [activePhotoIdx, setActivePhotoIdx] = useState<number>(0);
 
-  const containerRef = useRef<HTMLElement>(null);
-  const galleryRef = useRef<HTMLDivElement>(null);
-  const headerRef = useRef<HTMLDivElement>(null);
-  const footerRef = useRef<HTMLDivElement>(null);
+  // Filter albums
+  const filteredAlbums =
+    selectedCategory === "semua"
+      ? galleryAlbums.slice(0, 6)
+      : galleryAlbums
+          .filter((album) => album.category === selectedCategory || album.id.includes(selectedCategory))
+          .slice(0, 6);
 
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
+  const openLightbox = (album: GalleryAlbum, photoIdx: number = 0) => {
+    setActiveModalAlbum(album);
+    setActivePhotoIdx(photoIdx);
+  };
 
-  useGSAP(() => {
-    if (!containerRef.current) return;
+  const closeLightbox = () => {
+    setActiveModalAlbum(null);
+    setActivePhotoIdx(0);
+  };
 
-    // Header fade-in
-    gsap.fromTo(
-      headerRef.current,
-      { y: 36, opacity: 0 },
-      {
-        y: 0, opacity: 1, duration: 0.9, ease: "power3.out",
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: "top 80%",
-          toggleActions: "play reverse play reverse",
-        },
-      }
-    );
+  const nextPhoto = () => {
+    if (!activeModalAlbum) return;
+    const total = activeModalAlbum.photos.length || 1;
+    setActivePhotoIdx((prev) => (prev + 1) % total);
+  };
 
-    // Gallery cards stagger
-    if (galleryRef.current) {
-      gsap.fromTo(
-        Array.from(galleryRef.current.children),
-        { y: 60, opacity: 0, scale: 0.95 },
-        {
-          y: 0, opacity: 1, scale: 1, duration: 0.75, stagger: 0.12,
-          ease: "back.out(1.2)",
-          scrollTrigger: {
-            trigger: galleryRef.current,
-            start: "top 85%",
-            toggleActions: "play reverse play reverse",
-          },
-        }
-      );
-    }
-
-    // Footer line
-    gsap.fromTo(
-      footerRef.current,
-      { opacity: 0, x: -30 },
-      {
-        opacity: 1, x: 0, duration: 0.8, delay: 0.5, ease: "power2.out",
-        scrollTrigger: {
-          trigger: footerRef.current,
-          start: "top 95%",
-          toggleActions: "play reverse play reverse",
-        },
-      }
-    );
-  }, { scope: containerRef });
-
-  // Mobile: prev / next
-  const goNext = () =>
-    setCurrentSlide((i) => (i + 1) % FEATURED_ALBUMS.length);
-  const goPrev = () =>
-    setCurrentSlide((i) => (i - 1 + FEATURED_ALBUMS.length) % FEATURED_ALBUMS.length);
+  const prevPhoto = () => {
+    if (!activeModalAlbum) return;
+    const total = activeModalAlbum.photos.length || 1;
+    setActivePhotoIdx((prev) => (prev - 1 + total) % total);
+  };
 
   return (
-    <section
-      id="galeri"
-      ref={containerRef}
-      className="relative w-full py-20 md:py-28 lg:py-32 px-4 sm:px-6 lg:px-8 overflow-hidden"
-    >
-      {/* ── Background decorative elements ── */}
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-primary-500/5 blur-[100px] pointer-events-none -z-0" />
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-accent-500/5 blur-[80px] pointer-events-none -z-0" />
+    <section id="galeri" className="relative w-full py-20 sm:py-28 overflow-hidden bg-background">
+      {/* Decorative ambient background */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-gradient-to-r from-emerald-500/5 via-teal-400/5 to-transparent blur-[140px] rounded-full pointer-events-none -z-0" />
 
-      <div className="relative z-10 max-w-7xl mx-auto">
-
-        {/* ── Section Header ── */}
-        <div ref={headerRef} className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 md:mb-14">
-          <div>
-            {/* Pill label */}
-            <div className="inline-flex items-center gap-2 bg-primary-500/10 border border-primary-500/20 text-primary-600 dark:text-primary-400 text-xs font-ui font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4">
-              <Images className="w-3.5 h-3.5" />
-              Dokumentasi Kegiatan
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        {/* Section Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 sm:mb-16">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 dark:bg-emerald-400/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold mb-3">
+              <Camera className="w-3.5 h-3.5" />
+              <span>Dokumentasi Kegiatan Nyata</span>
             </div>
-
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-title font-bold text-n-900 dark:text-n-50 leading-tight">
-              <BlurText 
-                text="Galeri"
-                delay={50}
-                animateBy="words"
-                direction="top"
-                className="inline-block mr-3"
-              />
-              <BlurText 
-                text="Kegiatan"
-                delay={50}
-                animateBy="words"
-                direction="top"
-                className="inline-block text-accent-500"
-              />
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-title text-n-900 dark:text-white tracking-tight leading-tight">
+              Galeri Jejak Karya & Kebersamaan Pemuda
             </h2>
-            <p className="text-n-600 dark:text-n-400 font-body text-lg md:text-xl max-w-xl mt-3 leading-relaxed">
-              Jelajahi momen-momen kebersamaan dan inisiatif nyata Karang Taruna
-              Kelurahan Mojosongo dalam membangun lingkungan yang lebih baik.
+            <p className="text-sm sm:text-base text-n-600 dark:text-n-400 mt-3 font-sans">
+              Potret dedikasi, pentas seni budaya, dan aksi sosial Karang Taruna Kelurahan Mojosongo dalam melayani masyarakat.
             </p>
           </div>
 
-          {/* CTA link to full gallery */}
           <Link
             href="/galeri"
-            className="group inline-flex items-center gap-2.5 bg-n-900 dark:bg-n-50 text-n-50 dark:text-n-900 px-6 py-3 rounded-full font-ui font-semibold text-sm hover:bg-primary-500 dark:hover:bg-primary-500 dark:hover:text-white transition-all duration-300 shadow-md hover:shadow-primary-500/25 hover:scale-105 self-start md:self-auto whitespace-nowrap"
+            className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white dark:bg-white/10 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-500 border border-n-200/80 dark:border-white/15 text-xs sm:text-sm font-semibold text-n-800 dark:text-white shadow-xs hover:shadow-md transition-all duration-300 self-start md:self-end"
           >
-            Lihat Semua
-            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+            <span>Buka Arsip Galeri Lengkap</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </Link>
         </div>
 
-        {/* ── Gallery: Desktop Accordion / Mobile Carousel ── */}
-        <div className="relative">
+        {/* ── Category Filter Tabs (iOS Pill Style) ── */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 sm:mb-10 no-scrollbar">
+          {[
+            { id: "semua", label: "Semua Album" },
+            { id: "turun-kebawah-2026", label: "Turun Kebawah 2026" },
+            { id: "merti-desa-mojosongo", label: "Merti Desa Mojosongo" },
+            { id: "karawitan-rumah-dinas-walikota", label: "Karawitan Loji Gandrung" },
+            { id: "sosial", label: "Bakti Sosial" },
+            { id: "seni-budaya", label: "Seni & Budaya" },
+          ].map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={cn(
+                "px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 shrink-0",
+                selectedCategory === cat.id
+                  ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20 scale-105"
+                  : "bg-white/80 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-n-700 dark:text-n-300 border border-n-200/60 dark:border-white/10"
+              )}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
 
-          {/* ── DESKTOP: Accordion / Hover-Expand Layout ── */}
-          <div
-            ref={galleryRef}
-            className={cn(
-              "hidden md:flex gap-4 h-[480px] lg:h-[560px]",
-            )}
-            onMouseLeave={() => setHoveredIndex(null)}
-          >
-            {FEATURED_ALBUMS.map((album, index) => {
-              const isExpanded = hoveredIndex !== null
-                ? hoveredIndex === index
-                : index === 0;
-
-              return (
-                <motion.div
-                  key={album.id}
-                  className="relative rounded-3xl overflow-hidden cursor-pointer shadow-xl flex-shrink-0"
-                  onMouseEnter={() => setHoveredIndex(index)}
-                  animate={{
-                    width: isExpanded ? "48%" : "17.3%",
-                  }}
-                  transition={{ type: "spring", stiffness: 240, damping: 28 }}
-                  onClick={() => window.location.href = "/galeri"}
-                >
-                  {/* Cover Image */}
+        {/* ── Bento Grid Showcase of Albums ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          {filteredAlbums.map((album, idx) => {
+            const isFeaturedLarge = idx === 0 || idx === 1;
+            return (
+              <div
+                key={album.id}
+                onClick={() => openLightbox(album)}
+                className={cn(
+                  "group relative rounded-[2rem] overflow-hidden bg-white/70 dark:bg-white/5 border border-white/80 dark:border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgba(0,188,106,0.12)] backdrop-blur-2xl transition-all duration-500 cursor-pointer flex flex-col justify-between transform hover:-translate-y-1.5",
+                  isFeaturedLarge && "md:col-span-1"
+                )}
+              >
+                {/* Photo Cover Wrapper */}
+                <div className="relative w-full aspect-[16/11] overflow-hidden rounded-t-[1.8rem] bg-n-100 dark:bg-n-800">
                   <Image
                     src={album.cover}
                     alt={album.title}
                     fill
-                    className={cn(
-                      "object-cover transition-transform duration-700",
-                      isExpanded ? "scale-105" : "scale-100"
-                    )}
-                    sizes="(max-width: 1280px) 50vw, 40vw"
+                    loading="lazy"
+                    quality={80}
+                    className="object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   />
+                  
+                  {/* Subtle top pill tags */}
+                  <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between pointer-events-none">
+                    <span className="px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-[11px] font-semibold text-white flex items-center gap-1">
+                      <Images className="w-3 h-3 text-emerald-400" />
+                      {album.photos.length || album.photoCount} Foto
+                    </span>
 
-                  {/* Dark overlay */}
-                  <div className={cn(
-                    "absolute inset-0 transition-opacity duration-500",
-                    isExpanded
-                      ? "bg-gradient-to-t from-black/75 via-black/20 to-transparent"
-                      : "bg-black/50"
-                  )} />
-
-                  {/* Top badges (only visible when expanded) */}
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        transition={{ duration: 0.25 }}
-                        className="absolute top-5 left-5 right-5 z-10 flex items-center justify-between"
-                      >
-                        <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-3.5 py-1.5 rounded-full text-xs font-ui font-semibold flex items-center gap-1.5">
-                          <Calendar className="w-3 h-3" />
-                          {album.date}
-                        </div>
-                        <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-3.5 py-1.5 rounded-full text-xs font-ui font-semibold flex items-center gap-1.5">
-                          <Images className="w-3 h-3" />
-                          {album.photoCount} foto
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* Bottom info */}
-                  <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
-                    <AnimatePresence>
-                      {isExpanded && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 16 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 8 }}
-                          transition={{ duration: 0.3 }}
-                          className="mb-2"
-                        >
-                          <p className="text-white/70 text-xs font-ui flex items-center gap-1.5 mb-1">
-                            <MapPin className="w-3 h-3" />
-                            {album.location}
-                          </p>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
-                    <div className="bg-white/15 backdrop-blur-xl border border-white/25 p-3.5 rounded-2xl shadow-lg">
-                      <span className="text-white/70 text-[10px] uppercase tracking-[0.18em] font-ui font-bold block mb-1">
-                        Galeri Kegiatan
-                      </span>
-                      <h3 className={cn(
-                        "text-white font-title font-bold leading-snug drop-shadow-sm",
-                        isExpanded ? "text-base md:text-lg" : "text-xs line-clamp-2"
-                      )}>
-                        {album.title}
-                      </h3>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-
-          {/* ── MOBILE: Snap Carousel ── */}
-          <div className="md:hidden relative">
-            <div className="overflow-hidden rounded-3xl aspect-[4/3]">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentSlide}
-                  initial={{ opacity: 0, x: 40 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -40 }}
-                  transition={{ duration: 0.35, ease: "easeOut" }}
-                  className="relative w-full h-full"
-                >
-                  <Image
-                    src={FEATURED_ALBUMS[currentSlide].cover}
-                    alt={FEATURED_ALBUMS[currentSlide].title}
-                    fill
-                    className="object-cover"
-                    sizes="100vw"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
-                  {/* Mobile badges */}
-                  <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
-                    <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-3 py-1.5 rounded-full text-[11px] font-ui font-semibold flex items-center gap-1.5">
-                      <Calendar className="w-3 h-3" />
-                      {FEATURED_ALBUMS[currentSlide].date}
-                    </div>
-                    <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-3 py-1.5 rounded-full text-[11px] font-ui font-semibold flex items-center gap-1.5">
-                      <Images className="w-3 h-3" />
-                      {FEATURED_ALBUMS[currentSlide].photoCount} foto
-                    </div>
+                    <span className="w-8 h-8 rounded-full bg-white/90 dark:bg-black/60 backdrop-blur-md flex items-center justify-center text-n-800 dark:text-white shadow-xs group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                      <Maximize2 className="w-3.5 h-3.5" />
+                    </span>
                   </div>
 
-                  {/* Mobile bottom info */}
-                  <div className="absolute bottom-5 left-5 right-5 z-10">
-                    <div className="bg-white/15 backdrop-blur-xl border border-white/25 p-4 rounded-2xl shadow-lg">
-                      <span className="text-white/70 text-[10px] uppercase tracking-widest font-ui font-bold block mb-1">
-                        Galeri Kegiatan
-                      </span>
-                      <h3 className="text-white font-title font-bold text-base leading-snug">
-                        {FEATURED_ALBUMS[currentSlide].title}
-                      </h3>
-                      <p className="text-white/60 text-xs font-ui mt-1 flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        {FEATURED_ALBUMS[currentSlide].location}
-                      </p>
-                    </div>
+                  {/* Date and Location Badge Overlay */}
+                  <div className="absolute bottom-3 left-3.5 right-3.5 flex items-center gap-2 text-[11px] font-medium text-white/90">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10">
+                      <Calendar className="w-3 h-3 text-emerald-300" />
+                      {album.date}
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 truncate">
+                      <MapPin className="w-3 h-3 text-emerald-300 shrink-0" />
+                      <span className="truncate">{album.location}</span>
+                    </span>
                   </div>
-                </motion.div>
-              </AnimatePresence>
-            </div>
+                </div>
 
-            {/* Mobile Prev / Next */}
-            <button
-              onClick={goPrev}
-              className="absolute left-3 top-1/2 -translate-y-1/2 z-20 bg-white/20 backdrop-blur-md border border-white/30 text-white p-2.5 rounded-full shadow-lg hover:bg-white/30 transition-colors"
-              aria-label="Sebelumnya"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button
-              onClick={goNext}
-              className="absolute right-3 top-1/2 -translate-y-1/2 z-20 bg-white/20 backdrop-blur-md border border-white/30 text-white p-2.5 rounded-full shadow-lg hover:bg-white/30 transition-colors"
-              aria-label="Berikutnya"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
+                {/* Card Info Content */}
+                <div className="p-5 sm:p-6 flex flex-col justify-between flex-grow">
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-bold font-title text-n-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1 mb-2">
+                      {album.title}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-n-600 dark:text-n-400 font-sans line-clamp-2 leading-relaxed">
+                      {album.description}
+                    </p>
+                  </div>
 
-            {/* Mobile dot indicators */}
-            <div className="flex justify-center gap-1.5 mt-4">
-              {FEATURED_ALBUMS.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrentSlide(i)}
-                  className={cn(
-                    "rounded-full transition-all duration-300",
-                    i === currentSlide
-                      ? "w-6 h-2 bg-primary-500"
-                      : "w-2 h-2 bg-n-300 dark:bg-n-600"
-                  )}
-                  aria-label={`Slide ${i + 1}`}
-                />
-              ))}
-            </div>
-          </div>
+                  <div className="mt-4 pt-4 border-t border-n-100 dark:border-white/10 flex items-center justify-between text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                    <span>Lihat Dokumentasi Lengkap</span>
+                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
-
-        {/* ── Footer: Progress bar + "Lihat Galeri Lengkap" ── */}
-        <div ref={footerRef} className="mt-10 md:mt-14 flex flex-col sm:flex-row items-center gap-6">
-          {/* Progress indicator */}
-          <div className="flex-1 h-[2px] bg-n-200 dark:bg-n-700 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-gradient-to-r from-primary-500 to-accent-500 rounded-full"
-              initial={{ width: "0%" }}
-              whileInView={{ width: `${(FEATURED_ALBUMS.length / galleryAlbums.length) * 100}%` }}
-              transition={{ duration: 1.2, ease: "easeOut" }}
-              viewport={{ once: true }}
-            />
-          </div>
-
-          <div className="flex items-center gap-4 shrink-0">
-            <span className="text-sm font-ui text-n-500 dark:text-n-400 border border-n-200 dark:border-n-700 px-4 py-1.5 rounded-full">
-              {FEATURED_ALBUMS.length} dari {galleryAlbums.length} album
-            </span>
-            <Link
-              href="/galeri"
-              className="group flex items-center gap-2 text-sm font-ui font-semibold text-primary-600 dark:text-primary-400 hover:text-accent-500 transition-colors"
-            >
-              Lihat Semua
-              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-            </Link>
-          </div>
-        </div>
-
       </div>
+
+      {/* ── Interactive Lightbox Modal ── */}
+      {activeModalAlbum && (
+        <div
+          className="fixed inset-0 z-[999] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-2xl transition-all duration-300 animate-in fade-in"
+          onClick={closeLightbox}
+        >
+          <div
+            className="relative w-full max-w-4xl max-h-[90vh] bg-n-900/90 border border-white/20 rounded-[2rem] overflow-hidden shadow-2xl flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-white/10 text-white">
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold font-title">
+                  {activeModalAlbum.title}
+                </h3>
+                <p className="text-xs text-n-400">
+                  {activeModalAlbum.location} • {activeModalAlbum.date}
+                </p>
+              </div>
+
+              <button
+                onClick={closeLightbox}
+                className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+                aria-label="Tutup Galeri"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Image Display */}
+            <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] bg-black flex items-center justify-center overflow-hidden">
+              {(() => {
+                const currentPhoto =
+                  activeModalAlbum.photos[activePhotoIdx]?.src || activeModalAlbum.cover;
+                const currentAlt =
+                  activeModalAlbum.photos[activePhotoIdx]?.alt || activeModalAlbum.title;
+
+                return (
+                  <Image
+                    src={currentPhoto}
+                    alt={currentAlt}
+                    fill
+                    className="object-contain"
+                    sizes="100vw"
+                    priority
+                  />
+                );
+              })()}
+
+              {/* Prev / Next navigation buttons */}
+              {activeModalAlbum.photos.length > 1 && (
+                <>
+                  <button
+                    onClick={prevPhoto}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/60 hover:bg-emerald-600 text-white backdrop-blur-md flex items-center justify-center transition-all shadow-md"
+                    aria-label="Foto Sebelumnya"
+                  >
+                    <ChevronLeft className="w-6 h-6" />
+                  </button>
+                  <button
+                    onClick={nextPhoto}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/60 hover:bg-emerald-600 text-white backdrop-blur-md flex items-center justify-center transition-all shadow-md"
+                    aria-label="Foto Berikutnya"
+                  >
+                    <ChevronRight className="w-6 h-6" />
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Modal Footer Thumbnails */}
+            {activeModalAlbum.photos.length > 1 && (
+              <div className="flex items-center gap-2 p-4 overflow-x-auto bg-black/40 border-t border-white/10">
+                {activeModalAlbum.photos.map((photo, i) => (
+                  <button
+                    key={photo.src}
+                    onClick={() => setActivePhotoIdx(i)}
+                    className={cn(
+                      "relative w-16 h-12 rounded-lg overflow-hidden shrink-0 border-2 transition-all",
+                      activePhotoIdx === i
+                        ? "border-emerald-500 scale-105"
+                        : "border-transparent opacity-60 hover:opacity-100"
+                    )}
+                  >
+                    <Image
+                      src={photo.src}
+                      alt={photo.alt}
+                      fill
+                      loading="lazy"
+                      quality={60}
+                      sizes="64px"
+                      className="object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

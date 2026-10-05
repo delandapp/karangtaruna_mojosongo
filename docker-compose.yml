@@ -7,11 +7,11 @@
 #
 # CATATAN JARINGAN:
 #   • shared_postgres & shared_pgbouncer  → Docker container di network "shared-backend-services"
-#   • Redis & Elasticsearch menggunakan "127.0.0.1" di .env.production
-#     Jika Redis/ES berjalan sebagai Docker container di network "shared-backend-services",
-#     ganti REDIS_URL dan ELASTIC_NODE di .env.production dengan nama container
-#     yang sesuai (contoh: redis://..., http://elasticsearch:9200)
-#     Jika Redis/ES berjalan langsung di host server (bukan Docker),
+#   • Redis menggunakan "127.0.0.1" di .env.production
+#     Jika Redis berjalan sebagai Docker container di network "shared-backend-services",
+#     ganti REDIS_URL di .env.production dengan nama container
+#     yang sesuai (contoh: redis://...)
+#     Jika Redis berjalan langsung di host server (bukan Docker),
 #     gunakan network_mode: host atau sesuaikan konfigurasi jaringan.
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -42,20 +42,16 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-delandapp@Maheswari124@}
       REDIS_URL: ${REDIS_URL:-redis://:DelandAppMaheswari124Secure@127.0.0.1:6379}
 
-      # ── Elasticsearch ─────────────────────────────────────────────────────
-      ELASTIC_NODE: ${ELASTIC_NODE:-http://127.0.0.1:9200}
-      ELASTIC_USERNAME: ${ELASTIC_USERNAME:-elastic}
-      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-elasticsearch@Maheswari124@Secure}
-
       # ── Next.js Public (di-bake saat build, tetap di-pass saat runtime) ───
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://ktimojosongo.my.id/api}
-      NEXT_PUBLIC_S3_API_URL: ${NEXT_PUBLIC_S3_API_URL:-https://s3-api.mediatamaedu.com/api/v1}
-      NEXT_PUBLIC_S3_API_KEY: ${NEXT_PUBLIC_S3_API_KEY:-55f95e7379805f3e2ccbea368cb683382f6275076557100b0532631eab7a6d59}
+
+    volumes:
+      - ./public/uploads:/app/public/uploads
 
     networks:
       - services-net
 
-    # Izinkan container mengakses service di host (untuk Redis/ES yang berjalan
+    # Izinkan container mengakses service di host (untuk Redis yang berjalan
     # langsung di host server, bukan sebagai Docker container)
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -79,7 +75,7 @@ services:
 
 # ── Networks ──────────────────────────────────────────────────────────────────
 # "shared-backend-services" adalah network eksternal yang sudah dibuat di server,
-# tempat shared_postgres, shared_pgbouncer, Redis, dan Elasticsearch berada.
+# tempat shared_postgres, shared_pgbouncer, dan Redis berada.
 #
 # Jika network belum ada, buat dulu di server:
 #   sudo docker network create shared-backend-services

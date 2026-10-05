@@ -83,10 +83,6 @@ export async function recalculateTrendingScores(): Promise<void> {
         },
       });
 
-      // ── 2. Partial update Elasticsearch (hanya field yang berubah) ────
-      // ── 2. Elasticsearch bypass (Elasticsearch tidak digunakan) ────
-      // Skip ES update
-
       updated++;
     }
 

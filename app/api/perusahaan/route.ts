@@ -7,16 +7,7 @@ import {
 } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import {
-  REDIS_KEYS,
-  ELASTIC_INDICES,
-  DEFAULT_CACHE_TTL,
-} from "@/lib/constants";
-import {
-  searchDocuments,
-  indexDocument,
-  deleteDocument,
-} from "@/lib/elasticsearch";
+import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
 import { z } from "zod";
@@ -51,18 +42,14 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
       const cached = await getCache<unknown[]>(cacheKey);
       if (cached) return successResponse(cached, 200);
 
-      const { hits } = await searchDocuments(
-        ELASTIC_INDICES.PERUSAHAAN,
-        { match_all: {} },
-        {
-          size: 10000,
-          sort: [{ "nama.keyword": { order: "asc" } }],
-          _source: ["id", "nama"],
-        },
-      );
+      const items = await prisma.m_perusahaan.findMany({
+        select: { id: true, nama: true },
+        orderBy: { nama: "asc" },
+        take: 10000,
+      });
 
-      await setCache(cacheKey, hits, DEFAULT_CACHE_TTL);
-      return successResponse(hits, 200);
+      await setCache(cacheKey, items, DEFAULT_CACHE_TTL);
+      return successResponse(items, 200);
     }
 
     // ── Mode Paginated ────────────────────────────────────────────────────
@@ -84,58 +71,43 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
         return paginatedResponse(cached.data as any[], cached.meta as any, 200);
     }
 
-    // Build Elasticsearch query
-    const must: Record<string, unknown>[] = [];
-    const filter: Record<string, unknown>[] = [];
-
+    const where: Record<string, unknown> = {};
     if (search) {
-      must.push({
-        multi_match: {
-          query: search,
-          fields: ["nama", "nama_kontak"],
-          type: "best_fields",
-          fuzziness: "AUTO",
-        },
-      });
+      where.OR = [
+        { nama: { contains: search, mode: "insensitive" } },
+        { nama_kontak: { contains: search, mode: "insensitive" } },
+      ];
     }
-
     if (m_sektor_industri_id) {
-      filter.push({ term: { m_sektor_industri_id } });
+      where.m_sektor_industri_id = m_sektor_industri_id;
     }
-
     if (m_skala_perusahaan_id) {
-      filter.push({ term: { m_skala_perusahaan_id } });
+      where.m_skala_perusahaan_id = m_skala_perusahaan_id;
     }
 
-    const esQuery =
-      must.length > 0 || filter.length > 0
-        ? {
-            bool: {
-              must: must.length > 0 ? must : [{ match_all: {} }],
-              filter,
-            },
-          }
-        : { match_all: {} };
-
-    const { hits, total } = await searchDocuments(
-      ELASTIC_INDICES.PERUSAHAAN,
-      esQuery,
-      {
-        from: skip,
-        size: limit,
-        sort: [{ dibuat_pada: { order: "desc" } }],
-      },
-    );
+    const [items, total] = await prisma.$transaction([
+      prisma.m_perusahaan.findMany({
+        where,
+        include: {
+          sektor: true,
+          skala: true,
+        },
+        skip,
+        take: limit,
+        orderBy: { dibuat_pada: "desc" },
+      }),
+      prisma.m_perusahaan.count({ where }),
+    ]);
 
     const totalPages = Math.ceil(total / limit);
     const meta = { page, limit, total, totalPages };
 
     // Simpan ke cache hanya untuk query tanpa filter/search
     if (!isFiltered) {
-      await setCache(cacheKey, { data: hits, meta }, DEFAULT_CACHE_TTL);
+      await setCache(cacheKey, { data: items, meta }, DEFAULT_CACHE_TTL);
     }
 
-    return paginatedResponse(hits, meta, 200);
+    return paginatedResponse(items, meta, 200);
   } catch (error) {
     return handleApiError(error);
   }
@@ -154,11 +126,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     });
 
     // Invalidate cache
-    await indexDocument(
-      ELASTIC_INDICES.PERUSAHAAN,
-      String(newItem.id),
-      newItem,
-    );
     await invalidateCachePrefix(REDIS_KEYS.PERUSAHAAN.ALL_PREFIX);
     return successResponse(newItem, 201);
   } catch (error) {

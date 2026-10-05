@@ -19,7 +19,7 @@ import { seedNews } from "./seeds/12-news";
 import { seedRapatNotulen } from "./seeds/13-rapat-notulen";
 import { seedPlatform } from "./seeds/14-platform";
 
-import { invalidateCachePrefix } from "../lib/redis";
+import { invalidateCachePrefix, redis } from "../lib/redis";
 
 import {
   REDIS_KEYS,
@@ -105,12 +105,31 @@ async function main() {
   console.log("═".repeat(60) + "\n");
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
+async function cleanup() {
+  try {
     await prisma.$disconnect();
+  } catch (err) {
+    console.error("Error disconnecting Prisma:", err);
+  }
+  try {
     await pool.end();
+  } catch (err) {
+    console.error("Error ending DB pool:", err);
+  }
+  try {
+    await redis.quit();
+  } catch {
+    redis.disconnect();
+  }
+}
+
+main()
+  .then(async () => {
+    await cleanup();
+    process.exit(0);
+  })
+  .catch(async (e) => {
+    console.error(e);
+    await cleanup();
+    process.exit(1);
   });

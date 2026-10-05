@@ -5,14 +5,8 @@ import { handleApiError } from "@/lib/error-handler";
 import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
 import {
   REDIS_KEYS,
-  ELASTIC_INDICES,
   DEFAULT_CACHE_TTL,
 } from "@/lib/constants";
-import {
-  getDocument,
-  indexDocument,
-  deleteDocument,
-} from "@/lib/elasticsearch";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
 type RouteProps = { params: Promise<{ id: string }> };
@@ -37,20 +31,16 @@ export const GET = withAuth(
       const cached = await getCache<unknown>(cacheKey);
       if (cached) return successResponse(cached, 200);
 
-      // Coba ES dulu, fallback ke DB
-      let notulen: any = await getDocument(ELASTIC_INDICES.NOTULEN, notulenId);
-      if (!notulen) {
-        notulen = await prisma.m_notulen.findUnique({
-          where: { id: notulenId },
-          include: {
-            rapat: { select: { id: true, judul_rapat: true } },
-            notulis: { select: { id: true, nama_lengkap: true } },
-            poin_bahasan: { orderBy: { urutan: "asc" } },
-            keputusan: { orderBy: { urutan: "asc" } },
-            tindak_lanjut: true,
-          },
-        });
-      }
+      const notulen = await prisma.m_notulen.findUnique({
+        where: { id: notulenId },
+        include: {
+          rapat: { select: { id: true, judul_rapat: true } },
+          notulis: { select: { id: true, nama_lengkap: true } },
+          poin_bahasan: { orderBy: { urutan: "asc" } },
+          keputusan: { orderBy: { urutan: "asc" } },
+          tindak_lanjut: true,
+        },
+      });
 
       if (!notulen)
         return errorResponse(404, "Notulen tidak ditemukan", "NOT_FOUND");
@@ -166,7 +156,6 @@ export const PUT = withAuth(
       }
 
       await invalidateCachePrefix(REDIS_KEYS.NOTULEN.SINGLE(notulenId));
-      await indexDocument(ELASTIC_INDICES.NOTULEN, String(updated.id), updated);
       await invalidateCachePrefix(REDIS_KEYS.NOTULEN.ALL_PREFIX);
       return successResponse(updated, 200);
     } catch (error) {
@@ -204,7 +193,6 @@ export const DELETE = withAuth(
       await prisma.m_notulen.delete({ where: { id: notulenId } });
 
       await invalidateCachePrefix(REDIS_KEYS.NOTULEN.SINGLE(notulenId));
-      await deleteDocument(ELASTIC_INDICES.NOTULEN, String(id));
       await invalidateCachePrefix(REDIS_KEYS.NOTULEN.ALL_PREFIX);
       return successResponse(null, 200);
     } catch (error) {

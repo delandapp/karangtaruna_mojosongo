@@ -1,5 +1,7 @@
+"use client";
+
 import { useEffect, useRef, useState } from "react";
-import { motion } from "motion/react";
+import { motion, useInView } from "motion/react";
 
 interface TrueFocusProps {
   sentence?: string;
@@ -41,7 +43,6 @@ const TrueFocus: React.FC<TrueFocusProps> = ({
     height: 0,
   });
 
-  const { useInView } = require("framer-motion");
   const inView = useInView(containerRef, { amount: 0.5, margin: "0px" });
 
   useEffect(() => {

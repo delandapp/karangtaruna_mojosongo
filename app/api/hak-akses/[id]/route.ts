@@ -1,10 +1,9 @@
-import { indexDocument, deleteDocument } from "@/lib/elasticsearch";
 import { invalidateCachePrefix } from "@/lib/redis";
 import { prisma } from "@/lib/prisma";
 import { updateHakAksesSchema } from "@/lib/validations/hak-akses.schema";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
-import { REDIS_KEYS, ELASTIC_INDICES } from "@/lib/constants";
+import { REDIS_KEYS } from "@/lib/constants";
 
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 

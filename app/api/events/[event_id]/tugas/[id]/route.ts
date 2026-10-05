@@ -1,4 +1,3 @@
-import { indexDocument, deleteDocument } from "@/lib/elasticsearch";
 import { prisma } from "@/lib/prisma";
 import { updateTugasSchema } from "@/lib/validations/tugas.schema";
 import { successResponse, errorResponse } from "@/lib/api-response";

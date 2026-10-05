@@ -3,17 +3,7 @@ import { updatePerusahaanSchema } from "@/lib/validations/perusahaan.schema";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { handleApiError } from "@/lib/error-handler";
 import { getCache, setCache, invalidateCachePrefix } from "@/lib/redis";
-import {
-  REDIS_KEYS,
-  ELASTIC_INDICES,
-  DEFAULT_CACHE_TTL,
-} from "@/lib/constants";
-import {
-  getDocument,
-  indexDocument,
-  deleteDocument,
-} from "@/lib/elasticsearch";
-
+import { REDIS_KEYS, DEFAULT_CACHE_TTL } from "@/lib/constants";
 import { withAuth, AuthenticatedRequest } from "@/lib/auth-middleware";
 
 type RouteProps = { params: Promise<{ id: string }> };
@@ -43,11 +33,18 @@ export const GET = withAuth(
       const cached = await getCache<unknown>(cacheKey);
       if (cached) return successResponse(cached, 200);
 
-      // 2. Ambil dari Elasticsearch
-      const item = await getDocument(
-        ELASTIC_INDICES.PERUSAHAAN,
-        String(itemId),
-      );
+      // 2. Ambil dari Prisma database
+      const item = await prisma.m_perusahaan.findUnique({
+        where: { id: itemId },
+        include: {
+          sektor: true,
+          skala: true,
+          m_provinsi: true,
+          m_kota: true,
+          m_kecamatan: true,
+          m_kelurahan: true,
+        },
+      });
       if (!item)
         return errorResponse(
           404,
@@ -109,11 +106,6 @@ export const PUT = withAuth(
 
       // Invalidate cache
       await invalidateCachePrefix(REDIS_KEYS.PERUSAHAAN.SINGLE(itemId));
-      await indexDocument(
-        ELASTIC_INDICES.PERUSAHAAN,
-        String(updated.id),
-        updated,
-      );
       await invalidateCachePrefix(REDIS_KEYS.PERUSAHAAN.ALL_PREFIX);
       return successResponse(updated, 200);
     } catch (error) {
@@ -152,7 +144,6 @@ export const DELETE = withAuth(
 
       // Invalidate cache
       await invalidateCachePrefix(REDIS_KEYS.PERUSAHAAN.SINGLE(itemId));
-      await deleteDocument(ELASTIC_INDICES.PERUSAHAAN, String(id));
       await invalidateCachePrefix(REDIS_KEYS.PERUSAHAAN.ALL_PREFIX);
       return successResponse(null, 200);
     } catch (error) {

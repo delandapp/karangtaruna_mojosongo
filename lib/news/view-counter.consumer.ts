@@ -71,10 +71,7 @@ export async function flushToDatabase(): Promise<void> {
     }
   }
 
-  // ── 2. Elasticsearch bypass (Elasticsearch tidak digunakan) ─────────────────
-  // Skip ES bulk update
-
-  // ── 3. Invalidasi Redis cache untuk setiap berita yang diupdate ───────────
+  // ── 2. Invalidasi Redis cache untuk setiap berita yang diupdate ───────────
   for (const [beritaId] of updates) {
     try {
       await invalidateCachePrefix(REDIS_KEYS.BERITA.SINGLE(beritaId));

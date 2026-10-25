@@ -58,11 +58,15 @@ echo "      • Mengisi ulang data master ke database"
 echo "      • Invalidasi semua Redis cache"
 echo ""
 
-if tsx prisma/seed.ts; then
-  echo "✅ Seeder selesai."
+if [ "$SKIP_SEED" = "true" ] || [ "$SKIP_SEED" = "1" ]; then
+  echo "⏩ Melewati seeder database (SKIP_SEED aktif)."
 else
-  echo "⚠️  Seeder mengalami error — container tetap dilanjutkan."
-  echo "   Periksa log di atas untuk detail error."
+  if tsx prisma/seed.ts; then
+    echo "✅ Seeder selesai."
+  else
+    echo "⚠️  Seeder mengalami error — container tetap dilanjutkan."
+    echo "   Periksa log di atas untuk detail error."
+  fi
 fi
 
 echo ""

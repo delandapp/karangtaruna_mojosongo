@@ -62,9 +62,19 @@ async function invalidateRedisCache() {
     REDIS_KEYS.NOTULEN.ALL_PREFIX,
   ];
 
-  for (const prefix of prefixes) {
-    await invalidateCachePrefix(prefix);
-    console.log(`  ✅ Invalidasi: ${prefix}`);
+  try {
+    const invalidationTasks = Promise.all(
+      prefixes.map(async (prefix) => {
+        await invalidateCachePrefix(prefix);
+        console.log(`  ✅ Invalidasi: ${prefix}`);
+      }),
+    );
+
+    // Timeout pengaman 5 detik untuk cache invalidation
+    const timeout = new Promise((resolve) => setTimeout(resolve, 5000));
+    await Promise.race([invalidationTasks, timeout]);
+  } catch (err) {
+    console.warn("⚠️ Error pada cache invalidation:", err);
   }
 
   console.log(
@@ -107,29 +117,43 @@ async function main() {
 
 async function cleanup() {
   try {
-    await prisma.$disconnect();
-  } catch (err) {
-    console.error("Error disconnecting Prisma:", err);
-  }
-  try {
-    await pool.end();
-  } catch (err) {
-    console.error("Error ending DB pool:", err);
-  }
-  try {
-    await redis.quit();
-  } catch {
+    // Putuskan koneksi Redis secara sinkron (disconnect).
+    // Jangan gunakan redis.quit() karena ioredis quit() sering menggantung (hang)
+    // tanpa batas waktu jika menunggu acknowledgement QUIT dari server di container/network.
     redis.disconnect();
+  } catch (err) {
+    console.error("Error disconnecting Redis:", err);
   }
+
+  // Jalankan disconnect Prisma dan Pool secara paralel dengan batas waktu (timeout)
+  // agar proses tidak pernah stuck jika ada koneksi pool yang tertahan
+  const disconnectTasks = Promise.allSettled([
+    prisma.$disconnect().catch((err) => console.error("Error disconnecting Prisma:", err)),
+    pool.end().catch((err) => console.error("Error ending DB pool:", err)),
+  ]);
+
+  const timeout = new Promise((resolve) => setTimeout(resolve, 1500));
+  await Promise.race([disconnectTasks, timeout]);
 }
 
 main()
   .then(async () => {
+    // Watchdog timer: jika cleanup melebihi 2.5 detik, paksa exit 0
+    const watchdog = setTimeout(() => {
+      process.exit(0);
+    }, 2500);
+    watchdog.unref();
+
     await cleanup();
     process.exit(0);
   })
   .catch(async (e) => {
     console.error(e);
+    const watchdog = setTimeout(() => {
+      process.exit(1);
+    }, 2500);
+    watchdog.unref();
+
     await cleanup();
     process.exit(1);
   });

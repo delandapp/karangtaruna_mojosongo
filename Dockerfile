@@ -12,22 +12,7 @@
 # ══════════════════════════════════════════════════════════════════════════════
 
 
-# ── Stage 1: Full deps (dev + prod) — hanya untuk build ───────────────────────
-# Stage ini TIDAK masuk ke image final. Hanya dipakai oleh builder.
-FROM node:22-alpine AS deps
-
-WORKDIR /app
-
-RUN apk add --no-cache libc6-compat
-
-COPY package.json package-lock.json ./
-
-# Install semua dependency (termasuk devDeps: TypeScript, ESLint, Vitest, dll.)
-# Diperlukan agar next build & prisma generate bisa berjalan.
-RUN npm ci --include=dev
-
-
-# ── Stage 2: Production-only deps — untuk runner (jauh lebih kecil) ───────────
+# ── Stage 1: Production-only deps — untuk runner (jauh lebih kecil) ───────────
 # Tidak ada TypeScript, ESLint, Vitest, @tailwindcss/oxide, dll.
 # Ukuran node_modules turun drastis → image final lebih kecil & export lebih cepat.
 FROM node:22-alpine AS prod-deps
@@ -41,20 +26,24 @@ COPY package.json package-lock.json ./
 # Hanya install production dependencies
 RUN npm ci --omit=dev
 
-# tsx tidak ada di package.json tapi dibutuhkan entrypoint untuk menjalankan
-# prisma/seed.ts saat container startup. Install secara eksplisit tanpa menyentuh lockfile.
+# tsx dibutuhkan entrypoint untuk menjalankan prisma/seed.ts saat container startup.
+# Install secara eksplisit tanpa menyentuh lockfile.
 RUN npm install --no-save tsx
 
 
-# ── Stage 3: Build Next.js application ────────────────────────────────────────
+# ── Stage 2: Build Next.js application ────────────────────────────────────────
 FROM node:22-alpine AS builder
 
 WORKDIR /app
 
 RUN apk add --no-cache libc6-compat
 
-# Gunakan full deps dari stage 1
-COPY --from=deps /app/node_modules ./node_modules
+COPY package.json package-lock.json ./
+
+# Install dependency langsung di builder.
+# Menghindari "COPY --from=deps node_modules" lintas stage yang menduplikasi
+# ratusan ribu file (2GB) dan menyebabkan 'input/output error' pada Docker BuildKit.
+RUN npm ci --include=dev
 
 # Salin seluruh source code
 COPY . .
@@ -77,7 +66,7 @@ RUN node_modules/.bin/prisma generate
 RUN node_modules/.bin/next build
 
 
-# ── Stage 4: Production runner ─────────────────────────────────────────────────
+# ── Stage 3: Production runner ─────────────────────────────────────────────────
 FROM node:22-alpine AS runner
 
 WORKDIR /app

@@ -89,6 +89,7 @@
     "tailwind-merge": "^3.5.0",
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.183.2",
+    "tsx": "^4.23.15",
     "whatsapp-web.js": "^1.34.7",
     "xlsx": "^0.18.5",
     "z": "^1.0.9",

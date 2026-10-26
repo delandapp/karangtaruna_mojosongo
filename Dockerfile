@@ -23,12 +23,8 @@ RUN apk add --no-cache libc6-compat
 
 COPY package.json package-lock.json ./
 
-# Hanya install production dependencies
+# Hanya install production dependencies (termasuk tsx untuk runtime seeder)
 RUN npm ci --omit=dev
-
-# tsx dibutuhkan entrypoint untuk menjalankan prisma/seed.ts saat container startup.
-# Install secara eksplisit tanpa menyentuh lockfile.
-RUN npm install --no-save tsx
 
 
 # ── Stage 2: Build Next.js application ────────────────────────────────────────

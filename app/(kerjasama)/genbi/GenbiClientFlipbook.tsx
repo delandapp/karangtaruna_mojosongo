@@ -88,7 +88,6 @@ export default function GenbiClientFlipbook({
   const [dimensions, setDimensions] = useState({ width: 500, height: 707 });
   const [tocOpen, setTocOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [panSide, setPanSide] = useState<"left" | "right">("right");
 
   const flipBookRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -115,41 +114,53 @@ export default function GenbiClientFlipbook({
 
   const isOnCover = currentPage === 0;
 
-  /* ── Sizing: 90% of viewport ── */
+  /* ── Sizing: Responsive single-page (mobile) & spread (desktop) ── */
   const calculateDimensions = useCallback(() => {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const ratio = 1 / 1.414; // A4 aspect ratio
-
-    // Toolbar (48px) + Top header (56px)
-    const topBarH = 56;
-    const toolbarH = 48;
-    const availH = vh - toolbarH - topBarH;
-
-    let pageH = Math.floor(availH * 0.93);
-    let pageW = Math.floor(pageH * ratio);
-
     const isMob = vw <= 768;
-    const maxArea = Math.floor(vw * 0.95);
+    setIsMobile(isMob);
+
+    // Exact A4 aspect ratio from PDF MediaBox (595.5 / 842.25)
+    const ratio = 595.5 / 842.25;
+
+    // Header & toolbar reservation with safe vertical padding
+    const topBarH = isMob ? 50 : 56;
+    const toolbarH = isMob ? 46 : 48;
+    const paddingV = isMob ? 16 : 28;
+    const availH = Math.max(vh - toolbarH - topBarH - paddingV, 200);
 
     if (isMob) {
-      pageW = maxArea;
-      pageH = Math.floor(pageW / ratio);
-      if (pageH > availH * 0.9) {
-        pageH = Math.floor(availH * 0.9);
-        pageW = Math.floor(pageH * ratio);
+      // Mobile: Single page portrait mode
+      const maxW = Math.min(vw - 24, 480);
+      let pageW = maxW;
+      let pageH = Math.round(pageW / ratio);
+
+      if (pageH > availH) {
+        pageH = Math.floor(availH);
+        pageW = Math.round(pageH * ratio);
       }
+
+      pageW = Math.max(pageW, 200);
+      pageH = Math.max(pageH, 283);
+
+      setDimensions({ width: pageW, height: pageH });
     } else {
+      // Desktop: Two-page landscape spread
+      let pageH = Math.floor(availH * 0.94);
+      let pageW = Math.round(pageH * ratio);
+
+      const maxArea = Math.floor((vw - 40) * 0.95);
       if (pageW * 2 > maxArea) {
         pageW = Math.floor(maxArea / 2);
-        pageH = Math.floor(pageW / ratio);
+        pageH = Math.round(pageW / ratio);
       }
+
+      pageW = Math.max(pageW, 240);
+      pageH = Math.max(pageH, 339);
+
+      setDimensions({ width: pageW, height: pageH });
     }
-
-    pageW = Math.max(pageW, 220);
-    pageH = Math.max(pageH, 311);
-
-    setDimensions({ width: pageW, height: pageH });
   }, []);
 
   useEffect(() => {
@@ -159,23 +170,15 @@ export default function GenbiClientFlipbook({
   }, [calculateDimensions]);
 
   /* ── Flip sound effect ── */
-  const onFlip = useCallback(
-    (e: any) => {
-      const isForward = e.data > currentPage;
-      setCurrentPage(e.data);
+  const onFlip = useCallback((e: any) => {
+    setCurrentPage(e.data);
 
-      if (e.data === 0) setPanSide("right");
-      else if (isForward) setPanSide("left");
-      else setPanSide("right");
-
-      try {
-        const s = new Audio("/sound/effect/flip_effect.mp3");
-        s.volume = 0.4;
-        s.play().catch(() => {});
-      } catch {}
-    },
-    [currentPage],
-  );
+    try {
+      const s = new Audio("/sound/effect/flip_effect.mp3");
+      s.volume = 0.4;
+      s.play().catch(() => {});
+    } catch {}
+  }, []);
 
   /* ── Keyboard navigation ── */
   useEffect(() => {
@@ -231,25 +234,22 @@ export default function GenbiClientFlipbook({
 
   const goFirst = () => {
     flipBookRef.current?.pageFlip()?.flip(0);
-    setPanSide("right");
   };
   const goLast = () => {
-    flipBookRef.current?.pageFlip()?.flip(totalInternalPages - 1);
-    setPanSide("left");
+    const target = isMobile ? numPages - 1 : totalInternalPages - 1;
+    flipBookRef.current?.pageFlip()?.flip(target);
   };
 
   const goPrev = () => {
-    if (isMobile && currentPage > 0 && panSide === "right") setPanSide("left");
-    else flipBookRef.current?.pageFlip()?.flipPrev();
+    flipBookRef.current?.pageFlip()?.flipPrev();
   };
 
   const goNext = () => {
-    if (isMobile && currentPage > 0 && panSide === "left") setPanSide("right");
-    else flipBookRef.current?.pageFlip()?.flipNext();
+    flipBookRef.current?.pageFlip()?.flipNext();
   };
 
   const isAtEnd = isMobile
-    ? currentPage >= totalInternalPages - 2 && panSide === "right"
+    ? currentPage >= numPages - 1
     : currentPage >= totalInternalPages - 1;
 
   const bgColor = isDark ? "#121824" : "#e5e9f0";
@@ -272,39 +272,50 @@ export default function GenbiClientFlipbook({
     >
       {/* ── Top Bar: Logo Partner Konstan + Identitas Kegiatan ── */}
       <header
-        className={`shrink-0 z-30 flex items-center justify-between px-3 sm:px-6 py-2 backdrop-blur-md transition-colors duration-300 ${headerBg}`}
+        className={`shrink-0 z-30 flex items-center justify-between px-2 sm:px-6 py-2 backdrop-blur-md transition-colors duration-300 ${headerBg}`}
       >
         {/* Left: Home link + 4 Logos */}
-        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+        <div className="flex items-center gap-1.5 sm:gap-4 min-w-0">
           <Link
             href="/"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors"
+            className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors shrink-0"
             title="Kembali ke Beranda"
           >
             <Home className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Beranda</span>
           </Link>
 
-          <div className="h-5 w-px bg-slate-300 dark:bg-white/10 hidden sm:block" />
+          <div className="h-4 w-px bg-slate-300 dark:bg-white/10 hidden sm:block" />
 
           {/* 4 Logos Container */}
-          <div className="flex items-center gap-2 sm:gap-3 p-1 rounded-xl bg-white/80 dark:bg-white/90 shadow-sm border border-slate-200/80 dark:border-white/20">
-            {GENBI_CONFIG.logos.map((logo) => (
-              <div
-                key={logo.name}
-                className="relative flex items-center justify-center px-1"
-                title={logo.name}
-              >
-                <Image
-                  src={logo.src}
-                  alt={logo.alt}
-                  width={60}
-                  height={60}
-                  className="h-6 sm:h-7 w-auto max-w-[36px] sm:max-w-[48px] object-contain"
-                  priority
-                />
-              </div>
-            ))}
+          <div className="flex items-center gap-1 sm:gap-2.5 p-1 rounded-2xl bg-white/80 dark:bg-white/90 shadow-sm border border-slate-200/80 dark:border-white/20">
+            {GENBI_CONFIG.logos.map((logo) => {
+              const isBI = logo.isFullRounded === false;
+              return (
+                <div
+                  key={logo.name}
+                  className={`relative flex items-center justify-center shrink-0 ${
+                    isBI
+                      ? "px-1 sm:px-1.5 py-0.5 rounded-md"
+                      : "w-6 h-6 sm:w-8 sm:h-8 rounded-full overflow-hidden bg-white shadow-xs p-0.5 aspect-square"
+                  }`}
+                  title={logo.name}
+                >
+                  <Image
+                    src={logo.src}
+                    alt={logo.alt}
+                    width={60}
+                    height={60}
+                    className={`object-contain ${
+                      isBI
+                        ? "h-5 sm:h-7 w-auto max-w-[42px] sm:max-w-[65px]"
+                        : "w-full h-full rounded-full"
+                    }`}
+                    priority
+                  />
+                </div>
+              );
+            })}
           </div>
 
           {/* Title tag */}
@@ -319,15 +330,15 @@ export default function GenbiClientFlipbook({
         </div>
 
         {/* Right: Badge Proposal + Action */}
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide bg-indigo-500/10 text-indigo-600 dark:bg-indigo-400/20 dark:text-indigo-300 border border-indigo-500/20">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <span className="hidden md:inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide bg-indigo-500/10 text-indigo-600 dark:bg-indigo-400/20 dark:text-indigo-300 border border-indigo-500/20">
             Proposal Kerjasama
           </span>
 
           <a
             href={pdfUrl}
             download="Proposal-GENABLE.pdf"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-white bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 border border-slate-200 dark:border-white/10 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-white bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 border border-slate-200 dark:border-white/10 transition-colors cursor-pointer"
             title="Download PDF Proposal"
           >
             <Download className="w-3.5 h-3.5" />
@@ -365,9 +376,14 @@ export default function GenbiClientFlipbook({
 
               <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5 scrollbar-thin">
                 {daftarIsi.map((item, idx) => {
+                  const startPage = item.halaman;
+                  const endPage = item.halamanAkhir || item.halaman;
+                  const leftPage = currentPage === 0 ? 1 : currentPage + 1;
+                  const rightPage = currentPage === 0 ? 1 : currentPage + 2;
                   const isActive =
-                    currentPage === item.halaman - 1 ||
-                    currentPage === item.halaman;
+                    (leftPage >= startPage && leftPage <= endPage) ||
+                    (rightPage >= startPage && rightPage <= endPage);
+
                   return (
                     <button
                       key={`${item.urutan}-${item.judul}`}
@@ -399,7 +415,7 @@ export default function GenbiClientFlipbook({
                             : "text-white/30 group-hover:text-white/40"
                         }`}
                       >
-                        Hal {item.halaman}
+                        {item.labelHalaman || `Hal ${item.halaman}`}
                       </span>
                     </button>
                   );
@@ -445,19 +461,17 @@ export default function GenbiClientFlipbook({
               style={{
                 position: "absolute",
                 left: isMobile
-                  ? panSide === "left"
-                    ? `calc(50% - ${(spreadWidth * zoom) / 4}px)`
-                    : `calc(50% - ${(spreadWidth * zoom) * 0.75}px)`
+                  ? `calc(50% - ${(dimensions.width * zoom) / 2}px)`
                   : isOnCover
                     ? `calc(50% - ${dimensions.width * 1.5 * zoom}px)`
                     : `calc(50% - ${(spreadWidth * zoom) / 2}px)`,
                 top: `calc(50% - ${(dimensions.height * zoom) / 2}px)`,
-                width: spreadWidth,
+                width: isMobile ? dimensions.width : spreadWidth,
                 height: dimensions.height,
                 transform: `scale(${zoom})`,
-                transformOrigin: "top left",
+                transformOrigin: "center center",
                 transition:
-                  "left 0.7s cubic-bezier(0.4, 0, 0.2, 1), top 0.3s ease",
+                  "left 0.4s cubic-bezier(0.4, 0, 0.2, 1), top 0.3s ease",
               }}
             >
               <Document
@@ -468,7 +482,7 @@ export default function GenbiClientFlipbook({
                 loading={
                   <div
                     style={{
-                      width: spreadWidth,
+                      width: isMobile ? dimensions.width : spreadWidth,
                       height: dimensions.height,
                     }}
                     className="flex items-center justify-center bg-slate-100/50 dark:bg-slate-800/50 rounded-lg animate-pulse"
@@ -486,18 +500,23 @@ export default function GenbiClientFlipbook({
                         : "drop-shadow(0 20px 40px rgba(0,0,0,0.25)) drop-shadow(0 4px 8px rgba(0,0,0,0.15))",
                     }}
                   >
-                    {/* Simulated 3D Spine Fold Overlay */}
-                    <div
-                      className="pointer-events-none absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-16 z-10 mix-blend-multiply opacity-60 dark:opacity-80"
-                      style={{
-                        background:
-                          "linear-gradient(to right, transparent 0%, rgba(0,0,0,0.08) 35%, rgba(0,0,0,0.3) 48%, rgba(0,0,0,0.3) 52%, rgba(0,0,0,0.08) 65%, transparent 100%)",
-                      }}
-                    />
-                    <div className="pointer-events-none absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-[2px] z-10 bg-black/10 dark:bg-black/40" />
+                    {/* Simulated 3D Spine Fold Overlay — Desktop spread only */}
+                    {!isMobile && (
+                      <>
+                        <div
+                          className="pointer-events-none absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-16 z-10 mix-blend-multiply opacity-60 dark:opacity-80"
+                          style={{
+                            background:
+                              "linear-gradient(to right, transparent 0%, rgba(0,0,0,0.08) 35%, rgba(0,0,0,0.3) 48%, rgba(0,0,0,0.3) 52%, rgba(0,0,0,0.08) 65%, transparent 100%)",
+                          }}
+                        />
+                        <div className="pointer-events-none absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-[2px] z-10 bg-black/10 dark:bg-black/40" />
+                      </>
+                    )}
 
                     {/* @ts-ignore */}
                     <HTMLFlipBook
+                      key={isMobile ? "mobile-portrait" : "desktop-landscape"}
                       width={dimensions.width}
                       height={dimensions.height}
                       size="fixed"
@@ -506,17 +525,17 @@ export default function GenbiClientFlipbook({
                       minHeight={dimensions.height}
                       maxHeight={dimensions.height}
                       maxShadowOpacity={isDark ? 0.6 : 0.3}
-                      showCover={true}
+                      showCover={!isMobile}
                       mobileScrollSupport={true}
                       onFlip={onFlip}
                       ref={flipBookRef}
-                      usePortrait={false}
+                      usePortrait={isMobile}
                       drawShadow={true}
-                      flippingTime={600}
+                      flippingTime={isMobile ? 450 : 600}
                       useMouseEvents={true}
-                      swipeDistance={30}
-                      showPageCorners={true}
-                      startPage={0}
+                      swipeDistance={25}
+                      showPageCorners={!isMobile}
+                      startPage={currentPage}
                       autoSize={false}
                       style={{ willChange: "transform" }}
                     >
@@ -529,7 +548,7 @@ export default function GenbiClientFlipbook({
                           const isCoverPage = isFirst || isLast;
                           const Wrapper = isCoverPage ? FlipCover : FlipPage;
 
-                          if (isLast && needsBlank) {
+                          if (isLast && needsBlank && !isMobile) {
                             pages.push(
                               <FlipPage key="blank-filler">
                                 <div className="w-full h-full bg-white" />
@@ -595,9 +614,14 @@ export default function GenbiClientFlipbook({
 
             <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
               {daftarIsi.map((item, idx) => {
+                const startPage = item.halaman;
+                const endPage = item.halamanAkhir || item.halaman;
+                const leftPage = currentPage === 0 ? 1 : currentPage + 1;
+                const rightPage = currentPage === 0 ? 1 : currentPage + 2;
                 const isActive =
-                  currentPage === item.halaman - 1 ||
-                  currentPage === item.halaman;
+                  (leftPage >= startPage && leftPage <= endPage) ||
+                  (rightPage >= startPage && rightPage <= endPage);
+
                 return (
                   <button
                     key={`${item.urutan}-${item.judul}`}
@@ -630,7 +654,7 @@ export default function GenbiClientFlipbook({
                           : "text-white/30 group-hover:text-white/40"
                       }`}
                     >
-                      Hal {item.halaman}
+                      {item.labelHalaman || `Hal ${item.halaman}`}
                     </span>
                   </button>
                 );
@@ -651,43 +675,51 @@ export default function GenbiClientFlipbook({
         <>
           <button
             onClick={goPrev}
+            disabled={currentPage <= 0}
+            aria-label="Halaman Sebelumnya"
             style={{ pointerEvents: currentPage <= 0 ? "none" : "auto" }}
-            className={`absolute left-2 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center w-12 h-12 rounded-full backdrop-blur-md border border-white/20 shadow-lg text-white/90 transition-all duration-300 ${
+            className={`absolute left-2 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center w-10 h-10 rounded-full backdrop-blur-md border border-white/20 shadow-xl text-white transition-all duration-300 ${
               currentPage <= 0
-                ? "opacity-0 -translate-x-2"
-                : "opacity-100 translate-x-0 hover:bg-white/20 active:scale-95 bg-black/40"
+                ? "opacity-0 -translate-x-3 pointer-events-none"
+                : "opacity-80 hover:opacity-100 translate-x-0 active:scale-95 bg-black/50"
             }`}
           >
-            <ChevronLeft className="w-8 h-8" />
+            <ChevronLeft className="w-5 h-5" />
           </button>
 
           <button
             onClick={goNext}
+            disabled={isAtEnd}
+            aria-label="Halaman Selanjutnya"
             style={{ pointerEvents: isAtEnd ? "none" : "auto" }}
-            className={`absolute right-2 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center w-12 h-12 rounded-full backdrop-blur-md border border-white/20 shadow-lg text-white/90 transition-all duration-300 ${
+            className={`absolute right-2 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center w-10 h-10 rounded-full backdrop-blur-md border border-white/20 shadow-xl text-white transition-all duration-300 ${
               isAtEnd
-                ? "opacity-0 translate-x-2"
-                : "opacity-100 translate-x-0 hover:bg-white/20 active:scale-95 bg-black/40"
+                ? "opacity-0 translate-x-3 pointer-events-none"
+                : "opacity-80 hover:opacity-100 translate-x-0 active:scale-95 bg-black/50"
             }`}
           >
-            <ChevronRight className="w-8 h-8" />
+            <ChevronRight className="w-5 h-5" />
           </button>
         </>
       )}
 
-      {/* ── Bottom Toolbar (Tanpa Music Controller) ── */}
+      {/* ── Bottom Toolbar ── */}
       <div className="shrink-0 z-20 relative">
         <div
-          className={`flex items-center justify-center gap-0.5 px-4 py-2 border-t transition-colors duration-500 ${toolbarBg}`}
+          className={`flex items-center justify-center gap-0.5 sm:gap-1 px-2 sm:px-4 py-1.5 sm:py-2 border-t transition-colors duration-500 overflow-x-auto ${toolbarBg}`}
         >
-          <TBtn
-            onClick={goFirst}
-            disabled={currentPage <= 0}
-            cls={currentPage <= 0 ? btnDisabledCls : btnBase}
-            tip="Halaman pertama"
-          >
-            <ChevronsLeft className="w-5 h-5" />
-          </TBtn>
+          {/* First page (desktop only) */}
+          <div className="hidden sm:flex items-center">
+            <TBtn
+              onClick={goFirst}
+              disabled={currentPage <= 0}
+              cls={currentPage <= 0 ? btnDisabledCls : btnBase}
+              tip="Halaman pertama"
+            >
+              <ChevronsLeft className="w-5 h-5" />
+            </TBtn>
+          </div>
+
           <TBtn
             onClick={goPrev}
             disabled={currentPage <= 0}
@@ -704,18 +736,22 @@ export default function GenbiClientFlipbook({
           >
             <ChevronRight className="w-5 h-5" />
           </TBtn>
-          <TBtn
-            onClick={goLast}
-            disabled={isAtEnd}
-            cls={isAtEnd ? btnDisabledCls : btnBase}
-            tip="Halaman terakhir"
-          >
-            <ChevronsRight className="w-5 h-5" />
-          </TBtn>
+
+          {/* Last page (desktop only) */}
+          <div className="hidden sm:flex items-center">
+            <TBtn
+              onClick={goLast}
+              disabled={isAtEnd}
+              cls={isAtEnd ? btnDisabledCls : btnBase}
+              tip="Halaman terakhir"
+            >
+              <ChevronsRight className="w-5 h-5" />
+            </TBtn>
+          </div>
 
           <Sep isDark={isDark} />
 
-          <div className="flex items-center gap-1.5 px-3 text-sm font-semibold tabular-nums text-white/70">
+          <div className="flex items-center gap-1 px-2 sm:px-3 text-xs sm:text-sm font-semibold tabular-nums text-white/70">
             <span className="text-white">
               {Math.min(currentPage + 1, numPages || 1)}
             </span>
@@ -731,7 +767,7 @@ export default function GenbiClientFlipbook({
             cls={zoom >= 1.8 ? btnDisabledCls : btnBase}
             tip="Perbesar"
           >
-            <ZoomIn className="w-5 h-5" />
+            <ZoomIn className="w-4 h-4 sm:w-5 sm:h-5" />
           </TBtn>
           <TBtn
             onClick={zoomOut}
@@ -739,15 +775,19 @@ export default function GenbiClientFlipbook({
             cls={zoom <= 0.5 ? btnDisabledCls : btnBase}
             tip="Perkecil"
           >
-            <ZoomOut className="w-5 h-5" />
+            <ZoomOut className="w-4 h-4 sm:w-5 sm:h-5" />
           </TBtn>
-          <TBtn
-            onClick={toggleFullscreen}
-            cls={btnBase}
-            tip="Layar penuh"
-          >
-            <Maximize className="w-5 h-5" />
-          </TBtn>
+
+          {/* Fullscreen (desktop only) */}
+          <div className="hidden sm:flex items-center">
+            <TBtn
+              onClick={toggleFullscreen}
+              cls={btnBase}
+              tip="Layar penuh"
+            >
+              <Maximize className="w-5 h-5" />
+            </TBtn>
+          </div>
 
           <Sep isDark={isDark} />
 
@@ -768,7 +808,7 @@ export default function GenbiClientFlipbook({
                 }
                 tip="Daftar Isi"
               >
-                <ListOrdered className="w-5 h-5" />
+                <ListOrdered className="w-4 h-4 sm:w-5 sm:h-5" />
               </TBtn>
             </>
           )}

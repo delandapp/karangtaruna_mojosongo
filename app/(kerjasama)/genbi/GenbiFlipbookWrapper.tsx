@@ -150,35 +150,39 @@ export default function GenbiFlipbookWrapper({
                 ease: [0.16, 1, 0.3, 1],
               }}
             >
-              <div className="flex items-center justify-center gap-2.5 sm:gap-4 px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-white/[0.08] backdrop-blur-xl border border-white/15 shadow-2xl">
-                {GENBI_CONFIG.logos.map((logo) => (
-                  <div
-                    key={logo.name}
-                    className="flex items-center justify-center p-1.5 sm:p-2 rounded-xl bg-white/95 shadow-md hover:scale-105 transition-transform"
-                    title={logo.name}
-                  >
-                    <Image
-                      src={logo.src}
-                      alt={logo.alt}
-                      width={80}
-                      height={80}
-                      className="h-7 sm:h-9 w-auto max-w-[42px] sm:max-w-[64px] object-contain"
-                      priority
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-2.5 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <p className="text-[11px] font-semibold tracking-[0.25em] text-white/50 uppercase">
-                  Sinergi Kolaborasi Multi-Stakeholder
-                </p>
+              <div className="flex items-center justify-center gap-2 sm:gap-4 px-3 sm:px-6 py-2 sm:py-3 rounded-2xl bg-white/[0.08] backdrop-blur-xl border border-white/15 shadow-2xl">
+                {GENBI_CONFIG.logos.map((logo) => {
+                  const isBI = logo.isFullRounded === false;
+                  return (
+                    <div
+                      key={logo.name}
+                      className={`flex items-center justify-center bg-white/95 shadow-md hover:scale-105 transition-transform overflow-hidden ${
+                        isBI
+                          ? "px-2 sm:px-3.5 py-1 sm:py-2 rounded-xl"
+                          : "w-9 h-9 sm:w-12 sm:h-12 rounded-full p-1 sm:p-1.5 aspect-square"
+                      }`}
+                      title={logo.name}
+                    >
+                      <Image
+                        src={logo.src}
+                        alt={logo.alt}
+                        width={80}
+                        height={80}
+                        className={`object-contain ${
+                          isBI
+                            ? "h-6 sm:h-9 w-auto max-w-[48px] sm:max-w-[76px]"
+                            : "w-full h-full rounded-full"
+                        }`}
+                        priority
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </motion.div>
 
             {/* ── Center Content: Nama Kegiatan & Motto ── */}
-            <div className="relative z-20 flex-1 flex flex-col items-center justify-center px-6 pointer-events-none -mt-4">
+            <div className="relative z-20 flex-1 flex flex-col items-center justify-center px-4 sm:px-6 pointer-events-none -mt-4">
               {/* Badge Program */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -195,7 +199,7 @@ export default function GenbiFlipbookWrapper({
                 delay={80}
                 animateBy="letters"
                 direction="top"
-                className="text-white text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight text-center leading-tight justify-center drop-shadow-[0_10px_35px_rgba(99,102,241,0.35)]"
+                className="text-white text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight text-center leading-tight justify-center drop-shadow-[0_10px_35px_rgba(99,102,241,0.35)]"
                 stepDuration={0.4}
               />
 

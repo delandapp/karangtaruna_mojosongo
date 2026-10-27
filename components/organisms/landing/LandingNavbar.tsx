@@ -65,7 +65,7 @@ export function LandingNavbar() {
         <div
           className={cn(
             "flex items-center justify-between px-4 sm:px-6 py-2.5 sm:py-3 rounded-full transition-all duration-300",
-            "bg-white/80 dark:bg-n-900/80 backdrop-blur-2xl border border-white/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.06)]"
+            "bg-white/80 dark:bg-[#0c101b]/85 backdrop-blur-2xl border border-white/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.06)]"
           )}
         >
           {/* Logo with prominent branding */}
@@ -146,7 +146,7 @@ export function LandingNavbar() {
       >
         <div
           className={cn(
-            "w-full max-w-md mx-auto rounded-[2.5rem] bg-white/95 dark:bg-n-900/95 border border-white/80 dark:border-white/10 p-6 shadow-2xl backdrop-blur-3xl transition-transform duration-300 flex flex-col gap-4",
+            "w-full max-w-md mx-auto rounded-[2.5rem] bg-white/95 dark:bg-[#0c101b]/95 border border-white/80 dark:border-white/10 p-6 shadow-2xl backdrop-blur-3xl transition-transform duration-300 flex flex-col gap-4",
             isOpen ? "translate-y-0" : "translate-y-12"
           )}
           onClick={(e) => e.stopPropagation()}

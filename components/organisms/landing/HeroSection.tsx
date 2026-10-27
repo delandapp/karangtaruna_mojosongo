@@ -203,7 +203,7 @@ export function HeroSection() {
               borderWidth={1.5}
               colorFrom="#10b981"
               colorTo="#059669"
-              className="w-full max-w-[440px] sm:max-w-[480px] rounded-[2.25rem] shadow-2xl p-2 bg-white/60 dark:bg-slate-900/60 backdrop-blur-2xl border border-white/80 dark:border-white/10"
+              className="w-full max-w-[440px] sm:max-w-[480px] rounded-[2.25rem] shadow-2xl p-2 bg-white/60 dark:bg-[#0c101b]/70 backdrop-blur-2xl border border-white/80 dark:border-white/10"
             >
               <div className="relative w-full aspect-[4/5] rounded-[1.85rem] overflow-hidden bg-slate-100 dark:bg-slate-800">
                 {/* Cross-fading 5 Images */}
@@ -356,7 +356,7 @@ export function HeroSection() {
           <GlassCard
             radius={28}
             blur={14}
-            className="flex flex-col justify-between p-7 bg-white/75 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 shadow-sm hover:shadow-md transition-all"
+            className="flex flex-col justify-between p-7 bg-white/75 dark:bg-slate-900/50 border border-slate-200/80 dark:border-white/10 shadow-sm hover:shadow-md dark:shadow-none transition-all"
           >
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
@@ -372,7 +372,7 @@ export function HeroSection() {
             </div>
             <Link
               href="#galeri"
-              className="inline-flex items-center justify-between w-full pt-4 border-t border-slate-200/60 dark:border-white/10 text-xs font-semibold text-slate-900 dark:text-white hover:text-emerald-600 transition-colors group"
+              className="inline-flex items-center justify-between w-full pt-4 border-t border-slate-200/60 dark:border-white/10 text-xs font-semibold text-slate-900 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors group"
             >
               <span>Dokumentasi Kegiatan</span>
               <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -383,7 +383,7 @@ export function HeroSection() {
           <GlassCard
             radius={28}
             blur={14}
-            className="flex flex-col justify-between p-7 bg-white/75 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 shadow-sm hover:shadow-md transition-all"
+            className="flex flex-col justify-between p-7 bg-white/75 dark:bg-slate-900/50 border border-slate-200/80 dark:border-white/10 shadow-sm hover:shadow-md dark:shadow-none transition-all"
           >
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
@@ -399,7 +399,7 @@ export function HeroSection() {
             </div>
             <Link
               href="#galeri"
-              className="inline-flex items-center justify-between w-full pt-4 border-t border-slate-200/60 dark:border-white/10 text-xs font-semibold text-slate-900 dark:text-white hover:text-emerald-600 transition-colors group"
+              className="inline-flex items-center justify-between w-full pt-4 border-t border-slate-200/60 dark:border-white/10 text-xs font-semibold text-slate-900 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors group"
             >
               <span>Eksplorasi Galeri Budaya</span>
               <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -410,7 +410,7 @@ export function HeroSection() {
           <GlassCard
             radius={28}
             blur={14}
-            className="flex flex-col justify-between p-7 bg-white/75 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 shadow-sm hover:shadow-md transition-all"
+            className="flex flex-col justify-between p-7 bg-white/75 dark:bg-slate-900/50 border border-slate-200/80 dark:border-white/10 shadow-sm hover:shadow-md dark:shadow-none transition-all"
           >
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">

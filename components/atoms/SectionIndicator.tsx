@@ -62,8 +62,8 @@ export function SectionIndicator({ sections, className }: SectionIndicatorProps)
             <span className={cn(
               "absolute right-6 mr-2 text-xs font-medium whitespace-nowrap transition-all duration-300",
               isActive 
-                ? "opacity-100 text-foreground translate-x-0" 
-                : "opacity-0 text-muted-foreground translate-x-2 group-hover:opacity-100 group-hover:translate-x-0"
+                ? "opacity-100 text-slate-900 dark:text-white font-semibold translate-x-0" 
+                : "opacity-0 text-slate-400 dark:text-slate-400 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0"
             )}>
               {sec.label}
             </span>
@@ -73,8 +73,8 @@ export function SectionIndicator({ sections, className }: SectionIndicatorProps)
               className={cn(
                 "block rounded-full transition-all duration-300 ease-out z-10",
                 isActive 
-                  ? "w-2.5 h-6 bg-primary" 
-                  : "w-2 h-2 bg-muted-foreground/40 group-hover:bg-primary/60 group-hover:scale-150"
+                  ? "w-2.5 h-6 bg-emerald-500 shadow-sm shadow-emerald-500/50" 
+                  : "w-2 h-2 bg-slate-400/50 dark:bg-slate-600 group-hover:bg-emerald-500/80 group-hover:scale-150"
               )}
             />
           </button>

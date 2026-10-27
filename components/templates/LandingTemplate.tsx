@@ -30,7 +30,7 @@ export function LandingTemplate() {
   }, []);
 
   return (
-    <div className="relative w-full min-h-screen bg-slate-50 dark:bg-n-950 text-slate-900 dark:text-slate-50 selection:bg-emerald-500 selection:text-white overflow-x-clip">
+    <div className="relative w-full min-h-screen bg-slate-50 dark:bg-[#06080d] text-slate-900 dark:text-slate-100 transition-colors duration-300 selection:bg-emerald-500 selection:text-white overflow-x-clip">
       {/* Floating Section Progress Indicator */}
       <SectionIndicator sections={LANDING_SECTIONS} />
 

@@ -54,7 +54,7 @@ export function GallerySection() {
   };
 
   return (
-    <section id="galeri" className="relative w-full py-20 sm:py-28 overflow-hidden bg-background">
+    <section id="galeri" className="relative w-full py-20 sm:py-28 overflow-hidden bg-transparent">
       {/* Decorative ambient background */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-gradient-to-r from-emerald-500/5 via-teal-400/5 to-transparent blur-[140px] rounded-full pointer-events-none -z-0" />
 
@@ -66,10 +66,10 @@ export function GallerySection() {
               <Camera className="w-3.5 h-3.5" />
               <span>Dokumentasi Kegiatan Nyata</span>
             </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-title text-n-900 dark:text-white tracking-tight leading-tight">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-title text-slate-900 dark:text-white tracking-tight leading-tight">
               Galeri Jejak Karya & Kebersamaan Pemuda
             </h2>
-            <p className="text-sm sm:text-base text-n-600 dark:text-n-400 mt-3 font-sans">
+            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 mt-3 font-sans">
               Potret dedikasi, pentas seni budaya, dan aksi sosial Karang Taruna Kelurahan Mojosongo dalam melayani masyarakat.
             </p>
           </div>
@@ -100,7 +100,7 @@ export function GallerySection() {
                 "px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 shrink-0",
                 selectedCategory === cat.id
                   ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20 scale-105"
-                  : "bg-white/80 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-n-700 dark:text-n-300 border border-n-200/60 dark:border-white/10"
+                  : "bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/60 dark:border-white/10"
               )}
             >
               {cat.label}
@@ -117,7 +117,7 @@ export function GallerySection() {
                 key={album.id}
                 onClick={() => openLightbox(album)}
                 className={cn(
-                  "group relative rounded-[2rem] overflow-hidden bg-white/70 dark:bg-white/5 border border-white/80 dark:border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgba(0,188,106,0.12)] backdrop-blur-2xl transition-all duration-500 cursor-pointer flex flex-col justify-between transform hover:-translate-y-1.5",
+                  "group relative rounded-[2rem] overflow-hidden bg-white/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.04)] dark:shadow-none hover:shadow-[0_20px_40px_rgba(0,188,106,0.12)] backdrop-blur-2xl transition-all duration-500 cursor-pointer flex flex-col justify-between transform hover:-translate-y-1.5",
                   isFeaturedLarge && "md:col-span-1"
                 )}
               >
@@ -164,7 +164,7 @@ export function GallerySection() {
                     <h3 className="text-lg sm:text-xl font-bold font-title text-n-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1 mb-2">
                       {album.title}
                     </h3>
-                    <p className="text-xs sm:text-sm text-n-600 dark:text-n-400 font-sans line-clamp-2 leading-relaxed">
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-sans line-clamp-2 leading-relaxed">
                       {album.description}
                     </p>
                   </div>

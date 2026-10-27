@@ -10,7 +10,7 @@ export function MediaPartnerSection() {
   const marqueeList = [...MEDIA_PARTNERS, ...MEDIA_PARTNERS];
 
   return (
-    <section className="relative w-full py-16 md:py-20 overflow-hidden bg-gradient-to-b from-transparent via-emerald-50/30 dark:via-emerald-950/10 to-transparent">
+    <section className="relative w-full py-16 md:py-20 overflow-hidden bg-gradient-to-b from-transparent via-emerald-50/30 dark:via-emerald-950/20 to-transparent">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 mb-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-6 border-b border-slate-200/60 dark:border-white/10">
           <div>
@@ -38,7 +38,7 @@ export function MediaPartnerSection() {
           {marqueeList.map((partner, idx) => (
             <div
               key={`${partner.id}-${idx}`}
-              className="group inline-flex items-center gap-3.5 px-4 sm:px-5 py-3 rounded-full bg-white/75 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-900 border border-slate-200/80 dark:border-white/10 hover:border-emerald-500/40 shadow-[0_4px_20px_rgba(0,0,0,0.02)] backdrop-blur-xl transition-all duration-300 transform hover:-translate-y-0.5 cursor-default shrink-0"
+              className="group inline-flex items-center gap-3.5 px-4 sm:px-5 py-3 rounded-full bg-white/75 dark:bg-slate-900/70 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-white/10 hover:border-emerald-500/40 shadow-[0_4px_20px_rgba(0,0,0,0.02)] backdrop-blur-xl transition-all duration-300 transform hover:-translate-y-0.5 cursor-default shrink-0"
             >
               <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden p-0.5 bg-slate-100 dark:bg-slate-800 shadow-xs shrink-0 ring-1 ring-slate-200/80 dark:ring-white/10">
                 <div className="w-full h-full rounded-full overflow-hidden relative bg-white">

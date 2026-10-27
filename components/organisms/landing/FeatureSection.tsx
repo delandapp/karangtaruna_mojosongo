@@ -97,7 +97,7 @@ export function FeatureSection() {
               <Image src={img1} alt="Kegiatan Pemuda 1" fill className="object-cover" />
             </div>
             {/* Secondary Image */}
-            <div className="absolute bottom-0 left-0 w-[60%] h-[60%] rounded-[2rem] overflow-hidden shadow-xl z-20 border-8 border-white dark:border-n-900">
+            <div className="absolute bottom-0 left-0 w-[60%] h-[60%] rounded-[2rem] overflow-hidden shadow-xl z-20 border-8 border-white dark:border-slate-900">
               <Image src={img2} alt="Kegiatan Pemuda 2" fill className="object-cover" />
             </div>
             {/* Floating Badge */}
@@ -119,7 +119,7 @@ export function FeatureSection() {
                 <div className="w-8 h-[2px] bg-accent-500 rounded-full"></div>
                 Tentang Kami
               </div>
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-title font-black italic tracking-tight drop-shadow-md pb-2 text-n-900 dark:text-n-50 leading-tight">
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-title font-black italic tracking-tight drop-shadow-md pb-2 text-slate-900 dark:text-white leading-tight">
                 <BlurText 
                   text="Wadah Kreativitas &" 
                   delay={50} 
@@ -145,7 +145,7 @@ export function FeatureSection() {
                   className="inline-block" 
                 />
               </h2>
-              <p className="text-n-500 dark:text-n-400 font-body text-base md:text-lg leading-relaxed max-w-xl">
+              <p className="text-slate-600 dark:text-slate-300 font-body text-base md:text-lg leading-relaxed max-w-xl">
                 Bergabunglah bersama kami untuk mengembangkan potensi diri, berkontribusi pada masyarakat, dan menjalin solidaritas antar pemuda di lingkungan Mojosongo.
               </p>
             </div>
@@ -153,32 +153,32 @@ export function FeatureSection() {
             <div ref={rightColRef} className="flex flex-col gap-6 mt-2">
               {/* Feature 1 */}
               <div className="flex gap-5 items-start group">
-                <div className="w-14 h-14 rounded-2xl bg-accent-100 dark:bg-accent-900/30 flex items-center justify-center shrink-0 group-hover:bg-accent-500 transition-colors duration-300 shadow-sm border border-transparent group-hover:border-accent-400">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center shrink-0 group-hover:bg-accent-500 transition-colors duration-300 shadow-sm border border-transparent dark:border-emerald-500/20 group-hover:border-emerald-400">
                   <Target className="w-6 h-6 text-accent-500 group-hover:text-white transition-colors duration-300" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <h3 className="font-title text-xl font-bold text-n-900 dark:text-n-50">Pengembangan Diri</h3>
-                  <p className="text-base text-n-500 dark:text-n-400 leading-relaxed">Tingkatkan soft skill dan hard skill melalui berbagai pelatihan dan kegiatan positif yang membangun.</p>
+                  <h3 className="font-title text-xl font-bold text-slate-900 dark:text-white">Pengembangan Diri</h3>
+                  <p className="text-base text-slate-600 dark:text-slate-400 leading-relaxed">Tingkatkan soft skill dan hard skill melalui berbagai pelatihan dan kegiatan positif yang membangun.</p>
                 </div>
               </div>
               {/* Feature 2 */}
               <div className="flex gap-5 items-start group">
-                <div className="w-14 h-14 rounded-2xl bg-accent-100 dark:bg-accent-900/30 flex items-center justify-center shrink-0 group-hover:bg-accent-500 transition-colors duration-300 shadow-sm border border-transparent group-hover:border-accent-400">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center shrink-0 group-hover:bg-accent-500 transition-colors duration-300 shadow-sm border border-transparent dark:border-emerald-500/20 group-hover:border-emerald-400">
                   <HeartHandshake className="w-6 h-6 text-accent-500 group-hover:text-white transition-colors duration-300" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <h3 className="font-title text-xl font-bold text-n-900 dark:text-n-50">Aksi Sosial & Kepedulian</h3>
-                  <p className="text-base text-n-500 dark:text-n-400 leading-relaxed">Turut serta dalam aksi nyata membangun kepedulian dan membantu lingkungan masyarakat sekitar.</p>
+                  <h3 className="font-title text-xl font-bold text-slate-900 dark:text-white">Aksi Sosial & Kepedulian</h3>
+                  <p className="text-base text-slate-600 dark:text-slate-400 leading-relaxed">Turut serta dalam aksi nyata membangun kepedulian dan membantu lingkungan masyarakat sekitar.</p>
                 </div>
               </div>
               {/* Feature 3 */}
               <div className="flex gap-5 items-start group">
-                <div className="w-14 h-14 rounded-2xl bg-accent-100 dark:bg-accent-900/30 flex items-center justify-center shrink-0 group-hover:bg-accent-500 transition-colors duration-300 shadow-sm border border-transparent group-hover:border-accent-400">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center shrink-0 group-hover:bg-accent-500 transition-colors duration-300 shadow-sm border border-transparent dark:border-emerald-500/20 group-hover:border-emerald-400">
                   <Network className="w-6 h-6 text-accent-500 group-hover:text-white transition-colors duration-300" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <h3 className="font-title text-xl font-bold text-n-900 dark:text-n-50">Jaringan & Relasi Kuat</h3>
-                  <p className="text-base text-n-500 dark:text-n-400 leading-relaxed">Perluas koneksi, bertukar ide, dan bangun relasi solidaritas tinggi dengan sesama pemuda.</p>
+                  <h3 className="font-title text-xl font-bold text-slate-900 dark:text-white">Jaringan & Relasi Kuat</h3>
+                  <p className="text-base text-slate-600 dark:text-slate-400 leading-relaxed">Perluas koneksi, bertukar ide, dan bangun relasi solidaritas tinggi dengan sesama pemuda.</p>
                 </div>
               </div>
             </div>
@@ -187,34 +187,34 @@ export function FeatureSection() {
         </div>
 
         {/* Bottom Section: Stats */}
-        <div ref={statsRef} className="grid grid-cols-2 lg:grid-cols-4 gap-8 mt-4 pt-12 border-t border-n-200 dark:border-n-800">
+        <div ref={statsRef} className="grid grid-cols-2 lg:grid-cols-4 gap-8 mt-4 pt-12 border-t border-slate-200 dark:border-white/10">
           {/* Stat 1 */}
           <div className="flex flex-col items-center justify-center text-center p-4">
-            <h4 className="text-4xl md:text-5xl lg:text-6xl font-title font-black text-n-900 dark:text-n-50 mb-2 italic tracking-tight drop-shadow-sm">
+            <h4 className="text-4xl md:text-5xl lg:text-6xl font-title font-black text-slate-900 dark:text-white mb-2 italic tracking-tight drop-shadow-sm">
               2.5<span className="text-accent-500 text-2xl md:text-3xl font-bold ml-1">km²</span>
             </h4>
-            <p className="text-sm md:text-base text-n-500 dark:text-n-400 font-body font-medium">Luas Wilayah</p>
+            <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 font-body font-medium">Luas Wilayah</p>
           </div>
           {/* Stat 2 */}
           <div className="flex flex-col items-center justify-center text-center p-4">
-            <h4 className="text-4xl md:text-5xl lg:text-6xl font-title font-black text-n-900 dark:text-n-50 mb-2 italic tracking-tight drop-shadow-sm">
+            <h4 className="text-4xl md:text-5xl lg:text-6xl font-title font-black text-slate-900 dark:text-white mb-2 italic tracking-tight drop-shadow-sm">
               45<span className="text-accent-500 text-2xl md:text-3xl font-bold ml-1">+</span>
             </h4>
-            <p className="text-sm md:text-base text-n-500 dark:text-n-400 font-body font-medium">Jumlah RT</p>
+            <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 font-body font-medium">Jumlah RT</p>
           </div>
           {/* Stat 3 */}
           <div className="flex flex-col items-center justify-center text-center p-4">
-            <h4 className="text-4xl md:text-5xl lg:text-6xl font-title font-black text-n-900 dark:text-n-50 mb-2 italic tracking-tight drop-shadow-sm">
+            <h4 className="text-4xl md:text-5xl lg:text-6xl font-title font-black text-slate-900 dark:text-white mb-2 italic tracking-tight drop-shadow-sm">
               15<span className="text-accent-500 text-2xl md:text-3xl font-bold ml-1">+</span>
             </h4>
-            <p className="text-sm md:text-base text-n-500 dark:text-n-400 font-body font-medium">Jumlah RW</p>
+            <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 font-body font-medium">Jumlah RW</p>
           </div>
           {/* Stat 4 */}
           <div className="flex flex-col items-center justify-center text-center p-4">
-            <h4 className="text-4xl md:text-5xl lg:text-6xl font-title font-black text-n-900 dark:text-n-50 mb-2 italic tracking-tight drop-shadow-sm">
+            <h4 className="text-4xl md:text-5xl lg:text-6xl font-title font-black text-slate-900 dark:text-white mb-2 italic tracking-tight drop-shadow-sm">
               150<span className="text-accent-500 text-2xl md:text-3xl font-bold ml-1">+</span>
             </h4>
-            <p className="text-sm md:text-base text-n-500 dark:text-n-400 font-body font-medium">Jumlah Anggota</p>
+            <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 font-body font-medium">Jumlah Anggota</p>
           </div>
         </div>
 

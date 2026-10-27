@@ -1,5 +1,14 @@
 "use client";
 
+if (typeof globalThis !== "undefined") {
+  if (typeof (globalThis as any).DOMMatrix === "undefined") {
+    (globalThis as any).DOMMatrix = class DOMMatrix {};
+  }
+  if (typeof (globalThis as any).Path2D === "undefined") {
+    (globalThis as any).Path2D = class Path2D {};
+  }
+}
+
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
@@ -82,11 +91,13 @@ export default function GenbiFlipbookWrapper({
 }: {
   pdfUrl?: string;
 }) {
+  const [mounted, setMounted] = useState(false);
   const [pdfReady, setPdfReady] = useState(false);
   const [minTimePassed, setMinTimePassed] = useState(false);
   const mountTime = useRef(Date.now());
 
   useEffect(() => {
+    setMounted(true);
     const elapsed = Date.now() - mountTime.current;
     const remaining = Math.max(0, MIN_LOADING_MS - elapsed);
     const t = setTimeout(() => setMinTimePassed(true), remaining);
@@ -97,6 +108,8 @@ export default function GenbiFlipbookWrapper({
   const isLoading = !showFlipbook;
 
   useAutoSplash(isLoading);
+
+  if (!mounted) return null;
 
   return (
     <div className="relative w-full h-full overflow-hidden">

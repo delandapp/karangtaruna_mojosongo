@@ -53,7 +53,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id" suppressHydrationWarning>
-      <body className={`${fontTitle.variable} ${fontBody.variable} ${fontUi.variable} ${fontPoppins.variable} font-sans antialiased`}>
+      <body className={`${fontTitle.variable} ${fontBody.variable} ${fontUi.variable} ${fontPoppins.variable} font-sans antialiased bg-background text-foreground min-h-screen selection:bg-emerald-500 selection:text-white`}>
         <Providers>
           {children}
           <Toaster position="top-right" richColors closeButton />

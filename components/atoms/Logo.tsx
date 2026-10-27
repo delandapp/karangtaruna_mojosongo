@@ -58,8 +58,8 @@ export default function Logo({
   const isDark = theme === 'dark';
 
   /* ── Resolved colours ── */
-  const resolvedTitleColor = titleColor ?? (isDark ? '#ffffff' : '#1a1a1a');
-  const resolvedSubtitleColor = subtitleColor ?? (isDark ? 'rgba(255,255,255,0.6)' : '#6b7280');
+  const resolvedTitleColor = titleColor;
+  const resolvedSubtitleColor = subtitleColor;
 
   /* ── Logo image ── */
   const logoImage = (
@@ -98,7 +98,7 @@ export default function Logo({
   const textBlock = (
     <div className="flex flex-col justify-center min-w-0">
       <span
-        className="font-semibold leading-tight truncate"
+        className={cn("font-semibold leading-tight truncate", !titleColor && (isDark ? "text-white" : "text-slate-900 dark:text-white"))}
         style={{
           fontFamily: 'var(--font-poppins), Poppins, sans-serif',
           color: resolvedTitleColor,
@@ -108,7 +108,7 @@ export default function Logo({
         {title}
       </span>
       <span
-        className="font-normal truncate"
+        className={cn("font-normal truncate", !subtitleColor && (isDark ? "text-white/60" : "text-slate-500 dark:text-slate-400"))}
         style={{
           fontFamily: 'var(--font-poppins), Poppins, sans-serif',
           color: resolvedSubtitleColor,

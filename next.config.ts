@@ -24,7 +24,10 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  webpack(config) {
+  webpack(config, { dev }) {
+    config.resolve = config.resolve || {};
+    config.resolve.alias = config.resolve.alias || {};
+    config.resolve.alias.canvas = false;
     config.module.rules.push({
       test: /\.(heic|HEIC)$/i,
       type: "asset/resource",

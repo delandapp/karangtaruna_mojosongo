@@ -74,7 +74,7 @@ export function SponsorshipSection() {
               id: "demography-card",
               theme: { hue: 160, saturation: 84, lightness: 39 },
               element: (
-                <div className="lg:col-span-7 rounded-[2.25rem] p-7 sm:p-10 bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 backdrop-blur-2xl shadow-sm flex flex-col justify-between">
+                <div className="lg:col-span-7 rounded-[2.25rem] p-7 sm:p-10 bg-white/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 backdrop-blur-2xl shadow-sm dark:shadow-none flex flex-col justify-between">
                   <div>
                     <span className="text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
                       Data Kunci Wilayah Mojosongo
@@ -84,38 +84,38 @@ export function SponsorshipSection() {
                     </h3>
 
                     <div className="grid grid-cols-2 gap-4 mb-8">
-                      <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/5 border border-slate-200/60 dark:border-white/10">
+                      <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/10">
                         <span className="text-2xl sm:text-3xl font-extrabold font-sans text-slate-900 dark:text-white flex items-baseline">
                           <CountUp to={55800} separator="." duration={2.5} />
                           <span>+</span>
                         </span>
-                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mt-0.5">Penduduk Terdata</p>
+                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 mt-0.5">Penduduk Terdata</p>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400">Kelurahan terpadat di Jebres</p>
                       </div>
 
-                      <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/5 border border-slate-200/60 dark:border-white/10">
+                      <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/10">
                         <span className="text-2xl sm:text-3xl font-extrabold font-sans text-emerald-600 dark:text-emerald-400 flex items-baseline">
                           <CountUp to={1} duration={2} />
                           <span>&nbsp;Juta+</span>
                         </span>
-                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mt-0.5">Impresi Media / Bulan</p>
+                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 mt-0.5">Impresi Media / Bulan</p>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400">Instagram & viral reach</p>
                       </div>
 
-                      <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/5 border border-slate-200/60 dark:border-white/10">
+                      <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/10">
                         <span className="text-2xl sm:text-3xl font-extrabold font-sans text-slate-900 dark:text-white flex items-baseline">
                           <CountUp to={39} duration={2} />
                           <span>&nbsp;RW</span>
                         </span>
-                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mt-0.5">250+ RT Aktif</p>
+                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 mt-0.5">250+ RT Aktif</p>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400">Jalur distribusi komunitas</p>
                       </div>
 
-                      <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/5 border border-slate-200/60 dark:border-white/10">
+                      <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/10">
                         <span className="text-2xl sm:text-3xl font-extrabold font-sans text-slate-900 dark:text-white">
                           <CountUp to={14} duration={1.8} />
                         </span>
-                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mt-0.5">Media Partner Solo</p>
+                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 mt-0.5">Media Partner Solo</p>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400">Publikasi serentak terpadu</p>
                       </div>
                     </div>
@@ -149,7 +149,7 @@ export function SponsorshipSection() {
               element: (
                 <div className="lg:col-span-5 flex flex-col gap-6">
                   {/* Instagram Spotlight Card */}
-                  <div className="p-7 rounded-[2rem] bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 shadow-sm flex flex-col justify-between backdrop-blur-2xl">
+                  <div className="p-7 rounded-[2rem] bg-white/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 shadow-sm dark:shadow-none flex flex-col justify-between backdrop-blur-2xl">
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <h4 className="text-base font-bold text-slate-900 dark:text-white font-sans">
@@ -169,7 +169,7 @@ export function SponsorshipSection() {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 text-center py-3 bg-white/50 dark:bg-white/5 rounded-2xl border border-slate-200/50 dark:border-white/5">
+                    <div className="grid grid-cols-2 gap-3 text-center py-3 bg-white/50 dark:bg-white/[0.04] rounded-2xl border border-slate-200/50 dark:border-white/10">
                       <div>
                         <span className="text-2xl font-extrabold font-sans text-slate-900 dark:text-white flex justify-center items-baseline">
                           <CountUp to={1100} separator="." duration={2.5} />
@@ -190,7 +190,7 @@ export function SponsorshipSection() {
                       href="https://instagram.com/karangtaruna.mojosongo"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-4 inline-flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-emerald-600 transition-colors group"
+                      className="mt-4 inline-flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors group"
                     >
                       <span>Buka Profil Instagram</span>
                       <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
@@ -198,7 +198,7 @@ export function SponsorshipSection() {
                   </div>
 
                   {/* TikTok Spotlight Card */}
-                  <div className="p-7 rounded-[2rem] bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 shadow-sm flex flex-col justify-between backdrop-blur-2xl">
+                  <div className="p-7 rounded-[2rem] bg-white/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 shadow-sm dark:shadow-none flex flex-col justify-between backdrop-blur-2xl">
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <h4 className="text-base font-bold text-slate-900 dark:text-white font-sans">
@@ -218,7 +218,7 @@ export function SponsorshipSection() {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 text-center py-3 bg-white/50 dark:bg-white/5 rounded-2xl border border-slate-200/50 dark:border-white/5">
+                    <div className="grid grid-cols-2 gap-3 text-center py-3 bg-white/50 dark:bg-white/[0.04] rounded-2xl border border-slate-200/50 dark:border-white/10">
                       <div>
                         <span className="text-2xl font-extrabold font-sans text-slate-900 dark:text-white">Organik</span>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Audiens Pemuda</p>
@@ -233,7 +233,7 @@ export function SponsorshipSection() {
                       href="https://tiktok.com/@karangtaruna.mojosongo"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-4 inline-flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-emerald-600 transition-colors group"
+                      className="mt-4 inline-flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors group"
                     >
                       <span>Buka Profil TikTok</span>
                       <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />

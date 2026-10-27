@@ -54,7 +54,7 @@ export function CtaSection() {
     <section id="kolaborasi" ref={containerRef} className="relative w-full px-4 py-5 sm:px-6 sm:py-6 md:px-8 md:py-8 lg:px-12 lg:py-10 xl:px-26 xl:py-22 flex flex-col overflow-hidden gap-12 lg:gap-16">
       
       {/* CTA Card (Inner Container equivalent padding/margin but dark theme) */}
-      <div ref={cardRef} className="w-full relative z-10 p-8 sm:p-10 md:p-12 lg:p-16 rounded-[2.5rem] sm:rounded-[4rem] lg:rounded-[5rem] bg-n-900 dark:bg-n-950 text-white shadow-2xl overflow-hidden border border-n-800">
+      <div ref={cardRef} className="w-full relative z-10 p-8 sm:p-10 md:p-12 lg:p-16 rounded-[2.5rem] sm:rounded-[4rem] lg:rounded-[5rem] bg-slate-900 dark:bg-[#0c101b] text-white shadow-2xl overflow-hidden border border-slate-800 dark:border-white/10">
         
         {/* Subtle Glow effects in background */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -94,7 +94,7 @@ export function CtaSection() {
               </div>
             </h2>
             
-            <p className="text-n-300 font-body text-base md:text-lg leading-relaxed max-w-lg mt-2">
+            <p className="text-slate-300 dark:text-slate-300 font-body text-base md:text-lg leading-relaxed max-w-lg mt-2">
               Kami membuka peluang besar bagi brand dan instansi untuk tumbuh bersama secara menguntungkan. Mari bersinergi menghadirkan kolaborasi kegiatan yang berkesan serta membawa manfaat positif yang nyata bagi masyarakat luas.
             </p>
             
@@ -122,35 +122,35 @@ export function CtaSection() {
             {/* Feature List */}
             <div className="flex flex-col gap-4">
               {/* Box 1 */}
-              <div className="flex gap-4 items-center bg-white/5 border border-white/10 p-4 rounded-2xl hover:bg-white/10 transition-colors">
+              <div className="flex gap-4 items-center bg-white/5 dark:bg-white/[0.04] border border-white/10 p-4 rounded-2xl hover:bg-white/10 dark:hover:bg-white/[0.08] transition-colors">
                 <div className="w-12 h-12 rounded-xl bg-accent-500/20 flex items-center justify-center shrink-0">
                   <FaBolt className="w-5 h-5 text-accent-400" />
                 </div>
                 <div>
                   <h4 className="font-title text-base md:text-lg font-bold text-white">Program Inovatif</h4>
-                  <p className="text-xs md:text-sm text-n-400">Kegiatan edukasi dan sosial yang berdampak</p>
+                  <p className="text-xs md:text-sm text-slate-400 dark:text-slate-300">Kegiatan edukasi dan sosial yang berdampak</p>
                 </div>
               </div>
               
               {/* Box 2 */}
-              <div className="flex gap-4 items-center bg-white/5 border border-white/10 p-4 rounded-2xl hover:bg-white/10 transition-colors">
+              <div className="flex gap-4 items-center bg-white/5 dark:bg-white/[0.04] border border-white/10 p-4 rounded-2xl hover:bg-white/10 dark:hover:bg-white/[0.08] transition-colors">
                 <div className="w-12 h-12 rounded-xl bg-accent-500/20 flex items-center justify-center shrink-0">
                   <FaShieldAlt className="w-5 h-5 text-accent-400" />
                 </div>
                 <div>
                   <h4 className="font-title text-base md:text-lg font-bold text-white">Transparansi Penuh</h4>
-                  <p className="text-xs md:text-sm text-n-400">Laporan kegiatan dan dana yang jelas</p>
+                  <p className="text-xs md:text-sm text-slate-400 dark:text-slate-300">Laporan kegiatan dan dana yang jelas</p>
                 </div>
               </div>
 
               {/* Box 3 */}
-              <div className="flex gap-4 items-center bg-white/5 border border-white/10 p-4 rounded-2xl hover:bg-white/10 transition-colors">
+              <div className="flex gap-4 items-center bg-white/5 dark:bg-white/[0.04] border border-white/10 p-4 rounded-2xl hover:bg-white/10 dark:hover:bg-white/[0.08] transition-colors">
                 <div className="w-12 h-12 rounded-xl bg-accent-500/20 flex items-center justify-center shrink-0">
                   <FaHeadset className="w-5 h-5 text-accent-400" />
                 </div>
                 <div>
                   <h4 className="font-title text-base md:text-lg font-bold text-white">Dukungan Solidaritas</h4>
-                  <p className="text-xs md:text-sm text-n-400">Bimbingan & relasi antar sesama pemuda</p>
+                  <p className="text-xs md:text-sm text-slate-400 dark:text-slate-300">Bimbingan & relasi antar sesama pemuda</p>
                 </div>
               </div>
             </div>

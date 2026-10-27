@@ -22,6 +22,9 @@ export const GENBI_CONFIG = {
     "Proposal Program GENABLE: Sinergi Digitalisasi UMKM dan Pemberdayaan Ekonomi Masyarakat melalui Inovasi Digital oleh Karang Taruna Mojosongo, Pemerintah Kota Surakarta, Kantor Perwakilan Bank Indonesia, dan GenBI UIN Raden Mas Said Surakarta.",
   // PDF URL Konstan (bisa di-override lewat ENV jika diarahkan ke CDN/S3)
   pdfUrl: process.env.NEXT_PUBLIC_GENBI_PDF_URL || "/pdf/genbi-proposal.pdf",
+  whatsappNumber: "0882-3935-2876",
+  whatsappUrl:
+    "https://wa.me/6288239352876?text=Halo%20Admin%2C%20saya%20telah%20membaca%20Proposal%20GENABLE%20dan%20tertarik%20untuk%20berkolaborasi.",
   // Logo konstan kolaborasi
   logos: [
     {

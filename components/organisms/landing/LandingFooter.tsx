@@ -48,7 +48,7 @@ export function LandingFooter() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="w-full border-t border-slate-200/80 dark:border-white/10 bg-slate-50/80 dark:bg-n-950/80 backdrop-blur-xl relative overflow-hidden">
+    <footer className="w-full border-t border-slate-200/80 dark:border-white/10 bg-slate-50/80 dark:bg-[#06080d]/90 backdrop-blur-xl relative overflow-hidden">
       {/* Background ambient accents */}
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-emerald-500/5 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-emerald-500/5 blur-[120px] rounded-full pointer-events-none" />
@@ -61,7 +61,7 @@ export function LandingFooter() {
               <Logo variant="with-text" size={44} />
             </Link>
 
-            <p className="text-slate-600 dark:text-slate-400 font-sans text-sm leading-relaxed max-w-sm">
+            <p className="text-slate-600 dark:text-slate-300 font-sans text-sm leading-relaxed max-w-sm">
               Karang Taruna Kelurahan Mojosongo — wadah akselerasi potensi generasi muda,
               pelestarian budaya adiluhung, dan kolaborasi sinergis antar pemuda di Surakarta.
             </p>
@@ -88,7 +88,7 @@ export function LandingFooter() {
             </div>
 
             {/* Address */}
-            <div className="flex flex-col gap-2 text-xs text-slate-600 dark:text-slate-400">
+            <div className="flex flex-col gap-2 text-xs text-slate-600 dark:text-slate-300">
               <span className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
                 Kelurahan Mojosongo, Kec. Jebres, Kota Surakarta, Jawa Tengah 57127
@@ -135,14 +135,14 @@ export function LandingFooter() {
 
           {/* Callout Card (1 col) */}
           <div className="flex flex-col gap-4">
-            <div className="p-5 rounded-3xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-sm flex flex-col gap-3.5">
+            <div className="p-5 rounded-3xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 shadow-sm flex flex-col gap-3.5">
               <div className="w-9 h-9 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
                 <Sparkles className="w-4 h-4" />
               </div>
               <h5 className="font-bold text-sm text-slate-900 dark:text-white">
                 Ingin Brand Anda Menjangkau 55.000+ Warga?
               </h5>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              <p className="text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
                 Bergabunglah sebagai mitra sponsor resmi kegiatan pemuda & budaya Mojosongo.
               </p>
               <Link
